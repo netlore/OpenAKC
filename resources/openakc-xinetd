@@ -1,0 +1,13 @@
+service openakc
+{
+        flags           = REUSE
+        socket_type     = stream
+        wait            = no
+        user            = root
+        server          = /usr/sbin/openakc-server
+	server_args	= inetd
+        log_on_failure  += USERID
+	instances	= 500
+	cps		= 250 10
+        disable         = no
+}

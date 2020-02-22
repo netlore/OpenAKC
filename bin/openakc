@@ -1,0 +1,701 @@
+#!/bin/bash
+
+# Filename      : /usr/bin/openakc
+# Function      : OpenAKC User/API Tool
+#
+# Copyright (C) 2019-2020  A. James Lewis
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+#
+# Static Values / Setup
+#
+
+trap '' SIGTSTP
+trap '' SIGINT
+RELEASE="0.0"
+
+#
+# Defaults
+#
+CONFFILE="/etc/openakc/openakc.conf"
+DATADIR="/var/lib/openakc"
+USERDIR="${HOME}/.openakc"
+TMOUT=5
+DEBUG="no"
+PORT=889
+
+#
+# Functions
+#
+
+logstatus () {
+ logger -p authpriv.info -t "openakc-tool[$$]" "INFO - $1"
+}
+
+logauth () {
+ logger -p authpriv.notice -t "openakc-tool[$$]" "AUTH - $1"
+}
+
+logdebug () {
+ if [ "x$DEBUG" == "xyes" ];then
+  logger -p authpriv.debug -t "openakc-tool[$$]" "DEBUG - $1"
+ fi
+}
+
+logwarn () {
+ logger -p authpriv.warn -t "openakc-tool[$$]" "WARNING - $1"
+}
+
+logerr () {
+ logger -p authpriv.err -t "openakc-tool[$$]" "ERROR - $1"
+}
+
+
+isok () {
+ ISOK=$(echo $OK | cut -d ":" -f 1)
+ if [ "x$ISOK" != "xOK" ]; then
+  echo "Protocol Error:-"
+  echo $OK
+  echo
+  logerr "Quitting due to unexpected command response - $OK"
+  echo "quit" >&5
+  exec 5>&-
+  exit 0
+ fi
+}
+
+sendmessage () {
+ MESSAGE=$(echo "$MESSAGE" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo "message $MESSAGE" >&5
+}
+
+usage () {
+ echo ""
+ echo "Commands Available:-"
+ echo ""
+ echo "$0 help"
+ echo "   - This help text"
+ echo ""
+ echo "$0 register [public key file]"
+ echo "   - Register personal SSH key pair"
+ echo ""
+ echo "$0 submit {public key file} {\"Description\"}"
+ echo "   - Submit key for trust relationship"
+ echo ""
+ echo "$0 setrole {user@hostname} {filename}"
+ echo "   - Add permission"
+ echo ""
+ echo "$0 getrole {user@hostname} {filename}"
+ echo "   - Get permission"
+ echo ""
+ echo "$0 showrole {user@hostname}"
+ echo "   - Display permission"
+ echo ""
+ echo "$0 editrole {user@hostname}"
+ echo "   - Update permission"
+# echo ""
+# echo "$0 listusers"
+# echo "   - List registered users"
+ echo ""
+ echo "$0 ping"
+ echo "   - Check connectivity"
+ echo ""
+ echo "$0 license"
+ echo "   - Display License Details"
+ echo ""
+}
+
+apicall () {
+ #
+ # Start of illogical function dance where work is done once API is open.
+ #
+ 
+ #
+ # Check/read cache file or query OpenAKC Server
+ #
+ 
+ # Connect to API
+ logdebug "Trying TCP Session with API \"${1}:${PORT}\" ID is \"$(whoami)\""
+ exec 5<>/dev/tcp/${1}/${PORT}
+ success=${?}
+ if [ $success -ne 0 ]; then
+  exit $success
+  logdebug "TCP Session exit Code ${success} with API \"${1}:${PORT}\""
+ fi
+ logdebug "TCP Session opened with API \"${1}:${PORT}\""
+ 
+ # NB If we're still going, then we're it!
+ 
+ read TAGLINE <&5
+ read OK <&5
+ isok
+ echo "getproto" >&5
+ read PROTOS <&5
+ read OK <&5
+ isok
+ 
+ #
+ # Check our protocol is available
+ #
+ POK=0
+ for C in $CPROTOS
+ do
+  for P in $PROTOS
+  do
+   if [ "x$P" == "x$C" ]; then
+    POK=1
+    PROTO=$C
+   fi
+  done
+ done
+ if [ "x$POK" == "x0" ]; then
+  logerr "No matching protocols found, exiting!"
+  exit 1
+ fi
+ #
+ case "$PROTO" in
+  akcrsa1)
+   SSLOPTS="-aes-256-cbc -md md5 -salt -in /dev/stdin -pass pass:"
+   ;;
+  akcrsa1.1)
+   SSLOPTS="-aes-256-cbc -md sha512 -pbkdf2 -iter 13370 -salt -in /dev/stdin -pass pass:"
+   ;;
+  *)
+   logerr "Can't set OpenSSL Options (Code Error), exiting."
+   exit 1
+ esac
+# PROTO=$(echo $PROTO | awk -F. '{print $1}') #FIXME This shouldn't be here
+  
+ echo "Server supports protocols:- $PROTOS"
+ echo "We support protocols:- $CPROTOS"
+ echo "Using Protocol:- $PROTO"
+ echo ""
+# echo "Mode:- "$MODE
+# echo ""
+  
+ #
+ # Initialise session protocol
+ #
+ echo "setproto $PROTO" >&5
+ read OK <&5
+ isok
+#
+ if [ ! -f "${USERDIR}/openakc-server-pubkey-${1}.pem" ]; then
+  echo "pubkey" >&5
+  touch /tmp/.pubkey.$$
+  rm /tmp/.pubkey.$$
+  for loop in {1..30}
+  do
+   read PUB <&5
+   if [ $(echo $PUB | cut -c 1-3) == "OK:" ]; then
+    break
+   fi
+   echo $PUB >> /tmp/.pubkey.$$
+  done
+  mv /tmp/.pubkey.$$ "${USERDIR}/openakc-server-pubkey-${1}.pem"  
+  logstatus "Collecting servers RSA Public Key"
+  OK=$PUB
+  isok
+  [ $loop -eq 15 ]&&logwarn "Error with collecting servers RSA Public Key"
+ fi
+ #
+ # Generate Session Key and register it.
+ #
+ SESSKEY=$(openssl rand -hex 26 2> /dev/null)
+ SESSCODE=$(echo $SESSKEY | openssl rsautl -encrypt -inkey "${USERDIR}/openakc-server-pubkey-${1}.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
+ #
+ echo "sessioncode $SESSCODE" >&5
+ read OK <&5
+ isok
+ #
+ 
+ echo "Connected!"
+
+ case "$MODE" in
+  register)
+   if [ "x${SDO}${MODE}" == "xyesregister" ]; then
+    echo "Sending key registration request"
+    MESSAGE=$(echo "challenge system $(hostid)");sendmessage
+    read CHALCODE <&5
+    read OK <&5
+    isok
+    CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+    CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${DATADIR}/keys/openakc-system-client-$(hostid)-prvkey.pem" -in /dev/stdin 2> /dev/null)
+    echo ""
+    echo "Key Register - $OK"
+    MESSAGE=$(echo "handshake ${CHAL}");sendmessage
+    read OK <&5
+    isok
+    echo "Key Register - $OK"
+    MESSAGE=$(echo "registerkey user ${usr} ${fp} ${pkey}");sendmessage
+    read OK <&5
+    isok
+    echo "Key Register - $OK"
+    echo ""
+    echo "Key Registered Successfully"
+   fi
+   ;;
+#
+  setrole)
+#  FIXME Do more input validation
+   echo "Sending role config request"
+   TARGET=$(echo "${ARGS}" | awk '{print $2}')
+   if [ -r ${ROLEFN} ]; then
+    ROLEFILE=$(cat ${ROLEFN} | gzip | base64 -w 0)
+   else
+    echo "Error: Role file (${ROLEFN}) not found, exiting"
+    break
+   fi
+   USRNAME=$(echo "${TARGET}" | awk -F\@ '{print $1}')
+   HSTNAME=$(echo "${TARGET}" | awk -F\@ '{print $2}')
+   #
+   MESSAGE=$(echo "challenge user $(whoami)");sendmessage
+   read CHALCODE <&5
+   read OK <&5
+   isok
+   CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+   CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+   echo ""
+   echo "Add Permission - $OK"   
+   MESSAGE=$(echo "handshake ${CHAL}");sendmessage
+   read OK <&5
+   isok
+   echo "Add Permission - $OK"
+   MESSAGE=$(echo "setrole ${USRNAME}@${HSTNAME} ${ROLEFILE}");sendmessage
+   read OK <&5
+   isok
+   echo "Add Permission - $OK"    
+   ;;
+#
+  getrole)
+#  FIXME Do more input validation
+   echo "Sending role config request"
+   TARGET=$(echo "${ARGS}" | awk '{print $2}')
+   touch "${ROLEFN}" 2> /dev/null
+   if [ $? -ne 0 ]; then
+    echo "Error: Role file (${ROLEFN}) not writable, exiting"
+    break
+   fi
+   rm "${ROLEFN}"
+   USRNAME=$(echo "${TARGET}" | awk -F\@ '{print $1}')
+   HSTNAME=$(echo "${TARGET}" | awk -F\@ '{print $2}')
+   #
+   MESSAGE=$(echo "challenge user $(whoami)");sendmessage
+   read CHALCODE <&5
+   read OK <&5
+   isok
+   CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+   CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+   echo ""
+   echo "Get Permission - $OK"   
+   MESSAGE=$(echo "handshake ${CHAL}");sendmessage
+   read OK <&5
+   isok
+   echo "Get Permission - $OK"
+   MESSAGE=$(echo "getrole ${USRNAME}@${HSTNAME} ${ROLEFILE}");sendmessage
+   read ROLEFILE <&5
+   ROLEFILE=$(echo "$ROLEFILE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | gzip -d | base64 -d)
+   read OK <&5
+   isok
+   echo "Get Permission - $OK"
+   if [ "x${OK:0:3}" != "xERR" ]; then
+    echo "$ROLEFILE" > "${ROLEFN}"
+   fi
+   ;;
+  submit)
+#  FIXME Do more input validation
+   echo "Sending key submission request"
+   if [ -r ${KEYFILE} ]; then
+    KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
+    COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
+   else
+    echo "Error: Key file (${KEYFILE}) not found, exiting"
+    break
+   fi
+   MESSAGE=$(echo "challenge user $(whoami)");sendmessage
+   read CHALCODE <&5
+   read OK <&5
+   isok
+   CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+   CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+   echo ""
+   echo "Submit Key - $OK"
+   MESSAGE=$(echo "handshake ${CHAL}");sendmessage
+   read OK <&5
+   isok
+   echo "Submit Key - $OK"
+   MESSAGE=$(echo "submit ${fp} ${KEYDATA} ${COMMENT}");sendmessage
+   read OK <&5
+   isok
+   echo "Submit Key - $OK"
+   ;;
+#
+  ping)
+   echo "Sending Test Run Ping Message"
+   MESSAGE=$(echo "ping");sendmessage
+   read OK <&5
+   echo "Test Run Response - $OK - from server - $1"
+   ;;
+#
+  *)
+   echo "Unrecognised session mode"
+   ;;
+ esac
+ #
+ # Common disconnect 
+ #
+ echo "quit" >&5
+ exec 5>&-
+ echo
+ echo "Note: \"Terminated\" message below is expected"
+ echo
+}
+
+netcall () {
+ for API in $APIS
+ do
+  apicall $API & apipid=$! 2> /dev/null
+  { sleep 15 ; kill $apipid 2> /dev/null; } & sleepid=$!
+  wait $apipid 2> /dev/null
+  success=${?}
+  pkill -P $sleepid
+  if [ ${success} -ne 0 ]; then
+   sleep 5
+   reset
+   echo "Timeout / Error with OpenAKC backend at ${API}, check port ${PORT}. Code: $success"
+  fi
+ done
+}
+
+
+
+
+#
+# Find OpenSSL Version
+#
+
+OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
+if [ "$OSSLV" -eq "$OSSLV" ] 2>/dev/null; then
+ :
+else
+ logerr "Unrecognised OpenSSL version, exiting."
+ exit 1
+fi
+if [ $OSSLV -ge 908 ];then
+ CPROTOS="akcrsa1" # Space Separated List
+else
+ logerr "OpenSSL too old, exiting."
+ exit 1
+fi
+if [ $OSSLV -ge 908 ];then
+ CPROTOS="akcrsa1 akcrsa1.1" # Space Separated List
+fi
+
+
+#
+# Get Configuration File (or poke server to write config incase this is the first communication).
+#
+mkdir -p "$USERDIR" 2> /dev/null
+
+if [ ! -f "${CONFFILE}" ] && [ ! -f "${USERDIR}/config" ]; then
+ echo
+ echo "No config found, checking for a server on \"localhost\" at port 889"
+ echo "init" > /dev/tcp/127.0.0.1/889
+ if [ $? -eq 0 ]; then
+  echo "Success! Hopefully the server wrote a base config"
+ else
+  echo
+  echo "Can't find any config or server to ping, please create either:-"
+  echo "${CONFFILE} or ${USERDIR}/config"
+  echo "and define APIS=\"host{,host}\" where host can be a name or IP address"
+  echo
+ fi
+ sleep 1
+fi
+#
+
+if [ -f "${CONFFILE}" ]; then
+ source "${CONFFILE}"
+fi
+if [ -f "${USERDIR}/config" ]; then
+ source "${USERDIR}/config"
+fi
+
+if [ ! -f "${CONFFILE}" ] && [ ! -f "${USERDIR}/config" ]; then
+ logerr "Can't find a config file, exiting."
+ echo "Can't find a config file, exiting."
+ echo
+ exit 1
+fi
+APIS=$(echo $APIS | tr ',' ' ')
+
+#
+# Fixed Values
+#
+PRVKEY="openakc-system-client-$(hostid)-prvkey.pem"
+PUBKEY="openakc-system-client-$(hostid)-pubkey.pem"
+USERPRVKEY="openakc-user-client-$(whoami)-prvkey.pem"
+USERPUBKEY="openakc-user-client-$(whoami)-pubkey.pem"
+SESSKEY=""
+
+#
+# Transient Values
+#
+DAT=$(date "+%c")
+SDAT=$(date "+%s")
+
+#
+# Initial Startup
+#
+MODE=${1}
+ARGS=${@}
+
+#
+# Validate Config FIXME Needs more checks. (ESP API hosts's)
+#
+if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
+ if [ $PORT -gt 65535 ]; then
+  logerr "Warning - TCP port $PORT is out of range, exiting"
+  exit 0
+ fi
+else
+ logerr "TCP port $PORT is not a number, exiting"
+ exit 0
+fi
+
+#
+# OpenAKC command line interface.
+#
+
+SDO="no"
+#TMPCMD=$(cat /proc/$PPID/cmdline) 2> /dev/null
+if [[ "x$(tr -d '\0' < /proc/$PPID/cmdline)" == *"xsudo"* ]]; then
+  SDO="yes"
+  echo "OpenAKC Copyright (C) 2019  A. James Lewis."
+  USERDIR=${4}
+  #
+  [ ! -d "$DATADIR/keys" ]&&mkdir "$DATADIR/keys"
+  chmod 700 "$DATADIR/keys"
+  [ ! -f "${DATADIR}/keys/${PUBKEY}" ] && rm "${DATADIR}/keys/${PRVKEY}" 2> /dev/null
+  if [ ! -f "${DATADIR}/keys/${PRVKEY}" ]; then
+   logstatus "Forcing refresh of openssl keys"
+   openssl genrsa -out "${DATADIR}/keys/${PRVKEY}" 2048 2> /dev/null
+   openssl rsa -in "${DATADIR}/keys/${PRVKEY}" -outform PEM -pubout -out "${DATADIR}/keys/${PUBKEY}" 2> /dev/null
+  fi 
+  #
+else
+ if [ "x${MODE}" != "xrerole" ]; then
+  echo "OpenAKC Copyright (C) 2019  A. James Lewis.  Version is ${RELEASE}."
+  echo ""
+  echo "This program comes with ABSOLUTELY NO WARRANTY; see \"license\" option".
+  echo "This is free software, and you are welcome to redistribute it"
+  echo "under certain conditions; See LICENSE file for further details."
+ fi
+ echo ""
+ [ ! -d "$USERDIR" ]&&mkdir "$USERDIR"
+ chmod 700 "$USERDIR"
+ [ ! -f "${USERDIR}/${USERPUBKEY}" ] && rm "${USERDIR}/${USERPRVKEY}" 2> /dev/null
+ if [ ! -f "${USERDIR}/${USERPRVKEY}" ]; then
+  logstatus "Forcing refresh of openssl user keys"
+  openssl genrsa -out "${USERDIR}/${USERPRVKEY}" 2048 2> /dev/null
+  openssl rsa -in "${USERDIR}/${USERPRVKEY}" -outform PEM -pubout -out "${USERDIR}/${USERPUBKEY}" 2> /dev/null
+ fi 
+#
+fi
+case "$MODE" in
+ register)
+  if [ "x$SDO" == "xyes" ];then
+   logdebug "Starting key registration in sudo mode"
+   fp=${3}
+   usr=${2}
+   fps=$(echo ${3} | md5sum | awk '{print $1}')
+   pkey=$(cat /tmp/openakc.${fps})
+   chkusr=$(ls -l /tmp/openakc.${fps} | awk '{print $3}')
+   if [ "x${usr}" != "x${chkusr}" ]; then
+    echo ""
+    echo "Error: Key ownership not confirmed, aborting!"
+    echo "Error: \"$usr\" does not match \"$chkusr\"" 
+    exit 1
+   fi
+   #
+   # Looks like we need to register a key!
+   #
+   netcall
+  else
+   logdebug "Starting key registration in normal mode"
+   if [ "x$(whoami)" == "xroot" ];then 
+    echo  "Error: User \"root\" cannot register a user key"
+    usage
+    exit 1
+   fi
+#
+   tmpkey=$(readlink -m -- "${2}")
+   if [ -f "${tmpkey}" ]; then
+    key=${tmpkey}
+   else
+    key="${HOME}/.ssh/id_rsa.pub"
+   fi
+   logdebug "Looking for key file ${key}"
+#
+   if [ ! -r "${key}" ]; then
+    echo "Error: unable to read public key file"
+    usage
+    exit 1
+   else
+    prvkey=$(echo $key | sed -e "s,.pub$,,g")
+    if [ ! -r "${prvkey}" ]; then
+     echo "Error: unable to read private key file"
+     usage
+     exit 1
+    fi
+#
+    ssh-keygen -P "dummy" -yf "${prvkey}" 1> /dev/null 2> /dev/null
+    if [ $? -eq 0 ]; then
+     if [ "x$(whoami)" != "xroot" ]; then
+      echo "Error: user key (${prvkey}) must include passphrase"
+      usage
+      exit 1
+     fi
+    fi
+    echo "Passphrase is requested to ensure you own this key."
+    echo ""
+    ssh-keygen -yf $prvkey > /tmp/openakc.pubkey.$$
+#
+    if [ "$(cat /tmp/openakc.pubkey.$$ | awk '{print $2}')" != "$(cat ${key} | awk '{print $2}')" ];then
+     echo ""
+     echo "Error: Public / Private key mismatch"
+     usage
+     exit 1
+    fi
+#
+    pkey=$(cat /tmp/openakc.pubkey.$$)
+    fp=$(ssh-keygen -lf /tmp/openakc.pubkey.$$ | awk '{print $2}')
+    rm /tmp/openakc.pubkey.$$
+#
+    echo ${fp} | grep -q "^SHA" 2>/dev/null
+    if [ ${?} -ne 0 ]; then
+     echo "Key Fingerprint format unknown (old ssh version?). aborting!"
+     exit 1
+    fi
+#
+    fps=$(echo ${fp} | md5sum | awk '{print $1}')
+    echo $pkey > /tmp/openakc.${fps}
+    echo ""
+    echo "Escalating to perform API call"
+    echo ""
+    sudo /usr/bin/openakc register $(whoami) $fp $USERDIR
+    rm /tmp/openakc.${fps}
+    exit 0
+   fi
+  fi
+  ;;
+ setrole)
+  # FIXME Do some input validation
+  echo -n ""
+  ROLEFN=$(echo "${ARGS}" | awk '{print $3}')
+  netcall
+  exit 0
+  ;;
+ getrole)
+  # FIXME Do some input validation
+  echo -n ""
+  ROLEFN=$(echo "${ARGS}" | awk '{print $3}')
+  netcall
+  exit 0
+  ;;
+ showrole)
+  # FIXME Do some input validation
+  echo -n ""
+  ROLEFN="/tmp/.openakc_edit.$$"
+  MODE="getrole"
+  netcall
+  echo "Role configuration below:- $PAGER"
+  [ ! -x "$(which ${PAGER})" ]&&PAGER="more"
+  if [ ! -x "$(which ${PAGER})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
+  $PAGER "$ROLEFN"
+  rm "$ROLEFN"
+  exit 0
+  ;;
+ editrole)
+  # FIXME Do some input validation
+  echo -n ""
+  ROLEFN="/tmp/.openakc_edit.$$"
+  MODE="getrole"
+  netcall
+  [ ! -f ${ROLEFN} ]&&exit 0
+  echo "Running editor:- $EDITOR"
+  [ ! -x "$(which ${EDITOR})" ]&&EDITOR="vi"
+  if [ ! -x "$(which ${EDITOR})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
+  $EDITOR "$ROLEFN"
+  MODE="setrole"
+  netcall
+  rm "$ROLEFN"
+  exit 0
+  ;;
+ submit)
+  # FIXME Do some input validation
+  echo -n ""
+  KEYFILE=$(echo "${ARGS}" | awk '{print $2}')
+  COMMENT=$(echo "${3}")
+  echo "Storing static key ${KEYFILE} with comment \"${3}\""
+  if [ ! -r "$KEYFILE" ]; then
+   echo "Can't read key file (${KEYFILE}). aborting!"
+   exit 1
+  fi
+  #
+  fp=$(ssh-keygen -lf "$KEYFILE")
+  if [ ${?} -ne 0 ]; then
+   echo "Cannot generate key fingerprint. aborting!"
+   exit 1
+  fi
+  fp=$(echo ${fp} | awk '{print $2}')
+  #
+  echo ${fp} | grep -q "^SHA" 2>/dev/null
+  if [ ${?} -ne 0 ]; then
+   echo "Key Fingerprint format unknown (old ssh version?). aborting!"
+   exit 1
+  fi
+  #
+  netcall
+  ;;
+ listusers)
+  # FIXME Do some input validation
+  echo -n ""
+  ;;
+ ping)
+  echo -n ""
+  netcall
+  ;;
+ license)
+  echo "This program is free software: you can redistribute it and/or modify"
+  echo "it under the terms of the GNU General Public License as published by"
+  echo "the Free Software Foundation, either version 2 of the License, or"
+  echo "(at your option) any later version."
+  echo ""
+  echo "This program is distributed in the hope that it will be useful,"
+  echo "but WITHOUT ANY WARRANTY; without even the implied warranty of"
+  echo "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
+  echo "GNU General Public License for more details."
+  echo ""
+  echo "You should have received a copy of the GNU General Public License"
+  echo "along with this program.  If not, see <https://www.gnu.org/licenses/>."
+  exit 0
+  ;;
+ *)
+  usage
+  exit 1
+  ;;
+esac

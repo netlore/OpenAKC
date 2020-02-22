@@ -1,0 +1,2 @@
+# All users have access to register ssh keys
+ALL		 ALL=NOPASSWD: /usr/bin/openakc register *

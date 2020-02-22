@@ -1,0 +1,409 @@
+#!/bin/bash
+
+# Filename      : /usr/sbin/openakc-client
+# Function      : OpenAKC Authentication Plugin
+#
+# Copyright (C) 2019-2020  A. James Lewis
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+#
+# Static Values / Setup
+#
+trap '' SIGTSTP
+trap '' SIGINT
+RELEASE="0.0"
+
+#
+# Values from SSH Daemon
+#
+KEY=${3}
+REMHOME=${2}
+USER=${1}
+
+#
+# Defaults
+#
+CONFFILE="/etc/openakc/openakc.conf"
+DATADIR="/var/lib/openakc"
+SESSKEY=""
+APIS="openakc01,openakc02"
+ENABLED="yes"
+DEBUG="yes"
+PORT=889
+CACHETIME=60
+TMOUT=5
+DOAUDIT="no"
+PLUGINUSER="openakc"
+
+#
+# Functions
+#
+logstatus () {
+ logger -p authpriv.info -t "openakc-plugin[$$]" "INFO - $1"
+}
+
+logauth () {
+ logger -p authpriv.notice -t "openakc-plugin[$$]" "AUTH - $1"
+}
+
+logdebug () {
+ if [ "x$DEBUG" == "xyes" ];then
+  logger -p authpriv.debug -t "openakc-plugin[$$]" "DEBUG - $1"
+ fi
+}
+
+logwarn () {
+ logger -p authpriv.warn -t "openakc-plugin[$$]" "WARNING - $1"
+}
+
+logerr () {
+ logger -p authpriv.err -t "openakc-plugin[$$]" "ERROR - $1"
+}
+
+
+isok () {
+ ISOK=$(echo "${OK}" | cut -d ":" -f 1)
+ if [ "x${ISOK}" != "xOK" ]; then
+  logerr "Quitting due to unexpected command response - ${OK}"
+  echo "quit" >&5
+  exec 5>&-
+  exit 0
+ fi
+}
+
+sendmessage () {
+ MESSAGE=$(echo "${MESSAGE}" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo "message ${MESSAGE}" >&5
+}
+
+#
+# Find OpenSSL Version
+#
+OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
+if [ "${OSSLV}" -eq "${OSSLV}" ] 2>/dev/null; then
+ :
+else
+ logerr "Unrecognised OpenSSL version, exiting."
+ exit 1
+fi
+if [ ${OSSLV} -ge 908 ];then
+ CPROTOS="akcrsa1" # Space Separated List
+else
+ logerr "OpenSSL too old, exiting."
+ exit 1
+fi
+if [ ${OSSLV} -ge 908 ];then
+ CPROTOS="akcrsa1 akcrsa1.1" # Space Separated List
+fi
+
+#
+# Get Configuration.
+#
+CONFDIR=$(dirname "${CONFFILE}")
+if [ -r "${CONFFILE}" ]; then
+ source "${CONFFILE}"
+else
+ logerr "Can't find/read config file, exiting"
+ USER="usage"
+fi
+APIS=$(echo "${APIS}" | tr ',' ' ')
+
+#
+# Transient Values
+#
+DAT=$(date "+%c")
+SDAT=$(date "+%s")
+[ ${RANDOM} -lt 1638 ]&&DOAUDIT="yes"
+
+#
+# OpenAKC command line interface.
+#
+NOEXIT=0
+TMPCMD=$(cat "/proc/${PPID}/cmdline"|cut -c 1-4) 2> /dev/null
+if [ "x$TMPCMD" != "xsshd" ]; then
+ echo "OpenAKC Copyright (C) 2019  A. James Lewis.  Version is ${RELEASE}."
+ echo ""
+ echo "This program comes with ABSOLUTELY NO WARRANTY; for details type \"license\"".
+ echo "This is free software, and you are welcome to redistribute it"
+ echo "under certain conditions; See LICENSE file for further details."
+ echo ""
+ echo "Configuration in ${CONFFILE}"
+ echo
+ case "${USER}" in
+  resetkeys)
+   touch "${DATADIR}/keys/$$.tmp"
+   rm -f ${DATADIR}/keys/*
+   echo "Keys Deleted"
+   ;;
+  ping)
+   NOEXIT=1
+   ;;
+  license)
+   echo "This program is free software: you can redistribute it and/or modify"
+   echo "it under the terms of the GNU General Public License as published by"
+   echo "the Free Software Foundation, either version 2 of the License, or"
+   echo "(at your option) any later version."
+   echo ""
+   echo "This program is distributed in the hope that it will be useful,"
+   echo "but WITHOUT ANY WARRANTY; without even the implied warranty of"
+   echo "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
+   echo "GNU General Public License for more details."
+   echo ""
+   echo "You should have received a copy of the GNU General Public License"
+   echo "along with this program.  If not, see <https://www.gnu.org/licenses/>."
+   ;;
+  *)
+    echo ""
+    echo "Commands Available:-"
+    echo "$0 help                 - This help text"
+    echo "$0 resetkeys            - Reset any stored public keys"
+    echo "$0 ping                 - Verify encryption and connectivity"
+    echo "$0 license              - Display License Details"
+    echo
+    echo "Note: commands are intended for testing/recovery by system administrator only."
+    ;;
+  esac
+ [ "x${NOEXIT}" == "x0" ] && exit 0
+else
+ #
+ # Create Data Folders
+ #
+ mkdir -p "${DATADIR}/cache" "${DATADIR}/keys"
+ chmod 750 "${DATADIR}" "${DATADIR}/cache" "${DATADIR}/keys"
+ logdebug "OpenAKC Plugin Started KEY=${KEY} HOME=${REMHOME} USER=${USER}"
+fi
+
+if [ ! -d "${DATADIR}/keys" ]&&[ "x$(whoami)" == "xroot" ]; then
+ mkdir -p "${DATADIR}/cache" "${DATADIR}/keys"
+ chmod 750 "${DATADIR}" "${DATADIR}/cache" "${DATADIR}/keys"
+ chown "${PLUGINUSER}:root" "${DATADIR}" "${DATADIR}/cache" "${DATADIR}/keys"
+fi
+
+#
+# Validate Config FIXME Needs more checks. (ESP API hosts's)
+#
+if [ "${CACHETIME}" -eq "${CACHETIME}" ] 2>/dev/null; then
+ :
+else
+ logwarn "Cache time ${CACHETIME} is not a number, defaults to 60 seconds"
+ CACHETIME=60
+fi
+#
+if [ "x${ENABLED}" != "xyes" ]; then
+ logstatus "Disabled in config \"ENABLED\" must be \"yes\" to enable OpenAKC"
+ exit 0
+fi
+#
+if [ "${PORT}" -eq "${PORT}" ] 2>/dev/null; then
+ if [ ${PORT} -gt 65535 ]; then
+  logerr "Warning - TCP port ${PORT} is out of range, exiting"
+  exit 0
+ fi
+else
+ logerr "TCP port ${PORT} is not a number, exiting"
+ exit 0
+fi
+
+
+#
+# Determine API order
+#
+
+# FIXME Do something about API ordering, prefer source IP but API's supports names.
+#if [[ $APIS == *"$ORIGIN"* ]]; then
+#  APIS="$ORIGIN $(echo "$APIS" | tr -d '$ORIGIN')"
+#fi
+#echo "$APIS" > /tmp/apis.txt
+
+
+#
+# Start of illogical function dance.
+#
+apicall () {
+ #
+ # Check/read cache file or query OpenAKC Server
+ #
+ 
+ # FIXME Random chance? to flush old cache files. Do we want cache files, not with keystroke logging!
+ # CACHEFILE="$DATADIR/cache/$(echo "${PROTO}${KEY}${USER}" | md5sum | awk '{print $1}').cache"
+ 
+ # Connect to API
+ logdebug "Trying TCP Session with API \"${1}:${PORT}\" ID is \"$(whoami)\""
+ exec 5<>/dev/tcp/${1}/${PORT}
+ success=${?}
+ if [ ${success} -ne 0 ]; then
+  exit ${success}
+  logdebug "TCP Session exit Code ${success} with API \"${1}:${PORT}\""
+ fi
+ logdebug "TCP Session opened with API \"${1}:${PORT}\""
+ 
+ # NB If we're still going, then we're it!
+ 
+ read TAGLINE <&5
+ read OK <&5
+ isok
+ echo "getproto" >&5
+ read PROTOS <&5
+ read OK <&5
+ isok
+ 
+ #
+ # Check our protocol is available
+ #
+ POK=0
+ for C in ${CPROTOS}
+ do
+  for P in ${PROTOS}
+  do
+   if [ "x${P}" == "x${C}" ]; then
+    POK=1
+    PROTO=${C}
+   fi
+  done
+ done
+ if [ "x$P{OK}" == "x0" ]; then
+  logerr "No matching protocols found, exiting!"
+  exit 1
+ fi
+#
+ case "${PROTO}" in
+  akcrsa1)
+   SSLOPTS="-aes-256-cbc -md md5 -salt -in /dev/stdin -pass pass:"
+   ;;
+  akcrsa1.1)
+   SSLOPTS="-aes-256-cbc -md sha512 -pbkdf2 -iter 13370 -salt -in /dev/stdin -pass pass:"
+   ;;
+  *)
+   logerr "Can't set OpenSSL Options (Code Error), exiting."
+   exit 1
+ esac
+
+  
+ #
+ # Initialise Public Key
+ #
+ echo "setproto ${PROTO}" >&5
+ read OK <&5
+ isok
+
+ if [ ! -f "${DATADIR}/keys/openakc-server-pubkey-${1}.pem" ]; then
+  DOAUDIT="yes"
+  echo "pubkey" >&5
+  touch /tmp/.pubkey.$$
+  rm /tmp/.pubkey.$$
+  for loop in {1..30}
+  do
+   read PUB <&5
+   if [ $(echo ${PUB} | cut -c 1-3) == "OK:" ]; then
+    break
+   fi
+   echo ${PUB} >> /tmp/.pubkey.$$
+  done
+  mv /tmp/.pubkey.$$ "${DATADIR}/keys/openakc-server-pubkey-${1}.pem"  
+  logstatus "Collecting servers RSA Public Key"
+  OK=${PUB}
+  isok
+  [ ${loop} -eq 15 ]&&logwarn "Error with collecting servers RSA Public Key"
+ fi
+
+ #
+ # Generate Session Key and register it.
+ #
+ SESSKEY=$(openssl rand -hex 26)
+ SESSCODE=$(echo ${SESSKEY} | openssl rsautl -encrypt -inkey "${DATADIR}/keys/openakc-server-pubkey-${1}.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
+
+ echo "sessioncode ${SESSCODE}" >&5
+ read OK <&5
+ isok
+
+ if [ "x${NOEXIT}" == "x1" ]; then
+  echo "Sending Test Run Ping Message"
+  MESSAGE=$(echo "ping");sendmessage
+  read OK <&5
+  echo "Test Run Response - ${OK} - from server - ${1}"
+  echo "quit" >&5
+  exec 5>&-
+  echo
+  echo "Note: \"Terminated\" message below is expected"
+  echo
+  exit 0
+ fi
+
+ #
+ # Send Host Audit Data
+ #
+ [ "x${AUDIT}" == "xno" ]&&DOAUDIT="no"
+ PATH="${PATH}:/usr/sbin"
+ if [ "x${DOAUDIT}" == "xyes" ]; then 
+  logstatus "Sending audit data to server"
+ #
+  for i in "lshw:lshw" "routes:ip r" "cpuinfo:cat /proc/cpuinfo" "network:ip a" "memory:cat /proc/meminfo" "mounts:cat /proc/mounts" "swaps:cat /proc/swaps" "partitions:cat /proc/partitions" "lsusb:lsusb" "lspci:lspci" "uname:uname -a"
+  do
+   j=$(echo "${i}"|awk -F\: '{print $1}')
+   k=$(echo "${i}"|awk -F\: '{print $2}')
+   l=$(echo "${k}"|awk '{print $1}')
+ #
+   if [ -x "$(which $l 2> /dev/null)" ]; then
+    MESSAGE=$(echo "audit ${j}:$(${k} | base64 -w 0 | tr -d '\r')");sendmessage
+    read OK <&5
+    isok
+   else
+    logdebug "Cannot find audit command ${k}"
+   fi
+ #
+  done
+ #
+ fi
+
+ #
+ # Auth Request
+ #
+ MESSAGE=$(echo "auth $(hostname -s|tr 'A-Z' 'a-z');$(hostname -d|tr 'A-Z' 'a-z');$(hostid);$(hostname -i|tr ' ' ',');${USER};${KEY};${API};${RELEASE};${PPID}");sendmessage
+ read LOGMESSAGE <&5
+ read FLAGS <&5
+ read PUBKEY <&5
+ read OK <&5
+ isok
+
+ LOGMESSAGE=$(echo "${LOGMESSAGE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+ FLAGS=$(echo "${FLAGS}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r') 
+ PUBKEY=$(echo "${PUBKEY}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+ 
+ [ "x${FLAGS}" == "xLOG" ]&&logauth "${LOGMESSAGE}"
+ echo ${PUBKEY}
+ 
+
+ logdebug "Final OK is - ${OK}"
+ # Quit and close socket
+ echo "quit" >&5
+ exec 5>&-
+ exit 0
+}
+
+
+for API in ${APIS}
+do
+ apicall ${API} & apipid=${!} 2> /dev/null
+ { sleep 5 ; kill ${apipid} 2> /dev/null; } & sleepid=${!}
+ wait ${apipid} 2> /dev/null
+ success=${?}
+ pkill -P ${sleepid}
+ if [ ${success} -ne 0 ]; then
+  logwarn "Error with OpenAKC backend at ${API}, check port ${PORT}"
+ else
+  exit 0
+ fi
+done

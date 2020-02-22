@@ -1,0 +1,27 @@
+--- Makefile	2018-12-09 17:51:29.000000000 +0000
++++ Makefile	2019-11-27 14:34:31.114542670 +0000
+@@ -1,11 +1,12 @@
+-COPTFLAGS?=	-O2
++COPTFLAGS?=	-O2 -msse4.2 -maes -I.
+ CFLAGS+=	-Wall -g -std=c99 $(COPTFLAGS)
+ CXXFLAGS+= -Wall -std=c++11 -g $(COPTFLAGS)
+ CC?=	cc
+ CXX?=	c++
+ AR?=	ar
+ ARFLAGS?=	rcs
+-LIBS+=	-lcrypto -lsodium
++LIBS+=	-lcrypto
++# -lsodium
+ LDFLAGS+= -pthread
+ INSTALL?=	/usr/bin/install
+ PREFIX?=	/usr/local
+@@ -24,7 +25,8 @@ OBJS=	aead.o \
+ 	nonce.o \
+ 	kdf.o \
+ 	encrypt.o \
+-	decrypt.o 
++	decrypt.o \
++	libsodium.a
+ 	
+ all: hpenc
+ 

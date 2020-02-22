@@ -1,0 +1,9 @@
+#!/bin/sh
+
+chsh -s /bin/nologin openakc 2> /dev/null 1> /dev/null
+passwd -l openakc 2> /dev/null 1> /dev/null
+sed -i "s,^AuthorizedKeysCommand,#AuthorizedKeysCommand,g" /etc/ssh/sshd_config
+
+#DEBHELPER#
+
+exit 0

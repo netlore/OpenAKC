@@ -1,0 +1,25 @@
+#!/bin/sh
+
+setcap CAP_SETPCAP+ep /usr/bin/openakc-cap
+
+case "$1" in
+    install|configure)
+        sed -i "s,^#AuthorizedKeysCommand .*$,AuthorizedKeysCommand /usr/sbin/openakc-plugin %u %h %f,g" /etc/ssh/sshd_config
+        sed -i "s,^#AuthorizedKeysCommandUser .*$,AuthorizedKeysCommandUser openakc,g" /etc/ssh/sshd_config
+        service sshd restart > /dev/null 2>&1 || :
+        chown -R root:openakc /etc/openakc
+        chown -R openakc:root /var/lib/openakc
+        ;;
+    upgrade|abort-upgrade)
+        exit 0
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 0
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

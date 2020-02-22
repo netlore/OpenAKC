@@ -1,0 +1,96 @@
+
+
+_Server Installation_
+
+If installing from packages's rather than a repo, you may first need to ensure
+that some dependencies are installed.  At the time of writing, a standard
+minimal "CentOS container" requires the following packages to be installed
+in advance:-
+
+Eg.
+yum install openssh-clients openssl xinetd openssl sudo which
+
+For a minimal Ubuntu, installing the extra depenencies is also required
+if not using a repo.
+
+Eg.
+apt isntall xinetd
+
+Then, simply install packages "openakc-server" & "openakc-tools"
+
+
+
+
+
+
+
+_Client Installation_
+
+If installing from packages's rather than a repo, you may first need to ensur
+that some dependencies are installed.  At the time of writing, a standard
+minimal "CentOS container" requires the following packages to be installed
+in advance:-
+
+Eg.
+yum install e2fsprogs openssh-clients openssh-server openssl which
+
+For a minimal Ubuntu, installing extra dependencies is currently not
+required on the client host.
+
+Then simply install package "openakc"
+
+
+
+
+
+
+
+_System Setup_
+
+In a minimal installation, the only configuration required is to ensure that
+the hosts listed in the client config (/etc/openakc/openakc.conf) (which can
+be either name or IP) are configured to refer to the appropriate server. 
+These values are pre-populated with "openakc01 & openakc02", so you could
+simply ensure that these values are configured in DNS, or in the /etc/hosts
+on the client file for testing, or alter them as you prefer.
+
+Verify Server
+
+To verify the correct operation of the server, simply have a non-root user
+create an ssh key pair (with pass phrase), and attempt to register that key.
+
+#openakc register
+
+Now attempt to connect to your a client machine, this will demonstrate that
+you cannot connect, and also allow the server to learn about the client
+which will help later on (you will not be permitted to log in).
+
+Designating one or more security administrators.
+
+For a (registered) user who you wish to make a "security administrator",
+take the file from the users home folder:-
+
+~[user]/.openakc/openakc-user-client-[user]-pubkey.pem and place this in the
+root owned folder /var/lib/openakc/keys
+
+This user will now be able to run call the role management functions in the
+api tool,
+
+Eg.
+openakc editrole root@test-client
+
+Examine the comments, and example role "block" shown, and create one
+defining access for a user or group, and then test.
+
+Now examine the logs on each host to see what was logged, as well as check
+the keystroke log written to /var/lib/openakc/keylogs on the server.
+
+
+
+
+_Related software_
+
+OpenAKC makes use of hpenc, by Vsevolod Stakhov and libsodium by Frank Denis,
+these tools are included unmodified, in the source package for OpenAKC and
+specific licence terms for these tools are included in their own LICENCE files
+and the binary package documentation.

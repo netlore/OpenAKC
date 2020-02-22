@@ -1,0 +1,25 @@
+#!/bin/sh
+
+case "$1" in
+    install|configure)
+        if [ ! -n "`grep \"^#includedir /etc/sudoers.d\" /etc/sudoers`" ]; then
+         echo "#includedir /etc/sudoers.d" >> /etc/sudoers
+        fi
+        sed -i '/^openakc/ d' /etc/services
+        echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /etc/services
+        service xinetd restart > /dev/null 2>&1 || :
+        exit 0
+        ;;
+    upgrade|abort-upgrade)
+        exit 0
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 0
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

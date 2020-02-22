@@ -1,0 +1,891 @@
+#!/bin/bash
+
+# Filename	: /usr/sbin/openakc_server
+# Function	: OpenAKC Authentication API handler
+#
+# Copyright (C) 2019-2020  A. James Lewis
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+#
+# Static Values / Setup
+#
+
+trap '' SIGTSTP
+trap '' SIGINT
+RELEASE="0.0"
+
+#
+# Defaults
+#
+DATADIR="/var/lib/openakc"
+PREEXEC="/bin/true"
+POSTEXEC="/bin/true"
+CONFFILE="/etc/openakc/openakc.conf"
+TMOUT=30 # Entire transaction must be completed in this number of seconds.
+APIS="localhost"
+PORT="889"
+DEBUG="no"
+
+#
+# Get Configuration File (or make one).
+#
+
+CONFDIR=$(dirname "${CONFFILE}")
+if [ -f $CONFFILE ]; then
+ source ${CONFFILE}
+else
+ mkdir -p ${CONFDIR}
+ echo "APIS=\"${APIS}\"" >> ${CONFFILE}
+ echo "PORT=\"${PORT}\"" >> ${CONFFILE}
+ echo "CACHETIME=\"60\"" >> ${CONFFILE}
+ echo "DEBUG=\"${DEBUG}\"" >> ${CONFFILE}
+ echo "DATADIR=\"${DATADIR}\"" >> ${CONFFILE}
+ echo "PREEXEC=\"${PREEXEC}\"" >> ${CONFFILE}
+ echo "POSTEXEC=\"${POSTEXEC}\"" >> ${CONFFILE}
+# echo "PERMITROOT=\"yes\"" >> ${CONFFILE}
+# echo "QUIZ=\"yes\"" >> ${CONFFILE}
+# echo "FAKESUDO=\"yes\"" >> ${CONFFILE}
+ chmod 700 ${CONFFILE}
+ source ${CONFFILE}
+fi
+
+#
+# Fixed Values
+#
+PERMS=""
+PERMUSER=""
+PRVKEY="openakc-system-server-$(hostid)-prvkey.pem"
+PUBKEY="openakc-system-server-$(hostid)-pubkey.pem"
+SESSKEY=""
+PROTO="0"
+# REMOTE_HOST defined by xinetd.
+REMOTE_HOST=$(echo $REMOTE_HOST | sed -e "s,::ffff:,,g")
+
+#
+# Transient Values
+#
+DAT=$(date "+%c")
+SDAT=$(date +%s)
+let TDAT=SDAT+$TMOUT
+
+#
+# Database hack
+#
+
+export PGPASSWORD=${pgpassword}
+
+#
+# Functions
+#
+
+logstatus () {
+ logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
+}
+
+logauth () {
+ logger -p authpriv.notice -t "openakc-server[$$]" "AUTH - $1"
+}
+
+logdebug () {
+ if [ "x$DEBUG" == "xyes" ];then
+  logger -p authpriv.debug -t "openakc-server[$$]" "DEBUG - $1"
+ fi
+}
+
+logwarn () {
+ logger -p authpriv.warn -t "openakc-server[$$]" "WARNING - $1"
+}
+
+logerr () {
+ logger -p authpriv.err -t "openakc-server[$$]" "ERROR - $1"
+}
+
+greeter () {
+ echo "OpenAKC-$RELEASE $(uname -o) $(uname -r)"
+# echo "Protocols Supported: $PROTOS" # FIXME Remove
+ echo "OK: OpenAKC Server Ready"
+}
+
+cleanapi () {
+# read APIIN # FIXME Remove
+ API=$(echo $APIIN | tr -d '\r' | tr 'A-Z' 'a-z' | awk '{print $1}')
+ PARAM=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
+}
+
+setproto () {
+ for PR in $PROTOS
+ do
+  if [ "x$PR" == "x$PARAM" ]; then
+   PROTO=$PR
+  fi
+ done
+ if [ "x$PROTO" == "x0" ]; then
+  echo "ERR: Protocol Selection Failed"
+ else
+  echo "OK: Protocol Accepted"
+  logdebug "Client $REMOTE_HOST Selected Protocol \"$PROTO\""
+ fi
+}
+
+showhelp () {
+ echo "Welcome to OpenAKC, you are in the select protocol phase"
+ echo ""
+ echo "Commands Available:-"
+ echo "help                  - This help text"
+ echo "ping                  - Verify API response"
+ echo "getproto              - List supported OpenAKC protocol"
+ echo "setproto [protocol]   - Select supported OpenAKC protocol"
+ echo "quit                  - Exit this interface"
+ echo "OK: Help Sent"
+}
+
+showerr () {
+ echo "ERR: Unknown Command"
+ logdebug "Displayed \"Unknown Command\" message"
+}
+
+#
+# Startup
+#
+
+OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
+if [ "$OSSLV" -eq "$OSSLV" ] 2>/dev/null; then
+ :
+else
+ logerr "Unrecognised OpenSSL version, exiting."
+ exit 1
+fi
+if [ $OSSLV -ge 908 ];then
+ PROTOS="akcrsa1" # Space Separated List
+else
+ logerr "OpenSSL too old, exiting."
+ exit 1
+fi
+if [ $OSSLV -ge 10100 ];then
+ PROTOS="akcrsa1 akcrsa1.1" # Space Separated List
+fi
+
+if [ ! -d "$DATADIR" ];then 
+ mkdir -p "$DATADIR"
+ chmod 755 "$DATADIR"
+fi
+if [ ! -d "$DATADIR/audit" ];then
+ mkdir "$DATADIR/audit"
+ chmod 755 "$DATADIR/audit"
+fi
+if [ ! -d "$DATADIR/keylogs" ];then
+ mkdir "$DATADIR/keylogs"
+ chmod 700 "$DATADIR/keylogs"
+fi
+if [ ! -d "$DATADIR/data" ];then
+ mkdir "$DATADIR/data"
+ chmod 700 "$DATADIR/data"
+fi
+[ ! -d "$DATADIR/keys" ]&&mkdir "$DATADIR/keys"
+chmod 700 "$DATADIR/keys"
+[ ! -f "${DATADIR}/keys/${PUBKEY}" ] && rm "${DATADIR}/keys/${PRVKEY}" 2> /dev/null
+if [ ! -f "${DATADIR}/keys/${PRVKEY}" ]; then
+ logstatus "Forcing refresh of openssl keys"
+ openssl genrsa -out "${DATADIR}/keys/${PRVKEY}" 2048 2> /dev/null
+ openssl rsa -in "${DATADIR}/keys/${PRVKEY}" -outform PEM -pubout -out "${DATADIR}/keys/${PUBKEY}" 2> /dev/null
+fi 
+
+# Greet Client
+greeter
+logstatus "Session with $REMOTE_HOST established"
+
+#
+# Welcome Loop
+#
+
+while [ $(date +%s) -lt $TDAT ]
+do
+ read APIIN
+ cleanapi
+ case "$API" in
+  help)
+   showhelp
+   ;;
+  ping)
+   echo "OK: Pong!"
+   ;;
+  getproto)
+   echo $PROTOS
+   echo "OK: Protocols Listed" 
+   ;;
+  setproto)
+   setproto
+   [ "x$PROTO" != "x0" ]&&break
+   ;;
+  quit)
+   PROTO="0"
+   echo "OK: Goodbye (Welcome Phase)"
+   logstatus "Session with $REMOTE_HOST quit during welcome phase"
+   break
+   ;;
+  *)
+   showerr
+   ;;
+ esac 
+done
+
+#
+#
+#
+case "$PROTO" in
+ akcrsa1)
+  SSLOPTS="-aes-256-cbc -md md5 -salt -in /dev/stdin -pass pass:"
+  ;;
+ akcrsa1.1)
+  SSLOPTS="-aes-256-cbc -md sha512 -pbkdf2 -iter 13370 -salt -in /dev/stdin -pass pass:"
+  ;;
+ *)
+  logerr "Can't set OpenSSL Options (Code Error), exiting."
+  exit 1
+esac
+PROTO=$(echo $PROTO | awk -F. '{print $1}')
+
+#
+# Data Section FIXME Move to #include
+#
+
+#################
+
+data_registerkey () {
+#FIXME Error checks
+ mkdir -p ${DATADIR}/data/keys
+ fp=$(echo "${fp}" | tr '/' '-')
+ fn="${DATADIR}/data/keys/${fp}"
+ echo "${fp}" > "${fn}"
+ echo "${usr}" >> "${fn}"
+ echo "${pkey}" >> "${fn}"
+ echo "${PARAM}" >> "${fn}"
+ echo "${DAT}" >> "${fn}"
+ echo "Personal Key for user ${usr}" >> "${fn}"
+} 
+
+data_statickey () {
+#FIXME Error checks
+ mkdir -p ${DATADIR}/data/keys
+ fp=$(echo "${fp}" | tr '/' '-')
+ fn="${DATADIR}/data/keys/${fp}"
+ kd=$(echo $kd | base64 -d | gzip -d)
+ cmt=$(echo $cmt | base64 -d | gzip -d)
+ echo "${fp}" > "${fn}"
+ echo "_none" >> "${fn}"
+ echo "${kd}" >> "${fn}"
+ echo "static" >> "${fn}"
+ echo "${DAT}" >> "${fn}"
+ echo "${cmt}" >> "${fn}"
+}  
+
+data_openroles () {
+ reply="ERR: Cant open roles file"
+ fn="${DATADIR}/data/roles/${USR}@${HNS}.${HND}.roles" 
+ if [ -r ${fn} ]; then 
+  exec 6<>"$fn"
+  [ $? -eq 0 ]&&reply="OK: Roles file open"
+ else
+  reply="ERR: Error opening roles file"
+ fi
+}  
+ 
+data_setrole () {
+ cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
+ if [ $cnt -eq 1 ]; then
+  hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
+  hn=$(basename "$hnl")
+  mkdir -p ${DATADIR}/data/roles
+  mkdir -p ${DATADIR}/data/history
+  fn="${DATADIR}/data/roles/${usr}@${hn}.roles"
+  echo $rolefile | base64 -d | gzip -d > "${fn}.tmp"
+  touch "${fn}"
+  diff "${fn}" "${fn}.tmp" 1> /dev/null 2> /dev/null
+  if [ ${?} -ne 0 ]; then
+   echo "User ${PERMUSER} altered role ${usr}@${hn} as follows" >> "${DATADIR}/data/history/${usr}@${hn}.roles"
+   diff --unified=8 "${fn}" "${fn}.tmp" >> "${DATADIR}/data/history/${usr}@${hn}.roles"
+   echo "-------------------------------------------------------------------------------" >> "${DATADIR}/data/history/${usr}@${hn}.roles"
+   echo >> "${DATADIR}/data/history/${usr}@${hn}.roles"
+  fi
+  mv "${fn}.tmp" "${fn}"
+  reply="OK: Request processed, role data updated"
+ else
+  reply="ERR: Unknown Error, cannot save role data"
+  [ $cnt -eq 0 ]&&reply="ERR: Server not aware of this host"
+  [ $cnt -gt 1 ]&&reply="ERR: Hostname not unique, use fully qualified"
+ fi 
+}
+
+data_getrole () {
+# FIXME Stub confirm hostname
+ mkdir -p ${DATADIR}/data/roles
+ cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
+ if [ $cnt -eq 1 ]; then
+  hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
+  hn=$(basename "$hnl")
+  fn="${DATADIR}/data/roles/${usr}@${hn}.roles"
+  if [ ! -r "${fn}" ];then
+   cat <<EOF > "${fn}.tmp"
+# Edit this file to control permissions managed by OpenAKC.
+# Rules for ${usr}@${hn}
+#
+# First matched rule will apply.
+# {TYPE} can be user, group or key(ssh key fingerprint)
+# FROM= can be either "any" or a comma separated list of IPs or CIDR subnets
+# DAY= can be either "any" or a comma separated list of 3 letter day codes.
+# TIM= is daily {Start Time},{End Time} 24 hour format, local server time.
+# SHELL= users shell (could make shell "rjoe/rvim filename", or /bin/false).
+# CMD= is a list of permitted commands, "any" or "comma separated list"
+#   NB: 1) if CMD is not "any", it must include scp to allow SCP.
+#       2) if CMD is not "any", sftp-server requires full path.
+#       3) if CMD is exactly "internal-sftp", OpenAKC session will be
+#          bypassed and "internal-sftp" will be forced.  Care! No capability
+#          restrictions can be applied in this mode, and no session
+#          recording will take place other than sftp's own logging.
+#       4) Internal SFTP can be chrooted in sshd_config, while capabilities
+#          can be applied to external sftp Eg (/usr/lib/openssh/sftp-server).
+#       5) if a users calls an absolute path to a binary then CMD must
+#          match the absolute path, otherwise short names are OK.
+#   EG: CMD=scp,ls,uname,dmidecode,/usr/lib/openssh/sftp-server
+# SCP= "sed" expression implementing chroot for scp connections.
+# CAP= list of linux capabilities denied to role (man capabilities).
+# REC= record session log, yes/no
+#
+# Eg: (Warning, TAGs must be CAPITAL, do not use quotes)
+#
+#ROLE=2020/01/13 19:17,2020/01/13 20:17,{TYPE},jlewis
+#DAY=any
+#TIM=any
+#SHELL=/bin/bash
+#CMD=any
+#SCP=s,^/,/data/,g
+#CAP=cap_linux_immutable
+#REC=yes
+#FROM=any
+EOF
+   rolefile=$(cat "${fn}.tmp" | base64 -w 0)
+   rm "${fn}.tmp"
+  else
+   rolefile=$(cat $fn | base64 -w 0) 
+  fi
+  reply="OK: Request processed, role data read"
+ else
+  reply="ERR: Unknown Error, cannot check host data"
+  [ $cnt -eq 0 ]&&reply="ERR: Server not aware of this host"
+  [ $cnt -gt 1 ]&&reply="ERR: Hostname not unique, use fully qualified"
+ fi
+}
+
+data_sessionlog () {
+ mkdir -p ${DATADIR}/data/sessions
+ mkdir -p ${DATADIR}/data/hosts
+ fn="${DATADIR}/data/sessions/$RPPID-$HID.session"
+ fnh="${DATADIR}/data/hosts/$HNS.$HND"
+ if [ -r "${fn}" ];then
+ fdat=$(stat --format='%Z' ${fn})
+ ndat=$(date +%s)
+ TDIF=$((ndat-fdat))
+ else 
+  TDIF=1000
+ fi
+ echo "${HNS};${HND};${HID};${HIP};${USR};${KEYF};${API};${REL};${RPPID};${RUSR};${SHL};${SCP};${CAP};${FRM};${TIM};${CMD};${DAY};${REC};${EXT}" > ${fn}
+ echo "${HNS};${HND};${HID};${HIP}" > ${fnh}
+}
+
+data_sessionupd () {
+ mkdir -p ${DATADIR}/data/sessions
+ fn="${DATADIR}/data/sessions/$PARAM.session"
+ if [ -r "${fn}" ];then
+  exec 6<>$fn
+  read SESSDAT <&6
+  exec 6>&-
+  echo "${SESSDAT};${RIP};${RPRT};${RPTY}" > $fn
+  SESSDAT="${SESSDAT};${RIP};${RPRT};${RPTY}"
+ else
+  SESSDAT=""
+ fi
+}
+
+data_idkeyf () {
+#FIXME check only 1 result
+ fp=$(echo "${KEYF}" | tr '/' '-')
+ fn=$(ls ${DATADIR}/data/keys/${fp})
+ exec 7<>${fn}
+ read RUSR <&7
+ read RUSR <&7
+ read PUBKEY <&7
+ exec 7>&-
+}
+
+
+################
+
+#
+# AKCRSA1 Protocol Section.
+#
+
+showhelp_akcrsa1 () {
+ echo "Welcome to OpenAKC, you are in the akcrsa1 protocol phase"
+ echo ""
+ echo "Commands Available:-"
+ echo "help                 - This help text"
+ echo "pubkey               - Request remote public key"
+ echo "audit type:[cipher]  - Send audit data to server"
+ echo "sessioncode [cipher] - Send encrypted sessioncode" 
+ echo "logturn              - Transition to keystroke log receiver"
+ echo "quit                 - Exit this interface"
+ echo "OK: Help Sent"
+}
+
+sendpubkey () {
+ if [ -f "${DATADIR}/keys/${PUBKEY}" ]; then
+  cat "${DATADIR}/keys/${PUBKEY}"
+  echo "OK: Sent Pubkey"
+ else
+  echo "ERR: Error Sending Pubkey"
+  logdebug "Failed to find pubkey mid session"
+ fi
+}
+
+readsesscode () {
+ SESSKEY=$(echo $PARAM | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${DATADIR}/keys/${PRVKEY}" -in /dev/stdin 2> /dev/null)
+ if [ $? -eq 0 ]; then 
+  echo "OK: Session key decoded"
+  logdebug "Session key substr is:- $(echo $SESSKEY | cut -c 1-10)"
+  logstatus "Session with $REMOTE_HOST negotiated AKCRSA1 protocol successfully"
+ else
+  echo "ERR: Could not decode session key"
+  logwarn "Could not decode session key during session with $REMOTE_HOST, try \"openakc-plugin resetkeys\" on $REMOTE_HOST"
+ fi
+}
+
+rbmessage () {
+ ENC=1
+#
+# FIXME Remove This Debug Output
+# echo "$PARAM" > /tmp/openakc.dbg
+# echo "${SSLOPTS}" >> /tmp/openakc.dbg
+# echo "${SESSKEY}" >> /tmp/openakc.dbg
+ APIIN=$(echo $PARAM | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+ logdebug "Message decoded - \"$APIIN\""
+}
+
+rbsessiondata () {
+ logdebug "Processing session data request - \"$PARAM\""
+ RIP=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+ RPRT=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
+ RPTY=$(echo $APIIN | tr -d '\r' | awk '{print $6}')
+ data_sessionupd
+ echo $(echo $SESSDAT | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo "OK: Session data sent"
+ HNS=$(echo $SESSDAT | cut -d ";" -f 1) # Short Hostname
+ HND=$(echo $SESSDAT | cut -d ";" -f 2) # Domain Name
+ HID=$(echo $SESSDAT | cut -d ";" -f 3) # Hostid
+ HIP=$(echo $SESSDAT | cut -d ";" -f 4) # Host IP
+ USR=$(echo $SESSDAT | cut -d ";" -f 5) # Username
+ KEYF=$(echo $SESSDAT | cut -d ";" -f 6) # Key Fingerprint
+ API=$(echo $SESSDAT | cut -d ";" -f 7) # API Hostname
+ REL=$(echo $SESSDAT | cut -d ";" -f 8) # Client Code Release
+ RPPID=$(echo $SESSDAT | cut -d ";" -f 9) # Remote Parent PID
+ RUSR=$(echo $SESSDAT | cut -d ";" -f 10) # Remote Username
+ SHL=$(echo $SESSDAT | cut -d ";" -f 11) # Role Shell
+ SCP=$(echo $SESSDAT | cut -d ";" -f 12) # SCP Rules
+ CAP=$(echo $SESSDAT | cut -d ";" -f 13) # Capabilities
+ FRM=$(echo $SESSDAT | cut -d ";" -f 14) # Permitted Source IP
+ TIM=$(echo $SESSDAT | cut -d ";" -f 15) # Timebox
+ CMD=$(echo $SESSDAT | cut -d ";" -f 16) # Permitted Remote Commands
+ DAY=$(echo $SESSDAT | cut -d ";" -f 17) # Permitted Days
+ REC=$(echo $SESSDAT | cut -d ";" -f 18) # Record Session Log
+ EXT=$(echo $SESSDAT | cut -d ";" -f 19) # Extended data
+ logauth "User $USR authenticated on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR) to $RPTY from $RIP port $RPRT"
+}
+
+rbauth () {
+ logdebug "Processing auth request - \"$PARAM\"" 
+ HNS=$(echo $PARAM | cut -d ";" -f 1) # Short Hostname
+ HND=$(echo $PARAM | cut -d ";" -f 2) # Domain Name
+ HID=$(echo $PARAM | cut -d ";" -f 3) # Hostid
+ HIP=$(echo $PARAM | cut -d ";" -f 4) # Host IP
+ USR=$(echo $PARAM | cut -d ";" -f 5) # Username
+ KEYF=$(echo $PARAM | cut -d ";" -f 6) # Key Fingerprint - FIXME | tr '/' '-')
+ API=$(echo $PARAM | cut -d ";" -f 7) # API Hostname
+ REL=$(echo $PARAM | cut -d ";" -f 8) # Client Code Release
+ RPPID=$(echo $PARAM | cut -d ";" -f 9) # Remote Parent PID
+ #
+ data_idkeyf
+ #
+ SHL="none"
+ SCP="none"
+ CAP="-cap_linux_immutable"
+ FRM="any"
+ TIM="any"
+ CMD="any"
+ DAY="any"
+ REC="yes"
+ EXT="none"
+ data_sessionlog 
+ if [ $TDIF -lt 10 ]; then
+  REPLYFLG="NOLOG"
+ else
+  REPLYFLG="LOG"
+ fi
+ logdebug "Reply flag set to ${REPLYFLG}"
+ #
+ data_openroles
+ logdebug "Opening Roles ${reply} - ${fn}"
+ 
+ grant=0
+ 
+ if [ "x${reply:0:3}" != "xERR" ]; then
+  logdebug "Trying to read role file"
+  rfn="/tmp/openakc_rolecheck.$$"
+  touch ${rfn}
+  while read rdata <&6
+  do
+   [ "x${rdata:0:6}" == "xSHELL=" ]&&SHL=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${rdata:0:4}" == "xSCP=" ]&&SCP=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${rdata:0:4}" == "xCAP=" ]&&CAP=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${rdata:0:5}" == "xFROM=" ]&&FRM=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${rdata:0:4}" == "xTIM=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
+   [ "x${rdata:0:4}" == "xDAY=" ]&&DAY=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
+   [ "x${rdata:0:4}" == "xCMD=" ]&&CMD=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${rdata:0:4}" == "xREC=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${FRM}" == "xany" ]&&FRM="0.0.0.0/0"
+   #
+   if [ "x${rdata:0:5}" == "xROLE=" ]; then
+    logdebug "Starting to process ROLE - ${rdata}"
+    if [ $grant -eq 1 ]; then
+     logdebug "Inside final grant"
+     TOK=0
+     DOK=0
+     DNOW=$(date +%a | tr 'A-Z' 'a-z')
+     TNOW=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
+     logdebug "Starting time check"
+     if [ "x${TIM}" != "xany" ]; then
+      echo $TIM|egrep "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
+      if [ $? -eq 0 ]; then
+       TBEF=$(((10#${TIM:0:2}*10#60)+10#${TIM:3:2}))
+       TAFT=$(((10#${TIM:6:2}*10#60)+10#${TIM:9:2}))
+      else
+       TBEF=0
+       TAFT=0
+#       logerr "Time format invalid in role for ${USR}@${HNS}" #FIXME check at upload
+      fi   
+      [ ${TBEF} -lt ${TNOW} ]&&[ ${TAFT} -gt ${TNOW} ]&&TOK=1
+     else
+      TOK=1
+     fi
+     logdebug "Time check done"
+     echo $DAY | grep $DNOW 1> /dev/null 2> /dev/null
+     [ $? -eq 0 ]&&DOK=1
+     [ "x${DAY}" == "xany" ]&&DOK=1
+     #
+     logdebug "Role Day = ${DAY}, Role Time = ${TIM}, Current Day = ${DNOW}, Current Mins = ${TNOW}, Before Mins = ${TBEF}, After Mins = ${TAFT}"
+     logdebug "Day OK = ${DOK}, Time OK = ${TOK}"
+     if [ "x${TOK}" != "x1" ]; then
+      logdebug "Denied Based on time of day"
+      grant=0
+     fi
+     if [ "x${DOK}" != "x1" ]; then
+      logdebug "Denied Based on day of week"
+      grant=0
+     fi
+     break
+    fi
+    rdata=$(echo $rdata | awk -F= '{print $2}')
+    srole=$(echo $rdata | awk -F, '{print $1}')
+    srole=$(date +%s --date "$srole" 2> /dev/null)
+    [ $? -ne 0 ]&&srole=0
+    erole=$(echo $rdata | awk -F, '{print $2}')
+    erole=$(date +%s --date "$erole" 2> /dev/null)
+    [ $? -ne 0 ]&&erole=0
+    [ $srole -eq 0 ]&&erole=0
+    [ $erole -eq 0 ]&&srole=0
+    mrole="group"
+    [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xuser" ]&&mrole="user"
+    [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xkey" ]&&mrole="key"
+    krole=$(echo $rdata | awk -F, '{print $4}' | tr 'A-Z' 'a-z')
+    if [ "${srole}" -lt "${SDAT}" ] && [ "${erole}" -gt "${SDAT}" ]; then
+     logdebug "Checking User ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
+     if [ "x${mrole}${krole}" == "xuser${RUSR}" ]; then
+      logdebug "User looks OK"
+      grant=1
+     fi
+     logdebug "Checking Group ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
+     if [ "x${mrole}" == "xgroup" ]; then
+      chown "${RUSR}:daemon" ${rfn} 2> /dev/null
+      su "${RUSR}" -c "chgrp "${krole}" /tmp/openakc_rolecheck.$$ 2> /dev/null" 2> /dev/null
+      GROUPCHECK=${?}
+      if [ ${GROUPCHECK} -eq 0 ]; then
+       logdebug "Group looks OK"
+       grant=1
+      fi
+     fi
+     logdebug "Checking Key ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
+     if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${KEYF}" ]; then
+      logdebug "Key looks OK"
+      grant=1
+     fi
+    fi
+   fi
+   logdebug "Repeating Auth Loop"
+  done
+  logdebug "Ready to rm ${rfn}"
+  rm ${rfn} 2> /dev/null
+  logdebug "Updating Session Log"
+  data_sessionlog
+ fi
+ if [ ${grant} -eq 1 ]; then
+  REPLYLOG="User $USR authenticated on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
+  REPLYKEY="no-port-forwarding,no-X11-forwarding,from=\"$FRM\",command=\"/usr/bin/openakc-session $API $RPPID $HID $HNS\" $PUBKEY"
+  if [ "x${CMD}" == "xinternal-sftp" ]; then
+   REPLYKEY="no-port-forwarding,no-X11-forwarding,from=\"$FRM\",command=\"internal-sftp -f LOCAL6 -l INFO\" $PUBKEY"
+  fi
+ else
+  REPLYLOG="User $USR denied on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
+  REPLYKEY="command=\"/usr/bin/openakc-session $API $RPPID $HID $HNS\" ssh-rsa DENIED"
+ fi
+ 
+ #
+ logdebug "Sending key $REPLYKEY"
+ echo $(echo "$REPLYLOG" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo $(echo "$REPLYFLG" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo $(echo "$REPLYKEY" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo "OK: Auth request processed"
+} 
+
+rbchallenge () {
+
+# FIXME do input validation
+ KEYID=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+ case "$PARAM" in
+  system)
+   KEYTYPE="system"
+   ;;
+  user)
+   KEYTYPE="user"
+   PERMUSER=${KEYID}
+   ;;
+  *)
+   KEYTYPE="error"
+   ;;
+ esac
+ KEYFILE="${DATADIR}/keys/openakc-${KEYTYPE}-client-${KEYID}-pubkey.pem"
+ #
+ CHAL=$(openssl rand -hex 26 2> /dev/null)
+ if [ -r "${KEYFILE}" ]; then
+  CHALCODE=$(echo $CHAL | openssl rsautl -encrypt -inkey "${KEYFILE}" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
+  echo $(echo "$CHALCODE" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+  logdebug "Challenge sent - \"$CHAL\""
+  echo "OK: Challenge issued"
+ else
+  echo "FAIL"
+  if [ "x${KEYTYPE}" != "xerror" ];then
+   echo "ERR: Cannot Find necessary public key on server - $KEYFILE"
+  else
+   echo "ERR: Protocol error, invalid keytype specified"
+  fi
+ fi
+}
+
+rbhandshake () {
+ logdebug "Challenge response received - \"$PARAM\""
+ if [ "x${CHAL}" == "x${PARAM}" ];then
+  PERMS="$(echo ${KEYTYPE} | tr 'a-z' 'A-Z') ${PERMS}"
+  PERMS=$(echo -e "${PERMS}" | sed -e 's/[[:space:]]*$//')
+  echo "OK: Handshake accepted. Permission list now \"${PERMS}\""
+  logdebug "PERMS set to \"${PERMS}\""
+  logstatus "Authenticated session established with ${REMOTE_HOST}"
+ else
+  echo "ERR: Handshake failed"
+  logerr "API Handshake Failed"  
+ fi
+} 
+
+rbgetrole () {
+#FIXME This is a bit of a stub for full functionality.
+#FIXME Input Validation (look up hostid)
+ logdebug "Adding role data - \"$APIIN\""
+ if [ "x$PERMS" == "xUSER" ]; then
+  target=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
+  usr=$(echo "${target}" | awk -F\@ '{print $1}')
+  hn=$(echo "${target}" | awk -F\@ '{print $2}')
+  logstatus "Validated role read request from \"${PERMUSER}@${REMOTE_HOST}\" for \"${usr}@${hn}\""
+  DAT=$(date +%s)
+  data_getrole
+  echo $(echo "${rolefile}" | gzip | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0)
+  echo $reply
+  logdebug "sent request processed"
+ else
+  logstatus "Invalid role read request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  echo "ERR: Permission denied"
+ fi
+}
+
+rbsetrole () {
+#FIXME Input Validation
+ logdebug "Adding role data - \"$APIIN\""
+ if [ "x$PERMS" == "xUSER" ]; then
+  target=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
+  usr=$(echo "${target}" | awk -F\@ '{print $1}')
+  hn=$(echo "${target}" | awk -F\@ '{print $2}')
+  rolefile=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+  logstatus "Validated role update request from \"${PERMUSER}@${REMOTE_HOST}\" for \"${usr}@${hn}\""
+  DAT=$(date +%s)
+  data_setrole
+  echo "$reply"
+ else
+  logstatus "Invalid role update request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  echo "ERR: Permission denied"
+ fi
+}
+
+rbsubmit () {
+#FIXME Input Validation
+ logdebug "Adding static key data - \"$APIIN\""
+ if [ "x$PERMS" == "xUSER" ]; then
+  fp=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
+  kd=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+  cmt=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
+  DAT=$(date +%s)
+  data_statickey
+  echo "OK: Stored static key - ${cmt}"
+ else
+  logstatus "Invalid static key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  echo "ERR: Permission denied"
+ fi
+}
+
+rbregisterkey () {
+ logdebug "Adding registered user key - \"$APIIN\""
+ if [ "x$PERMS" == "xSYSTEM" ]; then
+  usr=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+  fp=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
+  pkey=$(echo $APIIN | tr -d '\r' | awk '{print $5" "$6}')
+  logstatus "Validated register-key request from \"${usr}@${REMOTE_HOST}\" for fingerprint \"${fp}\" type \"${PARAM}\""
+  DAT=$(date +%s)
+  data_registerkey "${fp}" "${usr}" "${pkey}" "${PARAM}" "$DAT"
+  echo "OK: Request processed"
+ else
+  logstatus "Invalid register-key request from \"${usr}@${REMOTE_HOST}\" for fingerprint \"${fp}\" type \"${PARAM}\""
+  echo "ERR: Permission denied"
+ fi
+}
+
+rbaudit () {
+SOURCE="$REMOTE_HOST"
+REPLY="OK: Audit data accepted"
+AUDFN=$(echo $PARAM | awk -F\: '{print $1}')
+AUDAT=$(echo $PARAM | awk -F\: '{print $2}')
+
+# FIXME do input validation on filename
+
+mkdir -p "${DATADIR}/audit/$SOURCE"
+echo -n "$AUDAT" | tr -d '\r' | base64 -d > "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp"
+if [ $? -eq 0 ]; then
+ echo "OK: Audit data accepted"
+ mv "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp" "${DATADIR}/audit/$SOURCE/${AUDFN}"
+else
+ echo "ERR: Audit data corrupted"
+ logwarn "Corrupt audit data detected"
+ touch "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp"
+ rm "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp"
+fi
+logstatus "Received audit packet from $SOURCE"
+}
+
+rblog () {
+# FIXME Validate session with data from authentication phase using backend.
+ LOGFN="$(date "+%Y/%m/%d")/$(date "+%H:%M:%S")-${PARAM}.log"
+ logstatus "Session with $REMOTE_HOST transitioned to keystroke log receiver, see log:- $LOGFN"
+ mkdir -p "${DATADIR}/keylogs/$(date "+%Y/%m/%d")"
+ touch "${DATADIR}/keylogs/$LOGFN"
+# chattr +a "${DATADIR}/keylogs/$LOGFN"
+ cat | /usr/bin/openakc-hpenc -d -k $SESSKEY >> "${DATADIR}/keylogs/$LOGFN"
+}
+
+ENC=0
+if [ "x$PROTO" == "xakcrsa1" ]; then
+ while [ $(date +%s) -lt $TDAT ]
+ do
+  [ "x$ENC" == "x0" ] && read APIIN
+  cleanapi
+  ENC=0
+  logdebug "Proceessing AKCRSA1 message - \"$API\" - \"$PARAM\""
+  case "$API" in
+   help)
+    showhelp_akcrsa1
+    ;;
+   pubkey)
+    sendpubkey
+    ;;
+   sessioncode)
+    readsesscode
+    ;;
+   challenge)
+    rbchallenge
+    ;;
+   handshake)
+    rbhandshake
+    ;;
+   setrole)
+    rbsetrole
+    ;;
+   getrole)
+    rbgetrole
+    ;;
+   listrole)
+    rblistrole
+    ;; 
+   registerkey)
+    rbregisterkey
+    ;;
+   submit)
+    rbsubmit
+    ;;
+   sessiondata)
+    rbsessiondata
+    ;;
+   message)
+    rbmessage
+    ;; 
+   audit)
+    rbaudit
+    ;; 
+   auth)
+    rbauth 
+    ;;
+   ping)
+    echo "OK: Pong!"
+    ;;
+   logturn)
+    rblog
+    logstatus "Session with $REMOTE_HOST quit during session logging phase"
+    break
+    ;;
+   quit)
+    PROTO="0"
+    echo "OK: Goodbye (AKCRSA1 Protocol)"
+    logstatus "Session with $REMOTE_HOST quit during AKCRSA1 phase"
+    break
+    ;;
+   *)
+    showerr
+    ;;
+  esac 
+ done
+ exit 0
+fi
