@@ -3,14 +3,36 @@
 #
 # Constants
 #
+source /etc/os-release
 VERSION="0.98"
 BUILD="5"
-RELEASE="${VERSION}~ubuntu-${BUILD}"
 
 #
 # Package requirements for build
 #
-sudo apt install build-essential unzip libcap-dev libssl-dev
+if [ "x$(whoami)" != "xroot" ]; then
+ echo "Sorry, this currently needs to be run as root. Quitting."
+ echo
+ exit 1
+fi
+#
+if [ "x${ID}" == "xdebian" ]||[ "x${ID}" == "xubuntu" ]; then
+ OS="${ID}${VERSION_ID}"
+else
+ echo "Warning: This OS is not recognised. Attempting to continue"
+ echo
+ OS="unknown"
+fi
+RELEASE="${VERSION}~${OS}-${BUILD}"
+echo "Release: ${RELEASE}"
+# 
+apt install build-essential unzip libcap-dev libssl-dev
+if [ ${?} -ne 0 ]; then
+ echo
+ echo "Sorry, could not verify required packages for build. Quitting."
+ echo
+ exit 1
+fi
 
 #
 # Locate our script
