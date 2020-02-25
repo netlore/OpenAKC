@@ -1,0 +1,6 @@
+*Possible Future Enhancements*
+
+* Offer some method to push values into users shell profile, like aliases,
+  default, or even read only environment variables.
+
+* Allow roles to be associated with a user or hostname including wildcards.
