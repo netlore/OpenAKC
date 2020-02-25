@@ -1,5 +1,37 @@
 
-Quickstart Guide
+*Building Packages*
+
+
+_Debian/Ubuntu_
+
+To create ".deb" packages for Debian/Ubuntu, simply download the repo using
+whatever method you prefer, then, as the "root" user, cd into the folder, and
+run "./makedebs.sh".  Watch for unexpected errors, and assuming there are no
+issues you will find that the required 3 .deb packages appear in the same
+folder as the "makedebs.sh" script.
+
+
+_Redhat_
+
+Collect the zip for "master", or for a release version, place it in the SOURCES
+folder of a working "rpmbuild" environment, Eg:-
+
+cd ~/rpmbuild/SOURCES
+wget https://github.com/netlore/OpenAKC/archive/master.zip
+
+Then extract the zip so that the associated "openakc.spec" file is available,
+and run rpmbuild to create the packages Eg:-
+
+unzip master.zip
+rpmbuild -ba OpenAKC-master/openakc.spec
+
+If nothing goes wrong, the RPM's will appear in the build environments "RPMS"
+folder.
+
+
+
+*Quickstart Guide*
+
 
 _Server Installation_
 
@@ -32,7 +64,6 @@ installing the server packages.  This should force the server to write out
 a default configuration and reply with "OK: Pong!"
 
 
-
 _Client Installation_
 
 As for the server, if you are installing from packages's rather than a repo,
@@ -61,7 +92,6 @@ minimal command line functions, but if for any reason you rebuild the
 server, and loose it's openssl identity, you may want to remove the server
 identity from the client using "openakc-plugin resetkeys"... otherwise no
 communication will be possible.
-
 
 
 _System Setup_
@@ -138,7 +168,7 @@ For further details please see the full documentation.
 
 
 
-_Related software_
+*Related software*
 
 OpenAKC makes use of hpenc, by Vsevolod Stakhov and libsodium by Frank Denis,
 these tools are included unmodified, in the source package for OpenAKC and
