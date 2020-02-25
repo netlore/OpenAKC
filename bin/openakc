@@ -30,6 +30,7 @@ RELEASE="0.0"
 #
 # Defaults
 #
+APIS="localhost"
 CONFFILE="/etc/openakc/openakc.conf"
 DATADIR="/var/lib/openakc"
 USERDIR="${HOME}/.openakc"
@@ -38,9 +39,25 @@ DEBUG="no"
 PORT=889
 
 #
+# Fixed Values
+#
+PRVKEY="openakc-system-client-$(hostid)-prvkey.pem"
+PUBKEY="openakc-system-client-$(hostid)-pubkey.pem"
+USERPRVKEY="openakc-user-client-$(whoami)-prvkey.pem"
+USERPUBKEY="openakc-user-client-$(whoami)-pubkey.pem"
+SESSKEY=""
+
+#
+# Transient Values
+#
+DAT=$(date "+%c")
+SDAT=$(date "+%s")
+MODE=${1}
+ARGS=${@}
+
+#
 # Functions
 #
-
 logstatus () {
  logger -p authpriv.info -t "openakc-tool[$$]" "INFO - $1"
 }
@@ -123,10 +140,6 @@ apicall () {
  # Start of illogical function dance where work is done once API is open.
  #
  
- #
- # Check/read cache file or query OpenAKC Server
- #
- 
  # Connect to API
  logdebug "Trying TCP Session with API \"${1}:${PORT}\" ID is \"$(whoami)\""
  exec 5<>/dev/tcp/${1}/${PORT}
@@ -137,7 +150,7 @@ apicall () {
  fi
  logdebug "TCP Session opened with API \"${1}:${PORT}\""
  
- # NB If we're still going, then we're it!
+ # If we're still going, then we're it!
  
  read TAGLINE <&5
  read OK <&5
@@ -177,14 +190,11 @@ apicall () {
    logerr "Can't set OpenSSL Options (Code Error), exiting."
    exit 1
  esac
-# PROTO=$(echo $PROTO | awk -F. '{print $1}') #FIXME This shouldn't be here
   
  echo "Server supports protocols:- $PROTOS"
  echo "We support protocols:- $CPROTOS"
  echo "Using Protocol:- $PROTO"
  echo ""
-# echo "Mode:- "$MODE
-# echo ""
   
  #
  # Initialise session protocol
@@ -365,6 +375,7 @@ apicall () {
 }
 
 netcall () {
+ logdebug "Starting netcall subroutine"
  for API in $APIS
  do
   apicall $API & apipid=$! 2> /dev/null
@@ -381,12 +392,15 @@ netcall () {
 }
 
 
+#
+# Initial Banner
+#
+echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
 
 
 #
 # Find OpenSSL Version
 #
-
 OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
 if [ "$OSSLV" -eq "$OSSLV" ] 2>/dev/null; then
  :
@@ -415,53 +429,36 @@ if [ ! -f "${CONFFILE}" ] && [ ! -f "${USERDIR}/config" ]; then
  echo "No config found, checking for a server on \"localhost\" at port 889"
  echo "init" > /dev/tcp/127.0.0.1/889
  if [ $? -eq 0 ]; then
-  echo "Success! Hopefully the server wrote a base config"
+  echo "Success! Hopefully the server has a config"
  else
   echo
   echo "Can't find any config or server to ping, please create either:-"
   echo "${CONFFILE} or ${USERDIR}/config"
   echo "and define APIS=\"host{,host}\" where host can be a name or IP address"
-  echo
  fi
  sleep 1
 fi
 #
 
-if [ -f "${CONFFILE}" ]; then
+if [ -r "${CONFFILE}" ]; then
  source "${CONFFILE}"
 fi
-if [ -f "${USERDIR}/config" ]; then
+if [ -r "${USERDIR}/config" ]; then
  source "${USERDIR}/config"
 fi
 
-if [ ! -f "${CONFFILE}" ] && [ ! -f "${USERDIR}/config" ]; then
- logerr "Can't find a config file, exiting."
- echo "Can't find a config file, exiting."
+if [ ! -r "${CONFFILE}" ] && [ ! -r "${USERDIR}/config" ]; then
  echo
- exit 1
+ echo "Warning: No configuration read, using defaults."
+ logwarn "No config read when run by \"$(whoami)\", attempting to use API list \"${APIS}\""
+ if [ "x$(whoami)" == "xroot" ]; then
+  logerr "Can't find/read the config file, exiting."
+  echo
+  echo "Can't find/read the config file, exiting."
+  exit 1
+ fi
 fi
 APIS=$(echo $APIS | tr ',' ' ')
-
-#
-# Fixed Values
-#
-PRVKEY="openakc-system-client-$(hostid)-prvkey.pem"
-PUBKEY="openakc-system-client-$(hostid)-pubkey.pem"
-USERPRVKEY="openakc-user-client-$(whoami)-prvkey.pem"
-USERPUBKEY="openakc-user-client-$(whoami)-pubkey.pem"
-SESSKEY=""
-
-#
-# Transient Values
-#
-DAT=$(date "+%c")
-SDAT=$(date "+%s")
-
-#
-# Initial Startup
-#
-MODE=${1}
-ARGS=${@}
 
 #
 # Validate Config FIXME Needs more checks. (ESP API hosts's)
@@ -479,12 +476,9 @@ fi
 #
 # OpenAKC command line interface.
 #
-
 SDO="no"
-#TMPCMD=$(cat /proc/$PPID/cmdline) 2> /dev/null
 if [[ "x$(tr -d '\0' < /proc/$PPID/cmdline)" == *"xsudo"* ]]; then
   SDO="yes"
-  echo "OpenAKC Copyright (C) 2019  A. James Lewis."
   USERDIR=${4}
   #
   [ ! -d "$DATADIR/keys" ]&&mkdir "$DATADIR/keys"
@@ -498,7 +492,6 @@ if [[ "x$(tr -d '\0' < /proc/$PPID/cmdline)" == *"xsudo"* ]]; then
   #
 else
  if [ "x${MODE}" != "xrerole" ]; then
-  echo "OpenAKC Copyright (C) 2019  A. James Lewis.  Version is ${RELEASE}."
   echo ""
   echo "This program comes with ABSOLUTELY NO WARRANTY; see \"license\" option".
   echo "This is free software, and you are welcome to redistribute it"
@@ -515,6 +508,9 @@ else
  fi 
 #
 fi
+#
+logdebug "Starting MODE case statement with mode ${MODE}"
+#
 case "$MODE" in
  register)
   if [ "x$SDO" == "xyes" ];then

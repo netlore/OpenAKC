@@ -1,35 +1,44 @@
 
+Quickstart Guide
 
 _Server Installation_
 
 If installing from packages's rather than a repo, you may first need to ensure
 that some dependencies are installed.  At the time of writing, a standard
-minimal "CentOS container" requires the following packages to be installed
-in advance:-
+minimal "CentOS container" requires several packages to be installed
+in addition to the default:-
 
 Eg.
 yum install openssh-clients openssl xinetd openssl sudo which
 
 For a minimal Ubuntu, installing the extra depenencies is also required
-if not using a repo.
+if not using a repo, but there are not as many.
 
 Eg.
 apt isntall xinetd
 
-Then, simply install packages "openakc-server" & "openakc-tools"
+With dependencies handled, simply install packages
 
+1) "openakc-server" which provides the server itself, which handles
+authentication requests, registration requests from users, and permissions
+updates.
 
+2) "openakc-tools" which contains the interface tool, which allows users to
+register their keys, and administrators to upload static keys and configure
+permissions.
 
-
+To verify that the server is working, simply type "openakc ping" after
+installing the server packages.  This should force the server to write out
+a default configuration and reply with "OK: Pong!"
 
 
 
 _Client Installation_
 
-If installing from packages's rather than a repo, you may first need to ensur
-that some dependencies are installed.  At the time of writing, a standard
-minimal "CentOS container" requires the following packages to be installed
-in advance:-
+As for the server, if you are installing from packages's rather than a repo,
+you may first need to ensure that some dependencies are installed.  At the time
+of writing, a standard minimal "CentOS container" requires the several
+packages to be installed in advance:-
 
 Eg.
 yum install e2fsprogs openssh-clients openssh-server openssl which
@@ -37,54 +46,95 @@ yum install e2fsprogs openssh-clients openssh-server openssl which
 For a minimal Ubuntu, installing extra dependencies is currently not
 required on the client host.
 
-Then simply install package "openakc"
+Once any dependencies are met, simply install package "openakc"
 
+To set up the client, ensure that the host(s) listed in the client config
+(/etc/openakc/openakc.conf) (which can be either name or IP) are configured
+to refer to the appropriate server.  The configuration is pre-populated with
+"openakc01 & openakc02", so you could simply ensure that these values are
+configured in DNS, or in the /etc/hosts on the client for testing, or alter
+them as you prefer.
 
-
-
+To verify that the client is configured, and can contact the server, after
+installation, you can run "openakc-plugin ping".  The plugin only has very
+minimal command line functions, but if for any reason you rebuild the
+server, and loose it's openssl identity, you may want to remove the server
+identity from the client using "openakc-plugin resetkeys"... otherwise no
+communication will be possible.
 
 
 
 _System Setup_
 
 In a minimal installation, the only configuration required is to ensure that
-the hosts listed in the client config (/etc/openakc/openakc.conf) (which can
-be either name or IP) are configured to refer to the appropriate server. 
-These values are pre-populated with "openakc01 & openakc02", so you could
-simply ensure that these values are configured in DNS, or in the /etc/hosts
-on the client file for testing, or alter them as you prefer.
+the client config contains valid "APIS".
 
-Verify Server
+Note that all personal key pairs registered with the system must have a
+passphrase.  In future support for tools like Yubikey may be added, and this
+rule may be relaxed when using keys backed with a hardware 2FA device.
 
-To verify the correct operation of the server, simply have a non-root user
-create an ssh key pair (with pass phrase), and attempt to register that key.
+To test get started with authentication, you will need at least one non-root
+user on the server, ideally 2 (one to be the security administrator, and the
+other to be a normal user).  For testing of course the security administrator
+could simply assign rights to himself.  Configurations where the users are
+on a different server will be discussed in the documentation proper, but
+will require only the openakc-tools package to be installed.
 
-#openakc register
+Ensure your users exist, and if they do not already have an SSH key pair then
+create one (with pass phrase), and attempt to register that key by running the
+command:-
+
+"openakc register"
 
 Now attempt to connect to your a client machine, this will demonstrate that
-you cannot connect, and also allow the server to learn about the client
-which will help later on (you will not be permitted to log in).
+you cannot connect (no permissions have been granted), but will also serve to
+let the server to learn about the client, (when a public key is presented to
+the remote ssh daemon, it will call the plugin and request authentication from
+the server, which will populate date about that host on the server) this will
+help later on.
 
-Designating one or more security administrators.
+Designating security administrators.
 
 For a (registered) user who you wish to make a "security administrator",
 take the file from the users home folder:-
 
 ~[user]/.openakc/openakc-user-client-[user]-pubkey.pem and place this in the
-root owned folder /var/lib/openakc/keys
+root owned folder on the server "/var/lib/openakc/keys".  This method allows
+a user who may be on an entirely unrelated system with only the openakc-tools
+package installed to manage permissions.  For the purpose of this "quickstart"
+guide however, we will not discuss distributed systems.
 
 This user will now be able to run call the role management functions in the
-api tool,
+api tool Eg:-
 
-Eg.
-openakc editrole root@test-client
+"openakc editrole root@test-client"
 
 Examine the comments, and example role "block" shown, and create one
-defining access for a user or group, and then test.
+defining access for a user or group.
 
-Now examine the logs on each host to see what was logged, as well as check
-the keystroke log written to /var/lib/openakc/keylogs on the server.
+The role data can also be uploaded or downloaded using the "getrole" or
+"setrole" commands with a filename as an extra parameter Eg:-
 
+"openakc getrole root@test-client /tmp/role.txt"
+
+This will get the role and write it to the file /tmp/role.txt... you can then
+edit it and upload it.  "setrole" could be used to upload roles without first
+downloading them, perhaps from some automation.
+
+Once the role data is saved, access should be available instantly... since
+keys are not "distributed" to the clients as in other key managers, but the
+clients query the server for every incoming ssh connection.  This allows
+for detailed logs to be keps on the server, but more importantly it allows
+for session logging to be performed (even if the connection does not come from
+the server, or indeed, in the case of a static key the connection may come from
+outside your network, and you will still see a session log generated on the
+server if specified in the role)
+
+You can examine the logs on each host to see what was logged, as well as check
+the keystroke log written to /var/lib/openakc/keylogs on the server, as well as
+the configuration audit data in /var/lib/openakc/audit on the server.
+
+For further details please see the full documentation.
 
 
 
@@ -92,5 +142,5 @@ _Related software_
 
 OpenAKC makes use of hpenc, by Vsevolod Stakhov and libsodium by Frank Denis,
 these tools are included unmodified, in the source package for OpenAKC and
-specific licence terms for these tools are included in their own LICENCE files
-and the binary package documentation.
+specific licence terms for these tools are included in separate LICENCE-* files
+and in the documentation directory deployed by OpenAKC packages.

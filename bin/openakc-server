@@ -58,7 +58,7 @@ else
 # echo "PERMITROOT=\"yes\"" >> ${CONFFILE}
 # echo "QUIZ=\"yes\"" >> ${CONFFILE}
 # echo "FAKESUDO=\"yes\"" >> ${CONFFILE}
- chmod 700 ${CONFFILE}
+ chmod 644 ${CONFFILE}
  source ${CONFFILE}
 fi
 

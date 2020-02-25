@@ -1,3 +1,5 @@
+OpenAKC makes use of "libsodium" by Frank Denis
+
 /*
  * ISC License
  *
