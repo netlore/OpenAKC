@@ -222,14 +222,14 @@ exit 0
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
-%doc OpenAKC*/README
+%doc OpenAKC*/QUICKSTART.txt
 
 
 %files tools
 %defattr(-,root,root,-)
 %attr(755, root, root) /usr/bin/openakc
 %doc OpenAKC*/LICENSE
-%doc OpenAKC*/README
+%doc OpenAKC*/QUICKSTART.txt
 #%doc OpenAKC*/docs/OpenAKC_Instructions-Tools.pdf
 
 %files server
@@ -241,10 +241,13 @@ exit 0
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
-%doc OpenAKC*/README
+%doc OpenAKC*/QUICKSTART.txt
 
 
 %changelog
+* Tue Feb 25 2020 James Lewis <james@fsck.co.uk>
+- Renamed README file to QUICKSTART.txt
+
 * Wed Feb 19 2020 James Lewis <james@fsck.co.uk>
 - Added a bunch of documentation to the package
 
