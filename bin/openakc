@@ -448,14 +448,15 @@ if [ -r "${USERDIR}/config" ]; then
 fi
 
 if [ ! -r "${CONFFILE}" ] && [ ! -r "${USERDIR}/config" ]; then
- echo
- echo "Warning: No configuration read, using defaults."
- logwarn "No config read when run by \"$(whoami)\", attempting to use API list \"${APIS}\""
- if [ "x$(whoami)" == "xroot" ]; then
+ if [ ${EUID} -eq 0]; then
   logerr "Can't find/read the config file, exiting."
   echo
   echo "Can't find/read the config file, exiting."
   exit 1
+ else
+  echo
+  echo "Warning: No configuration read, using defaults."
+  logwarn "No config read when run by \"$(whoami)\", attempting to use API list \"${APIS}\""
  fi
 fi
 APIS=$(echo $APIS | tr ',' ' ')
@@ -532,7 +533,7 @@ case "$MODE" in
    netcall
   else
    logdebug "Starting key registration in normal mode"
-   if [ "x$(whoami)" == "xroot" ];then 
+   if [ ${EUID} -eq 0 ];then
     echo  "Error: User \"root\" cannot register a user key"
     usage
     exit 1
@@ -560,7 +561,7 @@ case "$MODE" in
 #
     ssh-keygen -P "dummy" -yf "${prvkey}" 1> /dev/null 2> /dev/null
     if [ $? -eq 0 ]; then
-     if [ "x$(whoami)" != "xroot" ]; then
+     if [ ${EUID} -ne 0 ]; then
       echo "Error: user key (${prvkey}) must include passphrase"
       usage
       exit 1

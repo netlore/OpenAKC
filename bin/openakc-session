@@ -393,7 +393,7 @@ apicall () {
    echo
   fi
 
-  if [ "x${PERMITROOT}$(whoami)" != "xnoroot" ]; then
+  if [ "x${PERMITROOT}${EUID}" != "xno0" ]; then
    if [ "x${FAKESUDO}" == "xyes" ]; then
     logger -t sudo -p authpriv.info "  ${RUSR} : TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
    fi
@@ -429,7 +429,7 @@ apicall () {
    ( cat "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).cmd" "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k $SESSKEY >&5 ) &
   fi
  
-  if [ "x${PERMITROOT}$(whoami)" != "xnoroot" ]; then
+  if [ "x${PERMITROOT}${EUID}" != "xno0" ]; then
    if [ "x${FAKESUDO}" == "xyes" ]; then
     logger -t sudo -p authpriv.info "  ${RUSR} : TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
    fi

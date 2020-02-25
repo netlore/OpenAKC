@@ -186,10 +186,10 @@ else
  logdebug "OpenAKC Plugin Started KEY=${KEY} HOME=${REMHOME} USER=${USER}"
 fi
 
-if [ ! -d "${DATADIR}/keys" ]&&[ "x$(whoami)" == "xroot" ]; then
+if [ ! -d "${DATADIR}/keys" ]&&[ ${EUID} -eq 0 ]; then
  mkdir -p "${DATADIR}/cache" "${DATADIR}/keys"
  chmod 750 "${DATADIR}" "${DATADIR}/cache" "${DATADIR}/keys"
- chown "${PLUGINUSER}:root" "${DATADIR}" "${DATADIR}/cache" "${DATADIR}/keys"
+ chown "${PLUGINUSER}:0" "${DATADIR}" "${DATADIR}/cache" "${DATADIR}/keys"
 fi
 
 #
