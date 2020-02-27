@@ -1,3 +1,12 @@
+*Blocking For 1.0 Release*
+
+* Code review, fix up input validation.
+
+* Default role file assigned to a host when first discovered.
+
+* Review "key" type, can we refer to a key by some "tag" other than
+  fingerprint.
+
 *Possible Future Enhancements*
 
 * Offer some method to push values into users shell profile, like aliases,
