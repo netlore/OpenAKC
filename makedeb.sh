@@ -4,8 +4,8 @@
 # Constants
 #
 source /etc/os-release
-VERSION="0.98"
-BUILD="6"
+VERSION="0.99"
+BUILD="1"
 
 #
 # Package requirements for build
@@ -132,9 +132,9 @@ cp LICENSE-hpenc "${PDIR}/usr/share/doc/openakc/"
 cp LICENSE-libsodium "${PDIR}/usr/share/doc/openakc/"
 cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc/"
 #
-chmod 750 "${PDIR}/var/lib/openakc"
-chmod 750 "${PDIR}/etc/openakc"
-chmod 640 "${PDIR}/etc/openakc/openakc.conf"
+chmod 755 "${PDIR}/var/lib/openakc"
+chmod 755 "${PDIR}/etc/openakc"
+chmod 644 "${PDIR}/etc/openakc/openakc.conf"
 
 #
 echo "Package: openakc" > "${PDIR}/DEBIAN/control"
@@ -206,8 +206,8 @@ cp LICENSE-libsodium "${PDIR}/usr/share/doc/openakc-server/"
 cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc-server/"
 
 #
-chmod 440 "${PDIR}/etc/sudoers.d/openakc"
-chmod 644 "${PDIR}/etc/xinetd.d/openakc"
+chmod 640 "${PDIR}/etc/sudoers.d/openakc"
+chmod 640 "${PDIR}/etc/xinetd.d/openakc"
 
 #
 echo "Package: openakc-server" > "${PDIR}/DEBIAN/control"

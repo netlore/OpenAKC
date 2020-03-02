@@ -1,6 +1,6 @@
 Name:           openakc
-Version:        0.98
-Release:        6%{?dist}
+Version:        0.99
+Release:        1%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
 License:        GPLv2.0
@@ -216,9 +216,9 @@ exit 0
 %attr(755, root, root) /usr/bin/openakc-hpenc
 %attr(755, root, root) /usr/sbin/openakc-plugin
 %attr(755, root, root) /usr/bin/openakc-session
-%dir %attr(750, root, root) /etc/openakc
-%dir %attr(750, openakc, root) /var/lib/openakc
-%attr(640, root, openakc) %config /etc/openakc/openakc.conf
+%dir %attr(755, root, root) /etc/openakc
+%dir %attr(755, openakc, root) /var/lib/openakc
+%attr(644, root, openakc) %config /etc/openakc/openakc.conf
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
@@ -236,8 +236,8 @@ exit 0
 %defattr(-,root,root,-)
 %attr(755, root, root) /usr/bin/openakc-hpenc
 %attr(755, root, root) /usr/sbin/openakc-server
-%attr(440, root, root) %config(missingok) /etc/sudoers.d/openakc
-%attr(644, root, root) %config(missingok) /etc/xinetd.d/openakc
+%attr(640, root, root) %config(missingok) /etc/sudoers.d/openakc
+%attr(640, root, root) %config(missingok) /etc/xinetd.d/openakc
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
@@ -245,6 +245,9 @@ exit 0
 
 
 %changelog
+* Mon Mar 02 2020 James Lewis <james@fsck.co.uk>
+- Fixed some permissions issues
+
 * Tue Feb 25 2020 James Lewis <james@fsck.co.uk>
 - Renamed README file to QUICKSTART.txt
 
