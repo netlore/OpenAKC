@@ -183,6 +183,7 @@ apicall () {
  done
  if [ "x$POK" == "x0" ]; then
   logerr "No matching protocols found, exiting!"
+  echo "No matching protocols found, exiting!"
   exit 1
  fi
  #
@@ -198,10 +199,10 @@ apicall () {
    exit 1
  esac
   
- echo "Server supports protocols:- $PROTOS"
- echo "We support protocols:- $CPROTOS"
- echo "Using Protocol:- $PROTO"
- echo ""
+ logdebug "Server supports protocols:- $PROTOS"
+ logdebug "We support protocols:- $CPROTOS"
+ logdebug "Using Protocol:- $PROTO"
+# echo ""
   
  #
  # Initialise session protocol
@@ -239,7 +240,7 @@ apicall () {
  isok
  #
  
- echo "Connected!"
+ echo -n "Connected to AKC server.  "
 
  case "$MODE" in
   register)
@@ -251,24 +252,24 @@ apicall () {
     isok
     CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
     CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${DATADIR}/keys/openakc-system-client-$(hostid)-prvkey.pem" -in /dev/stdin 2> /dev/null)
-    echo ""
-    echo "Key Register - $OK"
+#    echo ""
+    logdebug "Key Register - $OK"
     MESSAGE=$(echo "handshake ${CHAL}");sendmessage
     read OK <&5
     isok
-    echo "Key Register - $OK"
+    logdebug "Key Register - $OK"
     MESSAGE=$(echo "registerkey user ${usr} ${fp} ${pkey}");sendmessage
     read OK <&5
     isok
-    echo "Key Register - $OK"
-    echo ""
-    echo "Key Registered Successfully"
+    logdebug "Key Register - $OK"
+#    echo ""
+    echo "${OK}"
    fi
    ;;
 #
   setrole)
    ABRT=0
-   echo "Sending role config request"
+   echo "Sending role update request"
    TARGET=$(echo "${ARGS}" | awk '{print $2}' | tr 'A-Z' 'a-z')
    if ( ! echo $TARGET | egrep  -q $NAMEHOST_REGEX ); then
     echo "Error: User or Host name invalid, exiting"
@@ -290,22 +291,23 @@ apicall () {
     isok
     CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
     CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
-    echo ""
-    echo "Add Permission - $OK"
+#    echo ""
+    logdebug "Add Permission - $OK"
     MESSAGE=$(echo "handshake ${CHAL}");sendmessage
     read OK <&5
     isok
-    echo "Add Permission - $OK"
+    logdebug "Add Permission - $OK"
     MESSAGE=$(echo "setrole ${USRNAME}@${HSTNAME} ${ROLEFILE}");sendmessage
     read OK <&5
     isok
-    echo "Add Permission - $OK"
+    logdebug "Add Permission - $OK"
+    echo "${OK}"
    fi
    ;;
 #
   getrole)
    ABRT=0
-   echo "Sending role config request"
+   echo "Sending role read request"
    TARGET=$(echo "${ARGS}" | awk '{print $2}' | tr 'A-Z' 'a-z')
    if ( ! echo $TARGET | egrep  -q $NAMEHOST_REGEX ); then 
     echo "Error: User or Host name invalid, exiting"
@@ -327,21 +329,22 @@ apicall () {
     isok
     CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
     CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
-    echo ""
-    echo "Get Permission - $OK"
+#    echo ""
+    logdebug "Get Permission - $OK"
     MESSAGE=$(echo "handshake ${CHAL}");sendmessage
     read OK <&5
     isok
-    echo "Get Permission - $OK"
+    logdebug "Get Permission - $OK"
     MESSAGE=$(echo "getrole ${USRNAME}@${HSTNAME} ${ROLEFILE}");sendmessage
     read ROLEFILE <&5
     ROLEFILE=$(echo "$ROLEFILE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | gzip -d | base64 -d)
     read OK <&5
     isok
-    echo "Get Permission - $OK"
+    logdebug "Get Permission - $OK"
     if [ "x${OK:0:3}" != "xERR" ]; then
      echo "$ROLEFILE" > "${ROLEFN}"
     fi
+    echo "${OK}"
    fi
    ;;
   submit)
@@ -360,16 +363,17 @@ apicall () {
    isok
    CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
    CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
-   echo ""
-   echo "Submit Key - $OK"
+#   echo ""
+   logdebug "Submit Key - $OK"
    MESSAGE=$(echo "handshake ${CHAL}");sendmessage
    read OK <&5
    isok
-   echo "Submit Key - $OK"
+   logdebug "Submit Key - $OK"
    MESSAGE=$(echo "submit ${fp} ${KEYDATA} ${COMMENT}");sendmessage
    read OK <&5
    isok
-   echo "Submit Key - $OK"
+   logdebug "Submit Key - $OK"
+   echo "${OK}"
    ;;
 #
   ping)
@@ -414,7 +418,9 @@ netcall () {
 #
 # Initial Banner
 #
-echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
+if [[  ${@} != *"nobanner" ]]; then
+ echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
+fi
 
 
 #
@@ -612,7 +618,7 @@ case "$MODE" in
     echo ""
     echo "Escalating to perform API call"
     echo ""
-    sudo /usr/bin/openakc register $(whoami) $fp $USERDIR
+    sudo /usr/bin/openakc register $(whoami) $fp $USERDIR nobanner
     rm /tmp/openakc.${fps}
     exit 0
    fi
