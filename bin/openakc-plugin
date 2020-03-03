@@ -134,7 +134,7 @@ SDAT=$(date "+%s")
 NOEXIT=0
 TMPCMD=$(cat "/proc/${PPID}/cmdline"|cut -c 1-4) 2> /dev/null
 if [ "x$TMPCMD" != "xsshd" ]; then
- echo "OpenAKC Copyright (C) 2019  A. James Lewis.  Version is ${RELEASE}."
+ echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
  echo ""
  echo "This program comes with ABSOLUTELY NO WARRANTY; for details type \"license\"".
  echo "This is free software, and you are welcome to redistribute it"

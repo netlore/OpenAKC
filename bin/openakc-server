@@ -34,7 +34,7 @@ DATADIR="/var/lib/openakc"
 PREEXEC="/bin/true"
 POSTEXEC="/bin/true"
 CONFFILE="/etc/openakc/openakc.conf"
-TMOUT=30 # Entire transaction must be completed in this number of seconds.
+TMOUT=90 # Entire transaction must be completed in this number of seconds (Warning, includes QUIZ).
 APIS="localhost"
 PORT="889"
 DEBUG="no"
@@ -115,12 +115,10 @@ logerr () {
 
 greeter () {
  echo "OpenAKC-$RELEASE $(uname -o) $(uname -r)"
-# echo "Protocols Supported: $PROTOS" # FIXME Remove
  echo "OK: OpenAKC Server Ready"
 }
 
 cleanapi () {
-# read APIIN # FIXME Remove
  API=$(echo $APIIN | tr -d '\r' | tr 'A-Z' 'a-z' | awk '{print $1}')
  PARAM=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
 }
@@ -160,7 +158,6 @@ showerr () {
 #
 # Startup
 #
-
 OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
 if [ "$OSSLV" -eq "$OSSLV" ] 2>/dev/null; then
  :
@@ -259,7 +256,7 @@ esac
 PROTO=$(echo $PROTO | awk -F. '{print $1}')
 
 #
-# Data Section FIXME Move to #include
+# Data Section FIXME Move to libexec and source functions in based in data configured data store.
 #
 
 #################
@@ -303,6 +300,15 @@ data_openroles () {
  fi
 }  
  
+data_resolve () {
+ cnt=$(getent hosts "${SOURCE}" 2> /dev/null | wc -l)
+ if [ $cnt -eq 1 ]; then
+  SOURCE_HOST=$(getent hosts "${SOURCE}" 2> /dev/null | awk '{print $2}')
+ else
+  SOURCE_HOST=${SOURCE}
+ fi
+}
+ 
 data_setrole () {
  cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
  if [ $cnt -eq 1 ]; then
@@ -330,7 +336,7 @@ data_setrole () {
 }
 
 data_getrole () {
-# FIXME Stub confirm hostname
+# FIXME Validation / Confirm hostname
  mkdir -p ${DATADIR}/data/roles
  cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
  if [ $cnt -eq 1 ]; then
@@ -474,11 +480,6 @@ readsesscode () {
 
 rbmessage () {
  ENC=1
-#
-# FIXME Remove This Debug Output
-# echo "$PARAM" > /tmp/openakc.dbg
-# echo "${SSLOPTS}" >> /tmp/openakc.dbg
-# echo "${SESSKEY}" >> /tmp/openakc.dbg
  APIIN=$(echo $PARAM | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
  logdebug "Message decoded - \"$APIIN\""
 }
@@ -520,7 +521,7 @@ rbauth () {
  HID=$(echo $PARAM | cut -d ";" -f 3) # Hostid
  HIP=$(echo $PARAM | cut -d ";" -f 4) # Host IP
  USR=$(echo $PARAM | cut -d ";" -f 5) # Username
- KEYF=$(echo $PARAM | cut -d ";" -f 6) # Key Fingerprint - FIXME | tr '/' '-')
+ KEYF=$(echo $PARAM | cut -d ";" -f 6) # Key Fingerprint
  API=$(echo $PARAM | cut -d ";" -f 7) # API Hostname
  REL=$(echo $PARAM | cut -d ";" -f 8) # Client Code Release
  RPPID=$(echo $PARAM | cut -d ";" -f 9) # Remote Parent PID
@@ -717,7 +718,7 @@ rbhandshake () {
 
 rbgetrole () {
 #FIXME This is a bit of a stub for full functionality.
-#FIXME Input Validation (look up hostid)
+#FIXME Input Validation (look up/validate hostid?)
  logdebug "Adding role data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
   target=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
@@ -790,21 +791,23 @@ SOURCE="$REMOTE_HOST"
 REPLY="OK: Audit data accepted"
 AUDFN=$(echo $PARAM | awk -F\: '{print $1}')
 AUDAT=$(echo $PARAM | awk -F\: '{print $2}')
-
-# FIXME do input validation on filename
-
-mkdir -p "${DATADIR}/audit/$SOURCE"
-echo -n "$AUDAT" | tr -d '\r' | base64 -d > "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp"
-if [ $? -eq 0 ]; then
- echo "OK: Audit data accepted"
- mv "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp" "${DATADIR}/audit/$SOURCE/${AUDFN}"
+data_resolve
+if echo "${AUDFN}" | egrep -q "^[-.a-zA-Z0-9]{0,33}$" 1> /dev/null 2> /dev/null; then
+ mkdir -p "${DATADIR}/audit/$SOURCE_HOST"
+ echo -n "$AUDAT" | tr -d '\r' | base64 -d > "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp"
+ if [ $? -eq 0 ]; then
+  echo "OK: Audit data accepted"
+  mv "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp" "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}"
+ else
+  echo "ERR: Audit data corrupted"
+  logwarn "Corrupt audit data detected"
+  touch "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp"
+ rm "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp"
+ fi
+ logstatus "Received audit packet from ${SOURCE_HOST}(${SOURCE})"
 else
- echo "ERR: Audit data corrupted"
- logwarn "Corrupt audit data detected"
- touch "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp"
- rm "${DATADIR}/audit/$SOURCE/${AUDFN}.tmp"
+ logerr "Received audit packet from ${SOURCE_HOST}(${SOURCE}) with invalid filename"
 fi
-logstatus "Received audit packet from $SOURCE"
 }
 
 rblog () {
@@ -813,7 +816,9 @@ rblog () {
  logstatus "Session with $REMOTE_HOST transitioned to keystroke log receiver, see log:- $LOGFN"
  mkdir -p "${DATADIR}/keylogs/$(date "+%Y/%m/%d")"
  touch "${DATADIR}/keylogs/$LOGFN"
-# chattr +a "${DATADIR}/keylogs/$LOGFN"
+ if which chattr; then
+  chattr +a "${DATADIR}/keylogs/$LOGFN"
+ fi
  cat | /usr/bin/openakc-hpenc -d -k $SESSKEY >> "${DATADIR}/keylogs/$LOGFN"
 }
 

@@ -92,7 +92,7 @@ sendmessage () {
 # OpenAKC command line check.
 #
 if [ "x$(cat /proc/$PPID/cmdline|cut -c 1-4)" != "xsshd" ]; then
- echo "OpenAKC Copyright (C) 2019  A. James Lewis.  Version is ${RELEASE}."
+ echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
  echo ""
  echo "This program comes with ABSOLUTELY NO WARRANTY; for details type \"license\"".
  echo "This is free software, and you are welcome to redistribute it"
@@ -283,16 +283,6 @@ apicall () {
  EXT=$(echo $SESSDAT | cut -d ";" -f 19) # Extensions
  RIP=$(echo $SESSDAT | cut -d ";" -f 20) # Remote IP
  
-# #
-# # Example Request
-# #
-# MESSAGE=$(echo "auth $(hostname -s);$(hostname -d);$(hostid);$(hostname -i);${USER};${KEY};${API};${RELEASE};${PPID}");sendmessage
-# read LOGMESSAGE <&5
-# read PUBKEY <&5
-# read OK <&5
-# isok
-#
-
  RESTRICT=${CAP}
  KLOG=0
  KEXIT=0
@@ -307,7 +297,6 @@ apicall () {
   export OCOMMAND=$(which $(echo $(echo $SSH_ORIGINAL_COMMAND | cut --delimiter=" " -f 1)))  
   export BCOMMAND=$(basename "${OCOMMAND}")
   PERMITC=0
-#env > /tmp/ocenv.txt
  else
   export OCOMMAND=""
   PERMITC=1
@@ -355,12 +344,12 @@ apicall () {
    logstatus "Presenting user quiz for session ${RPPID}-$(hostid)"
    echo "Please enter the reason for your connection"
    echo -n "Title / Change Number: "
-   read -t 120 i
+   read -t 30 i
    echo "Title: $i" > "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
    echo "Description (blank line to end)"
    while true
    do
-   read -t 120 j
+   read -t 45 j
    echo "Summary: $j" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
    [ "x$j" == "x" ]&&break
    done
@@ -382,7 +371,6 @@ apicall () {
   mkfifo "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
   ( cat "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz" "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k $SESSKEY >&5 ) &
 
-#echo $SESSDAT
 
   if [ "x$RESTRICT" != "x" ]; then
    echo "Restrictions Applied":-
