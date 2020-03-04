@@ -7,6 +7,9 @@
 * Review "key" type, can we refer to a key by some "tag" other than
   fingerprint.
 
+* Client package needs to set bins, and sshd_config to be immutable, and
+  handle resetting the flag on upgrade/removal.
+
 *Possible Future Enhancements*
 
 * Offer some method to push values into users shell profile, like aliases,
