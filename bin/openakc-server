@@ -84,13 +84,11 @@ let TDAT=SDAT+$TMOUT
 #
 # Database hack
 #
-
 export PGPASSWORD=${pgpassword}
 
 #
 # Functions
 #
-
 logstatus () {
  logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
 }
@@ -119,6 +117,7 @@ greeter () {
 }
 
 cleanapi () {
+#FIXME Variable Reuse of "API="
  API=$(echo $APIIN | tr -d '\r' | tr 'A-Z' 'a-z' | awk '{print $1}')
  PARAM=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
 }
@@ -200,14 +199,15 @@ if [ ! -f "${DATADIR}/keys/${PRVKEY}" ]; then
  openssl rsa -in "${DATADIR}/keys/${PRVKEY}" -outform PEM -pubout -out "${DATADIR}/keys/${PUBKEY}" 2> /dev/null
 fi 
 
+#
 # Greet Client
+#
 greeter
 logstatus "Session with $REMOTE_HOST established"
 
 #
 # Welcome Loop
 #
-
 while [ $(date +%s) -lt $TDAT ]
 do
  read APIIN
@@ -240,7 +240,7 @@ do
 done
 
 #
-#
+# Set OpenSSL options for protocol
 #
 case "$PROTO" in
  akcrsa1)
@@ -259,7 +259,7 @@ PROTO=$(echo $PROTO | awk -F. '{print $1}')
 # Data Section FIXME Move to libexec and source functions in based in data configured data store.
 #
 
-#################
+################################
 
 data_registerkey () {
 #FIXME Error checks
@@ -310,6 +310,7 @@ data_resolve () {
 }
  
 data_setrole () {
+#FIXME Error Checks
  cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
  if [ $cnt -eq 1 ]; then
   hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
@@ -336,7 +337,7 @@ data_setrole () {
 }
 
 data_getrole () {
-# FIXME Validation / Confirm hostname
+# FIXME Input validation on $usr & $hn
  mkdir -p ${DATADIR}/data/roles
  cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
  if [ $cnt -eq 1 ]; then
@@ -437,13 +438,13 @@ data_idkeyf () {
 }
 
 
-################
+################################
 
 #
 # AKCRSA1 Protocol Section.
 #
-
 showhelp_akcrsa1 () {
+#FIXME Help text incomplete
  echo "Welcome to OpenAKC, you are in the akcrsa1 protocol phase"
  echo ""
  echo "Commands Available:-"
@@ -479,12 +480,14 @@ readsesscode () {
 }
 
 rbmessage () {
+#FIXME Check exit code of openssl
  ENC=1
  APIIN=$(echo $PARAM | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
  logdebug "Message decoded - \"$APIIN\""
 }
 
 rbsessiondata () {
+#FIXME Security, validate session before sending.
  logdebug "Processing session data request - \"$PARAM\""
  RIP=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
  RPRT=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
@@ -642,9 +645,9 @@ rbauth () {
      fi
     fi
    fi
-   logdebug "Repeating Auth Loop"
+   logdebug "Repeating auth loop"
   done
-  logdebug "Ready to rm ${rfn}"
+  logdebug "Auth loop done"
   rm ${rfn} 2> /dev/null
   logdebug "Updating Session Log"
   data_sessionlog
@@ -669,7 +672,6 @@ rbauth () {
 } 
 
 rbchallenge () {
-
 # FIXME do input validation
  KEYID=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
  case "$PARAM" in
@@ -717,7 +719,6 @@ rbhandshake () {
 } 
 
 rbgetrole () {
-#FIXME This is a bit of a stub for full functionality.
 #FIXME Input Validation (look up/validate hostid?)
  logdebug "Adding role data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
@@ -771,6 +772,7 @@ rbsubmit () {
 }
 
 rbregisterkey () {
+#FIXME Input validation
  logdebug "Adding registered user key - \"$APIIN\""
  if [ "x$PERMS" == "xSYSTEM" ]; then
   usr=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
@@ -787,6 +789,7 @@ rbregisterkey () {
 }
 
 rbaudit () {
+#FIXME Input Validation
 SOURCE="$REMOTE_HOST"
 REPLY="OK: Audit data accepted"
 AUDFN=$(echo $PARAM | awk -F\: '{print $1}')
