@@ -28,7 +28,7 @@
 RELEASE="0.0"
 
 #
-# Values from AKC Stage One
+# Values from OpenAKC Stage One
 #
 API=${1}
 RPPID=${2}

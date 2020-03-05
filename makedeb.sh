@@ -5,7 +5,7 @@
 #
 source /etc/os-release
 VERSION="0.99"
-BUILD="2"
+BUILD="3"
 
 #
 # Package requirements for build
