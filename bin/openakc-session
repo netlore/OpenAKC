@@ -106,7 +106,7 @@ fi
 #
 # Find OpenSSL Version
 #
-OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
+OSSLV=$(openssl version 2> /dev/null | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
 if [ "$OSSLV" -eq "$OSSLV" ] 2>/dev/null; then
  :
 else
