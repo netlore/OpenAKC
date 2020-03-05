@@ -1,22 +1,27 @@
 *Blocking For 1.0 Release*
 
-* Code review, fix up input validation.
+* Code review, fix up input validation and graceful error handling/logging.
 
-* Default role file assigned to a host when first discovered.
+* Default role definition assigned to a host with no other role config.
 
 * Review "key" type, can we refer to a key by some "tag" other than
-  fingerprint.
+  fingerprint.  This would allow the key to be updated without editing the
+  role config.  Separate static keys from user keys in data store.
 
 * Client package needs to set bins, and sshd_config to be immutable, and
   handle resetting the flag on upgrade/removal.
 
+* Implement PREEXEC/POSTEXEC feature to allow external script to be executed
+  before/after authentication process on server, to allow functionality such
+  as force directory refresh for user details incase of recent group changes.
+
 *Possible Future Enhancements*
 
 * Offer some method to push values into users shell profile, like aliases,
-  default, or even read only environment variables.
+  default, or read only environment variables.
 
 * Allow roles to be associated with a user or hostname including wildcards.
 
-* Tool to allow users to query what is required for access to a given host,
+* Tool to allow users to query via API what is required for access to a given host,
   and/or to determine why they were not permitted access,
-  (require SYSTEM rights so it's not publically available).
+  (require SYSTEM (or lower?) rights so it's not publically available).
