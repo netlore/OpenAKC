@@ -28,7 +28,7 @@
 RELEASE="0.0"
 
 #
-# Values from AKC Stage One
+# Values from OpenAKC Stage One
 #
 API=${1}
 RPPID=${2}
@@ -50,7 +50,6 @@ FAKESUDO="no"
 #
 # Functions
 #
-
 logstatus () {
  logger -p authpriv.info -t "openakc-session[$$]" "INFO - $1"
 }
@@ -79,11 +78,12 @@ isok () {
   logerr "Quitting due to unexpected command response - $OK"
   echo "quit" >&5
   exec 5>&-
-  exit 0
+  exit 1
  fi
 }
 
 sendmessage () {
+#FIXME redirect stderr, and check exit code
  MESSAGE=$(echo "$MESSAGE" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
  echo "message $MESSAGE" >&5
 }
@@ -106,7 +106,7 @@ fi
 #
 # Find OpenSSL Version
 #
-OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
+OSSLV=$(openssl version 2> /dev/null | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
 if [ "$OSSLV" -eq "$OSSLV" ] 2>/dev/null; then
  :
 else
@@ -127,7 +127,6 @@ fi
 #
 # Get Configuration File (or exit).
 #
-
 if [ -r $CONFFILE ]; then
  source ${CONFFILE}
 else
@@ -157,24 +156,23 @@ fi
 #
 if [ "x$ENABLED" != "xyes" ]; then
  logstatus "Disabled in config \"ENABLED\" must be \"yes\" to enable OpenAKC"
- exit 0
+ exit 1
 fi
 #
 if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
  if [ $PORT -gt 65535 ]; then
   logerr "Warning - TCP port $PORT is out of range, exiting"
-  exit 0
+  exit 1
  fi
 else
  logerr "TCP port $PORT is not a number, exiting"
- exit 0
+ exit 1
 fi
 
 
 #
 # Start of illogical function dance.
 #
-
 apicall () {
  # Connect to API
  exec 5<>/dev/tcp/${1}/${PORT}
@@ -223,7 +221,6 @@ apicall () {
    logerr "Can't set OpenSSL Options (Code Error), exiting."
    exit 1
  esac
-# PROTO=$(echo $PROTO | awk -F. '{print $1}')
 
  #
  # Initialise Public Key
@@ -250,7 +247,7 @@ apicall () {
  isok
 
  if [ "x$SESSCODE" = "x" ]; then
-  echo "AKC Session Failed, to negotiate session with backend."
+  echo "OpenAKC Session Failed, to negotiate session with backend."
   echo "Please contact your Sysadmin or Security Administrator"
   exit 1
  fi

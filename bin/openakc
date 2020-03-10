@@ -240,7 +240,7 @@ apicall () {
  isok
  #
  
- echo -n "Connected to AKC server.  "
+ echo -n "Connected to OpenAKC server.  "
 
  case "$MODE" in
   register)

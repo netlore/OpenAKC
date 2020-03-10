@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Filename      : /usr/sbin/openakc-client
+# Filename      : /usr/sbin/openakc-plugin
 # Function      : OpenAKC Authentication Plugin
 #
 # Copyright (C) 2019-2020  A. James Lewis
@@ -80,11 +80,12 @@ isok () {
   logerr "Quitting due to unexpected command response - ${OK}"
   echo "quit" >&5
   exec 5>&-
-  exit 0
+  exit 1
  fi
 }
 
 sendmessage () {
+#FIXME redirect stderr and check exit code
  MESSAGE=$(echo "${MESSAGE}" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
  echo "message ${MESSAGE}" >&5
 }
@@ -92,7 +93,7 @@ sendmessage () {
 #
 # Find OpenSSL Version
 #
-OSSLV=$(openssl version | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
+OSSLV=$(openssl version 2> /dev/null | tr 'a-zA-Z' ' ' | awk '{print $1}' | awk -F. '{ printf("%02d%02d%02d", $1,$2,$3) }')
 if [ "${OSSLV}" -eq "${OSSLV}" ] 2>/dev/null; then
  :
 else
@@ -210,11 +211,11 @@ fi
 if [ "${PORT}" -eq "${PORT}" ] 2>/dev/null; then
  if [ ${PORT} -gt 65535 ]; then
   logerr "Warning - TCP port ${PORT} is out of range, exiting"
-  exit 0
+  exit 1
  fi
 else
  logerr "TCP port ${PORT} is not a number, exiting"
- exit 0
+ exit 1
 fi
 
 
@@ -222,7 +223,7 @@ fi
 # Determine API order
 #
 
-# FIXME Do something about API ordering, prefer source IP but API's supports names.
+# FIXME Do something about API ordering, resolve to IP and check source.
 #if [[ $APIS == *"$ORIGIN"* ]]; then
 #  APIS="$ORIGIN $(echo "$APIS" | tr -d '$ORIGIN')"
 #fi
