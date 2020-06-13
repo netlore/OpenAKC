@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Filename      : lxc-test.sh
+# Filename      : debian-lxc-build+demo.sh
 # Function      : Set up basic OpenAKC test platform using LXC.
 #
 # Copyright (C) 2020  A. James Lewis
@@ -20,10 +20,40 @@
 #
 
 #
-# Config
+# User Config
 #
 SUBID="100000" # Update by adding 100000 if range in use.
 CONTAINEROPTS="-r focal -a amd64" # Set null to be asked.
+#
+
+#
+# Functions
+#
+checkpackage () {
+ for i in $@
+ do
+  echo -n "Checking for installed package, $i - "
+  if dpkg -l "$i" 1> /dev/null 2> /dev/null; then
+   echo "Found!"
+  else
+   echo "Not Found."
+   echo 
+   echo "Attempting install. If you do not want to install the package"
+   echo "listed above, or do not have root permission, press ^C"
+   echo
+   sudo apt install $i
+   if [ $? -ne 0 ]; then
+    echo "Error Installing, Aborted!"
+    return 1
+   fi
+  fi
+ done
+echo 
+return 0   
+}
+
+#
+# Setup & Arguments
 #
 REQUIRED="lxc uidmap bridge-utils debootstrap dnsmasq-base gnupg iproute2 iptables lxc-templates lxcfs openssl rsync"
 SCRIPT=$(basename "$0")
@@ -58,35 +88,6 @@ while true; do
  esac  
  shift
 done
-
-#
-# Functions
-#
-checkpackage () {
- for i in $@
- do
-  echo -n "Checking for installed package, $i - "
-  if dpkg -l "$i" 1> /dev/null 2> /dev/null; then
-   echo "Found!"
-  else
-   echo "Not Found."
-   echo 
-   echo "Attempting install. If you do not want to install the package"
-   echo "listed above, or do not have root permission, press ^C"
-   echo
-   sudo apt install $i
-   if [ $? -ne 0 ]; then
-    echo "Error Installing, Aborted!"
-    return 1
-   fi
-  fi
- done
-echo 
-return 0   
-}
-
-#
-# Setup
 #
 if [ ! -f /etc/debian_version ]; then
  echo "Sorry, this script requires a debian/ubuntu based distribution. Aborted!"
@@ -107,6 +108,10 @@ if [ ! -d "${HOME}" ]; then
  echo
  exit 1
 fi
+#
+
+#
+# Proceed with Configuring unprivilaged LXC containers
 #
 if [ ! -d "${HOME}/.config/lxc" ]; then
  echo "Can't find unprivileged container setup"
@@ -140,6 +145,9 @@ else
  echo "Looks like unprivileged LXC containers are set up, assuming it works!"
  echo
 fi
+
+#
+# Lets build some containers
 #
 echo "Containers will be \"openakc-combined\" & \"openakc-client\"."
 echo
@@ -184,7 +192,11 @@ fi
 if [ ${REBUILD} -eq 1 ]; then
  echo "Waiting for new containers to settle"
  sleep 10
-fi
+fi 
+
+#
+# OK, lets get our containers ready to use, and build our packages
+#
 echo "Setting up containers."
 echo
 lxc-attach -n openakc-combined -- apt update
@@ -233,6 +245,9 @@ if [ ${OUTPUT} -eq 0 ]; then
  echo
  exit 1
 fi
+
+#
+# Install OpenAKC packages in our containers
 #
 if [ ${INSTALL} -eq 1 ]; then
  COMBINED=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc-")
@@ -250,6 +265,9 @@ if [ ${INSTALL} -eq 1 ]; then
  echo
  echo
 fi
+
+#
+# Do basic config, and create users ssh keys for testing.
 #
 SERVERIP=$(lxc-attach -n openakc-combined -- ip a show eth0 | grep "inet " | sed -e "s,/, ,g" | awk '{print $2}')
 CLIENTIP=$(lxc-attach -n openakc-client -- ip a show eth0 | grep "inet " | sed -e "s,/, ,g" | awk '{print $2}')
@@ -282,3 +300,7 @@ echo "If you need another attempt to add pass phrases and register for demo user
 echo "you can re-run the build+demo script with the following options"
 echo "\"--norebuild --nocompile --noinstall\""
 echo
+
+#
+# More to come.
+#
