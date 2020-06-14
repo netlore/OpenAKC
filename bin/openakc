@@ -392,8 +392,8 @@ apicall () {
  #
  echo "quit" >&5
  exec 5>&-
- echo
- echo "Note: \"Terminated\" message below is expected"
+# echo
+# echo "Note: \"Terminated\" message below is expected"
  echo
 }
 
@@ -405,7 +405,7 @@ netcall () {
   { sleep 15 ; kill $apipid 2> /dev/null; } & sleepid=$!
   wait $apipid 2> /dev/null
   success=${?}
-  pkill -P $sleepid
+  pkill --signal INT -P $sleepid
   if [ ${success} -ne 0 ]; then
    sleep 5
    reset
