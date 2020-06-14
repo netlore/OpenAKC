@@ -323,8 +323,8 @@ echo "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
 lxc-attach -n openakc-combined -- su - normal-user -c "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
 echo "done"
 echo
-echo "Using openakc setrole to upload the example role configuration"
-echo "lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole"
+echo "Using openakc setrole (as admin-user) to upload the example role configuration"
+echo "openakc setrole app-user@openakc-client /tmp/examplerole"
 echo "NB: use \"openakc editrole app-user@openakc-client\" for interactive configuation"
 echo
 cp -dpR "${SCRIPTPATH}/debian-lxc-build+demo.role_example" "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/examplerole"
@@ -339,4 +339,7 @@ echo "You should now have a working demo/sample install in the containers!"
 echo
 echo "To access the container, type \"lxc-attach -n openakc-combined\""
 echo "then, \"su - normal-user\""
+echo "then, \"ssh app-user@openakc-client\""
+echo
+echo "If everything above worked, you should be able to connect using the \"normal-user\" key (IE: userkey)"
 echo
