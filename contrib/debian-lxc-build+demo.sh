@@ -30,6 +30,7 @@ CONTAINEROPTS="-r focal -a amd64" # Set null to be asked.
 # Functions
 #
 checkpackage () {
+ UPDATE=0
  for i in $@
  do
   echo -n "Checking for installed package, $i - "
@@ -41,6 +42,10 @@ checkpackage () {
    echo "Attempting install. If you do not want to install the package"
    echo "listed above, or do not have root permission, press ^C"
    echo
+   if [ ${UPDATE} -eq 0 ]; then
+    sudo apt update
+    UPDATE=1
+   fi
    sudo apt install $i
    if [ $? -ne 0 ]; then
     echo "Error Installing, Aborted!"
@@ -91,6 +96,11 @@ done
 #
 if [ ! -f /etc/debian_version ]; then
  echo "Sorry, this script requires a debian/ubuntu based distribution. Aborted!"
+ exit 1
+fi
+#
+if [ "x$(id -u)" == "x0" ]; then
+ echo "Sorry, this script must be run as a non-root user. Aborted!"
  exit 1
 fi
 #
