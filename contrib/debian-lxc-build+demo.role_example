@@ -1,0 +1,36 @@
+# Edit this file to control permissions managed by OpenAKC.
+# Rules for app-user@openakc-client.
+#
+# First matched rule will apply.
+# {TYPE} can be user, group or key(ssh key fingerprint)
+# FROM= can be either "any" or a comma separated list of IPs or CIDR subnets
+# DAY= can be either "any" or a comma separated list of 3 letter day codes.
+# TIM= is daily {Start Time},{End Time} 24 hour format, local server time.
+# SHELL= users shell (could make shell "rjoe/rvim filename", or /bin/false).
+# CMD= is a list of permitted commands, "any" or "comma separated list"
+#   NB: 1) if CMD is not "any", it must include scp to allow SCP.
+#       2) if CMD is not "any", sftp-server requires full path.
+#       3) if CMD is exactly "internal-sftp", OpenAKC session will be
+#          bypassed and "internal-sftp" will be forced.  Care! No capability
+#          restrictions can be applied in this mode, and no session
+#          recording will take place other than sftp's own logging.
+#       4) Internal SFTP can be chrooted in sshd_config, while capabilities
+#          can be applied to external sftp Eg (/usr/lib/openssh/sftp-server).
+#       5) if a users calls an absolute path to a binary then CMD must
+#          match the absolute path, otherwise short names are OK.
+#   EG: CMD=scp,ls,uname,dmidecode,/usr/lib/openssh/sftp-server
+# SCP= "sed" expression implementing chroot for scp connections.
+# CAP= list of linux capabilities denied to role (man capabilities).
+# REC= record session log, yes/no
+#
+# Eg: (Warning, TAGs must be CAPITAL, do not use quotes)
+#
+ROLE=2020/01/13 19:17,2025/01/13 20:17,user,normal-user
+DAY=any
+TIM=any
+SHELL=/bin/bash
+CMD=any
+SCP=s,^/,/tmp/,g
+CAP=cap_linux_immutable
+REC=yes
+FROM=any

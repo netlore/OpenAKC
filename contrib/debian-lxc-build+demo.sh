@@ -286,21 +286,57 @@ echo "Creating users on OpenAKC client container (openakc-client) - app-user"
 echo "Use this & root for testing!"
 lxc-attach -n openakc-client -- useradd -c "Application User" -k /etc/skel -s /bin/bash -m app-user
 echo
-echo "Please enter a pass phrase for the ssh private key used by \"admin-user\""
+echo "Creating ssh private key used by \"admin-user\". NOTE: PASSPHRASE WILL BE - \"adminkey\""
 echo "OpenAKC will not accept a key with no pass phrase!"
-lxc-attach -n openakc-combined -- su - admin-user -c ssh-keygen
+echo
+lxc-attach -n openakc-combined -- su - admin-user -c "ssh-keygen -q -N 'adminkey' -f '/home/admin-user/.ssh/id_rsa'"
+echo
+echo "Running \"openakc register\" as user \"admin-user\", please enter the passphrase"
+echo
 lxc-attach -n openakc-combined -- su - admin-user openakc register
 echo
-echo "Please enter a pass phrase for the ssh private key used by \"normal-user\""
+echo "Creating ssh private key used by \"normal-user\". NOTE: PASSPHRASE WILL BE - \"userkey\""
 echo "OpenAKC will not accept a key with no pass phrase!"
-lxc-attach -n openakc-combined -- su - normal-user -c ssh-keygen
+echo
+lxc-attach -n openakc-combined -- su - normal-user -c "ssh-keygen -q -N 'userkey' -f '/home/normal-user/.ssh/id_rsa'"
+echo
+echo "Running \"openakc register\" as user \"normal-user\", please enter the passphrase"
+echo
 lxc-attach -n openakc-combined -- su - normal-user openakc register
 echo
-echo "If you need another attempt to add pass phrases and register for demo users,"
+echo "If you need another attempt to register keys for demo users,"
 echo "you can re-run the build+demo script with the following options"
 echo "\"--norebuild --nocompile --noinstall\""
 echo
-
-#
-# More to come.
-#
+echo "Press ^C now if if you need to try again, or ENTER to continue"
+read i
+echo
+echo "About to copy \"admin-user\"'s openakc public key to the system keys folder, to grant admin privilages"
+echo "Eg: cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/"
+echo
+lxc-attach -n openakc-combined -- cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/
+echo "done!"
+echo
+echo "Attempting to ssh to \"app-user@openakc-client\", this SHOULD FAIL as no access has been configured yet"
+echo
+echo "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
+lxc-attach -n openakc-combined -- su - normal-user -c "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
+echo "done"
+echo
+echo "Using openakc setrole to upload the example role configuration"
+echo "lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole"
+echo "NB: use \"openakc editrole app-user@openakc-client\" for interactive configuation"
+echo
+cp -dpR "${SCRIPTPATH}/debian-lxc-build+demo.role_example" "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/examplerole"
+lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole
+echo "done"
+echo
+echo "You should now connect to the \"openakc-combined\" container,"
+echo "Then verify that the \"normal-user\" account can successfully connect"
+echo "using \"ssh app-user@openakc-client\""
+echo
+echo "You should now have a working demo/sample install in the containers!"
+echo
+echo "To access the container, type \"lxc-attach -n openakc-combined\""
+echo "then, \"su - normal-user\""
+echo
