@@ -56,7 +56,7 @@ checkpackage () {
   fi
  done
 echo 
-if [ ${LXCINS} -eq 1]; then
+if [ ${LXCINS} -eq 1 ]; then
  echo "LXC was installed, we need to wait for container daemons to start..."
  sleep 30
 fi
