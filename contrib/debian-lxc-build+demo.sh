@@ -23,7 +23,7 @@
 # User Config
 #
 SUBID="100000" # Update by adding 100000 if range in use.
-CONTAINEROPTS="-r focal -a amd64" # Set null to be asked.
+CONTAINEROPTS="-r bionic -a amd64" # Set null to be asked.
 #
 
 #
@@ -31,6 +31,7 @@ CONTAINEROPTS="-r focal -a amd64" # Set null to be asked.
 #
 checkpackage () {
  UPDATE=0
+ LXCINS=0
  for i in $@
  do
   echo -n "Checking for installed package, $i - "
@@ -46,6 +47,7 @@ checkpackage () {
     sudo apt update
     UPDATE=1
    fi
+   [ "x${i}" == "xlxc" ]&&LXCINS=1
    sudo apt -y install $i
    if [ $? -ne 0 ]; then
     echo "Error Installing, Aborted!"
@@ -54,6 +56,10 @@ checkpackage () {
   fi
  done
 echo 
+if [ ${LXCINS} -eq 1]; then
+ echo "LXC was installed, we need to wait for container daemons to start..."
+ sleep 30
+fi
 return 0   
 }
 
