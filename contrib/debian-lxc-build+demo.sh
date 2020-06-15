@@ -57,8 +57,14 @@ checkpackage () {
  done
 echo 
 if [ ${LXCINS} -eq 1 ]; then
- echo "LXC was installed, we need to wait for container daemons to start..."
- sleep 30
+ echo "LXC was installed for the first time, in some instances this"
+ echo "will not work properly until you log out and back in!"
+ echo
+ echo "IF YOUR CONTAINERS FAIL TO START, please log out and back in,"
+ echo "then re-run this script."
+ echo
+ echo "Press ENTER to continue, or ^C to abort"
+ read i
 fi
 return 0   
 }
@@ -192,6 +198,8 @@ if [ ${REBUILD} -eq 1 ]; then
  lxc-create -t download -n openakc-combined -- -d ubuntu ${CONTAINEROPTS} > /dev/null
  lxc-create -t download -n openakc-client -- -d ubuntu ${CONTAINEROPTS} > /dev/null
  echo
+ echo "Almost done!.."
+ sleep 3
  lxc-start -n openakc-combined
  lxc-start -n openakc-client
 fi
