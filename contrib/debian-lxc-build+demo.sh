@@ -46,7 +46,7 @@ checkpackage () {
     sudo apt update
     UPDATE=1
    fi
-   sudo apt install $i
+   sudo apt -y install $i
    if [ $? -ne 0 ]; then
     echo "Error Installing, Aborted!"
     return 1
@@ -137,7 +137,7 @@ if [ ! -d "${HOME}/.config/lxc" ]; then
  echo "Setting up unprivileged LXC containers"
  echo
  sudo usermod --add-subuids ${SUBIDS} $(whoami)
- sudo usermod --add-subuids ${SUBIDS} $(whoami)
+ sudo usermod --add-subgids ${SUBIDS} $(whoami)
  #
  mkdir -p "${HOME}/.config"
  mkdir -p "${HOME}/.local/share/lxc"
