@@ -35,6 +35,7 @@ checkpackage () {
  LXCINS=0
  for i in $@
  do
+  printf "${CYAN}"
   echo -n "Checking for installed package, $i - "
   if dpkg -l "$i" 1> /dev/null 2> /dev/null; then
    echo "Found!"
@@ -43,6 +44,7 @@ checkpackage () {
    echo 
    echo "Attempting install using sudo"
    echo
+   printf "${WHITE}"
    if [ ${UPDATE} -eq 0 ]; then
     sudo apt update
     UPDATE=1
@@ -50,12 +52,14 @@ checkpackage () {
    [ "x${i}" == "xlxc" ]&&LXCINS=1
    sudo apt -y install $i
    if [ $? -ne 0 ]; then
+    printf "${CYAN}"
     echo "Error Installing, Aborted!"
     return 1
    fi
   fi
  done
 echo 
+printf "${CYAN}"
 if [ ${LXCINS} -eq 1 ]; then
  echo "LXC was installed for the first time, in some instances this"
  echo "will not work properly until you log out and back in!"
