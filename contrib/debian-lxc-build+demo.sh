@@ -23,7 +23,8 @@
 # User Config
 #
 SUBID="100000" # Update by adding 100000 if range in use.
-CONTAINEROPTS="-r bionic -a amd64" # Set null to be asked.
+CONTAINEROPTS="-d $(lsb_release -si | tr 'A-Z' 'a-z') -r $(lsb_release -sc | tr 'A-Z' 'a-z') -a amd64"
+#CONTAINEROPTS="-d ubuntu -r bionic -a amd64" # Set null to be asked.
 #
 
 #
@@ -209,9 +210,9 @@ if [ ${REBUILD} -eq 1 ]; then
  lxc-destroy -n openakc-combined 2> /dev/null
  lxc-stop -n openakc-client 2> /dev/null
  lxc-destroy -n openakc-client 2> /dev/null
- printf "${CYAN}Installing, please wait...${WHITE}\n"
- lxc-create -t download -n openakc-combined -- -d ubuntu ${CONTAINEROPTS} > /dev/null
- lxc-create -t download -n openakc-client -- -d ubuntu ${CONTAINEROPTS} > /dev/null
+ printf "${CYAN}Installing with options \"${CONTAINEROPTS}\", please wait...${WHITE}\n"
+ lxc-create -t download -n openakc-combined -- ${CONTAINEROPTS} > /dev/null
+ lxc-create -t download -n openakc-client -- ${CONTAINEROPTS} > /dev/null
  echo
  printf "${CYAN}Almost done!...${WHITE}\n"
  echo
