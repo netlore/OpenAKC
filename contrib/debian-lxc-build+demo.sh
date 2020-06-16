@@ -37,7 +37,7 @@ checkpackage () {
  do
   printf "${CYAN}"
   echo -n "Checking for installed package, $i - "
-  if dpkg -l "$i" 1> /dev/null 2> /dev/null; then
+  if dpkg -l "$i" | grep -q "^ii" 1> /dev/null 2> /dev/null; then
    echo "Found!"
   else
    echo "Not Found."
