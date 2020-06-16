@@ -40,8 +40,7 @@ checkpackage () {
   else
    echo "Not Found."
    echo 
-   echo "Attempting install. If you do not want to install the package"
-   echo "listed above, or do not have root permission, press ^C"
+   echo "Attempting install using sudo"
    echo
    if [ ${UPDATE} -eq 0 ]; then
     sudo apt update
@@ -63,8 +62,11 @@ if [ ${LXCINS} -eq 1 ]; then
  echo "IF YOUR CONTAINERS FAIL TO START, please log out and back in,"
  echo "then re-run this script."
  echo
- echo "Press ENTER to continue, or ^C to abort"
- read i
+ if [ ${YES} -eq 0 ]; then
+  echo "Press ENTER to continue, or ^C to abort"
+  read i
+  echo
+ fi
 fi
 return 0   
 }
@@ -72,10 +74,18 @@ return 0
 #
 # Setup & Arguments
 #
-REQUIRED="lxc uidmap bridge-utils debootstrap dnsmasq-base gnupg iproute2 iptables lxc-templates lxcfs openssl rsync"
+REQUIRED="lxc uidmap bridge-utils debootstrap dnsmasq-base gnupg iproute2 iptables lxc-templates lxcfs openssl rsync acl"
 SCRIPT=$(basename "$0")
 SCRIPTPATH=$(dirname "$0")
 SUBIDS="${SUBID}-$((${SUBID}+65536))"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+TITLE='\033[0;37;1m'
+WHITE='\033[0;m'
 REBUILD=1
 YES=0
 COMPILE=1
@@ -106,6 +116,8 @@ while true; do
  shift
 done
 #
+printf "${TITLE}Setting up OpenAKC demo environment, using unprivilaged LXC containers.${CYAN}\n"
+echo
 if [ ! -f /etc/debian_version ]; then
  echo "Sorry, this script requires a debian/ubuntu based distribution. Aborted!"
  exit 1
@@ -148,6 +160,7 @@ if [ ! -d "${HOME}/.config/lxc" ]; then
  fi
  echo "Setting up unprivileged LXC containers"
  echo
+ printf "${WHITE}"
  sudo usermod --add-subuids ${SUBIDS} $(whoami)
  sudo usermod --add-subgids ${SUBIDS} $(whoami)
  #
@@ -158,6 +171,7 @@ if [ ! -d "${HOME}/.config/lxc" ]; then
  setfacl -m u:${SUBID}:x "${HOME}/.local/share"
  setfacl -m u:${SUBID}:x "${HOME}/.local/share/lxc"
  cp -dpR /etc/lxc/ "${HOME}/.config"
+ printf "${CYAN}"
  echo "lxc.idmap = u 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
  echo "lxc.idmap = g 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
  echo -n "Updating /etc/lxc/lxc-usernet, adding - "
@@ -190,15 +204,17 @@ if [ ${REBUILD} -eq 1 ]; then
 #
  echo "Destroying old containers..."
  echo
+ printf "${WHITE}"
  lxc-stop -n openakc-combined 2> /dev/null
  lxc-destroy -n openakc-combined 2> /dev/null
  lxc-stop -n openakc-client 2> /dev/null
  lxc-destroy -n openakc-client 2> /dev/null
- echo "Installing, please wait..."
+ printf "${CYAN}Installing, please wait...${WHITE}\n"
  lxc-create -t download -n openakc-combined -- -d ubuntu ${CONTAINEROPTS} > /dev/null
  lxc-create -t download -n openakc-client -- -d ubuntu ${CONTAINEROPTS} > /dev/null
  echo
- echo "Almost done!.."
+ printf "${CYAN}Almost done!...${WHITE}\n"
+ echo
  sleep 3
  lxc-start -n openakc-combined
  lxc-start -n openakc-client
@@ -208,20 +224,20 @@ echo
 #
 STATE=$(($(lxc-info -n openakc-combined | grep -c RUNNING)+$(lxc-info -n openakc-client | grep -c RUNNING)))
 if [ ${STATE} -ne 2 ]; then
- echo "Containers don't seem to be running properly, please debug.  Exiting!"
+ printf "${CYAN}Containers don't seem to be running properly, please debug.  Exiting!${WHITE}\n"
  echo
  exit 1
 fi
 #
 if [ ${REBUILD} -eq 1 ]; then
- echo "Waiting for new containers to settle"
+ printf "${CYAN}Waiting for new containers to settle${WHITE}\n"
  sleep 10
 fi 
 
 #
 # OK, lets get our containers ready to use, and build our packages
 #
-echo "Setting up containers."
+printf "${CYAN}Setting up containers${WHITE}\n"
 echo
 lxc-attach -n openakc-combined -- apt update
 lxc-attach -n openakc-combined -- apt -q -y dist-upgrade
@@ -233,7 +249,7 @@ lxc-attach -n openakc-client -- apt -q -y dist-upgrade
 lxc-attach -n openakc-client -- apt -q -y install openssh-server
 #
 if [ ! -f "${SCRIPTPATH}/../openakc.spec" ]; then
- echo "Can't find source code, exiting."
+ printf "${CYAN}Can't find source code, exiting.${WHITE}\n"
  echo
  exit 1
 fi
@@ -256,7 +272,7 @@ fi
 #
 if [ -f "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/openakc-server"*.deb ]; then
  OUTPUT=1
- echo "Output packages copied to your home folder - ${HOME}"
+ printf "${CYAN}Output packages copied to your home folder - ${HOME}${WHITE}\n"
  echo
  ls "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/"*.deb
  echo
@@ -265,7 +281,7 @@ if [ -f "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/openakc-se
 fi
 #
 if [ ${OUTPUT} -eq 0 ]; then
- echo "Looks like we failed to create any output, please debug!"
+ printf "${CYAN}Looks like we failed to create any output, please debug!${WHITE}\n"
  echo
  exit 1
 fi
@@ -276,13 +292,13 @@ fi
 if [ ${INSTALL} -eq 1 ]; then
  COMBINED=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc-")
  CLIENT=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc_")
- echo "Installing packages in container \"openakc-combined\"."
+ printf "${CYAN}Installing packages in container \"openakc-combined\"${WHITE}\n"
  echo
  lxc-attach -n openakc-combined -- dpkg -P openakc-tools openakc-server 2> /dev/null
  lxc-attach -n openakc-combined -- dpkg -i ${COMBINED}
  echo
  echo
- echo "Installing packages in container \"openakc-client\"."
+ printf "${CYAN}Installing packages in container \"openakc-client\"${WHITE}\n"
  echo
  lxc-attach -n openakc-client -- dpkg -P openakc 2> /dev/null
  lxc-attach -n openakc-client -- dpkg -i ${CLIENT}
@@ -293,40 +309,55 @@ fi
 #
 # Do basic config, and create users ssh keys for testing.
 #
+printf "${CYAN}"
 SERVERIP=$(lxc-attach -n openakc-combined -- ip a show eth0 | grep "inet " | sed -e "s,/, ,g" | awk '{print $2}')
 CLIENTIP=$(lxc-attach -n openakc-client -- ip a show eth0 | grep "inet " | sed -e "s,/, ,g" | awk '{print $2}')
 echo "${CLIENTIP}%openakc-client" | tr '%' '\t' > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
 echo ${SERVERIP}%openakc-combined openakc01 openakc02 | tr '%' '\t' >> "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
+printf "${WHITE}"
 cat "${HOME}/.local/share/lxc/openakc-combined/rootfs/etc/hosts" | grep -v openakc >> "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
 cp "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts" "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/hosts"
 lxc-attach -n openakc-combined -- cp /tmp/hosts /etc/hosts
 lxc-attach -n openakc-client -- cp /tmp/hosts /etc/hosts
+printf "${CYAN}"
 echo "Creating users on OpenAKC combined container (openakc-combined)- admin-user & normal-user"
 echo "Use these for testing!"
+printf "${WHITE}"
 lxc-attach -n openakc-combined -- useradd -c "OpenAKC Admin" -k /etc/skel -s /bin/bash -m admin-user
 lxc-attach -n openakc-combined -- useradd -c "Standard User" -k /etc/skel -s /bin/bash -m normal-user
+printf "${CYAN}"
 echo
 echo "Creating users on OpenAKC client container (openakc-client) - app-user"
 echo "Use this & root for testing!"
+printf "${WHITE}"
 lxc-attach -n openakc-client -- useradd -c "Application User" -k /etc/skel -s /bin/bash -m app-user
+printf "${CYAN}"
 echo
-echo "Creating ssh private key used by \"admin-user\". NOTE: PASSPHRASE WILL BE - \"adminkey\""
+printf "Creating ssh private key used by \"admin-user\". ${RED}NOTE: ENTER PASSPHRASE - ${TITLE}\"adminkey\"${CYAN}\n"
 echo "OpenAKC will not accept a key with no pass phrase!"
 echo
+printf "${WHITE}"
 lxc-attach -n openakc-combined -- su - admin-user -c "ssh-keygen -q -N 'adminkey' -f '/home/admin-user/.ssh/id_rsa'"
+printf "${CYAN}"
 echo
 echo "Running \"openakc register\" as user \"admin-user\", please enter the passphrase"
 echo
+printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - admin-user openakc register
+printf "${CYAN}"
 echo
-echo "Creating ssh private key used by \"normal-user\". NOTE: PASSPHRASE WILL BE - \"userkey\""
+printf "Creating ssh private key used by \"normal-user\". ${RED}NOTE: ENTER PASSPHRASE - ${TITLE}\"userkey\"${CYAN}\n"
 echo "OpenAKC will not accept a key with no pass phrase!"
 echo
+printf "${WHITE}"
 lxc-attach -n openakc-combined -- su - normal-user -c "ssh-keygen -q -N 'userkey' -f '/home/normal-user/.ssh/id_rsa'"
+printf "${CYAN}"
 echo
 echo "Running \"openakc register\" as user \"normal-user\", please enter the passphrase"
 echo
+printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - normal-user openakc register
+printf "${CYAN}"
 echo
 echo "If you need another attempt to register keys for demo users,"
 echo "you can re-run the build+demo script with the following options"
@@ -338,21 +369,28 @@ echo
 echo "About to copy \"admin-user\"'s openakc public key to the system keys folder, to grant admin privilages"
 echo "Eg: cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/"
 echo
+printf "${WHITE}"
 lxc-attach -n openakc-combined -- cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/
+printf "${CYAN}"
 echo "done!"
 echo
 echo "Attempting to ssh to \"app-user@openakc-client\", this SHOULD FAIL as no access has been configured yet"
 echo
+printf "${WHITE}"
 echo "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
 lxc-attach -n openakc-combined -- su - normal-user -c "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
+printf "${CYAN}"
 echo "done"
 echo
 echo "Using openakc setrole (as admin-user) to upload the example role configuration"
 echo "openakc setrole app-user@openakc-client /tmp/examplerole"
 echo "NB: use \"openakc editrole app-user@openakc-client\" for interactive configuation"
 echo
+printf "${WHITE}"
 cp -dpR "${SCRIPTPATH}/debian-lxc-build+demo.role_example" "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/examplerole"
+printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole
+printf "${CYAN}"
 echo "done"
 echo
 echo "You should now connect to the \"openakc-combined\" container,"
@@ -365,5 +403,6 @@ echo "To access the container, type \"lxc-attach -n openakc-combined\""
 echo "then, \"su - normal-user\""
 echo "then, \"ssh app-user@openakc-client\""
 echo
-echo "If everything above worked, you should be able to connect using the \"normal-user\" key (IE: userkey)"
+echo "If everything above worked, you should be able to connect using the \"normal-user\" key (Passphrase: userkey)"
 echo
+printf "${WHITE}"
