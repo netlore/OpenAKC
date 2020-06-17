@@ -61,17 +61,17 @@ checkpackage () {
 echo 
 printf "${CYAN}"
 if [ ${LXCINS} -eq 1 ]; then
- echo "LXC was installed for the first time, in some instances this"
- echo "will not work properly until you log out and back in!"
- echo
- echo "IF YOUR CONTAINERS FAIL TO START, please log out and back in,"
- echo "then re-run this script."
- echo
- if [ ${YES} -eq 0 ]; then
-  echo "Press ENTER to continue, or ^C to abort"
-  read i
+ echo "We installed some components which likely require that log out and back in"
+ echo -n "before continueing. "
+ if [ -f /var/run/reboot-required ]; then
+  echo "Please also consider rebooting before continueing."
+ else
   echo
  fi
+ echo
+ echo "Aborting, please re-un this script once you are ready."
+ echo
+ exit 1
 fi
 return 0   
 }
