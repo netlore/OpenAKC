@@ -207,7 +207,7 @@ echo "to grant access"
 echo
 if [ ${REBUILD} -eq 1 ]; then
  if [ ${YES} -eq 0 ]; then
-  echo "The next step will destroy your test containers and rebuild!"
+  echo "The next step will destroy the test containers and rebuild!"
   echo
   echo "Press ENTER to rebuild test containers, or ^C to abort"
   read i
@@ -384,7 +384,7 @@ echo
 printf "${WHITE}"
 lxc-attach -n openakc-combined -- cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/
 printf "${CYAN}"
-echo "done!"
+echo "Done!"
 echo
 echo "Attempting to ssh to \"app-user@openakc-client\", this SHOULD FAIL as no access has been configured yet"
 echo
@@ -392,7 +392,8 @@ printf "${WHITE}"
 echo "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
 lxc-attach -n openakc-combined -- su - normal-user -c "ssh -o Batchmode=true -o StrictHostKeyChecking=no app-user@openakc-client"
 printf "${CYAN}"
-echo "done"
+echo
+echo "Done!"
 echo
 echo "Using openakc setrole (as admin-user) to upload the example role configuration"
 echo "openakc setrole app-user@openakc-client /tmp/examplerole"
@@ -403,7 +404,7 @@ cp -dpR "${SCRIPTPATH}/debian-lxc-build+demo.role_example" "${HOME}/.local/share
 printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole
 printf "${CYAN}"
-echo "done"
+echo "Done!"
 echo
 echo "You should now connect to the \"openakc-combined\" container,"
 echo "Then verify that the \"normal-user\" account can successfully connect"
