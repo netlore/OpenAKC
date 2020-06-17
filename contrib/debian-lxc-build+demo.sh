@@ -61,8 +61,8 @@ checkpackage () {
 echo 
 printf "${CYAN}"
 if [ ${LXCINS} -eq 1 ]; then
- echo "We installed some components which likely require that log out and back in"
- echo -n "before continueing. "
+ echo "We installed some components which likely require that you log out"
+ echo -n "and back in before continueing. "
  if [ -f /var/run/reboot-required ]; then
   echo "Please also consider rebooting before continueing."
  else
