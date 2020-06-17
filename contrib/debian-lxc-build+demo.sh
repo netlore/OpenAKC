@@ -71,6 +71,7 @@ if [ ${LXCINS} -eq 1 ]; then
  echo
  echo "Aborting, please re-un this script once you are ready."
  echo
+ printf "${WHITE}"
  exit 1
 fi
 return 0   
@@ -125,11 +126,15 @@ printf "${TITLE}Setting up OpenAKC demo environment, using unprivilaged LXC cont
 echo
 if [ ! -f /etc/debian_version ]; then
  echo "Sorry, this script requires a debian/ubuntu based distribution. Aborted!"
+ echo
+ printf "${WHITE}"
  exit 1
 fi
 #
 if [ "x$(id -u)" == "x0" ]; then
  echo "Sorry, this script must be run as a non-root user. Aborted!"
+ echo
+ printf "${WHITE}"
  exit 1
 fi
 #
@@ -139,12 +144,14 @@ if checkpackage ${REQUIRED}; then
 else
  echo "Components missing, cannot continue."
  echo
+ printf "${WHITE}"
  exit 1
 fi
 #
 if [ ! -d "${HOME}" ]; then
  echo "\$HOME appears to be invalid, Aborting!"
  echo
+ printf "${WHITE}"
  exit 1
 fi
 #
