@@ -159,10 +159,15 @@ fi
 #
 if [ "x$(lsb_release -si)" == "xDebian" ]; then
  sudocheck
- echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
+ if [ $(cat /proc/sys/kernel/unprivileged_userns_clone) -eq 0 ]; then
+  printf "${CYAN}Writing To /etc/sysctl.d/00-local-userns.conf${WHITE}\n"
+  echo "kernel.unprivileged_userns_clone = 1" | sudo tee /etc/sysctl.d/00-local-userns.conf
+  echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
+ fi
 fi
 #
 if [ "x$(id -u)" == "x0" ]; then
+ printf "${CYAN}"
  echo "Sorry, this script must be run as a non-root user. Aborted!"
  echo
  printf "${WHITE}"
@@ -252,6 +257,8 @@ EOF
  printf "${CYAN}"
  echo "lxc.idmap = u 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
  echo "lxc.idmap = g 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
+# sed -i "s,lxc.apparmor.profile = generated,lxc.apparmor.profile = lxc-container-default-cgns,g" "${HOME}/.config/lxc/default.conf"
+ sed -i "s,^lxc.apparmor.profile.*,lxc.apparmor.profile = unconfined,g" "${HOME}/.config/lxc/default.conf"
  echo -n "Updating /etc/lxc/lxc-usernet, adding - "
  echo "$(whoami) veth lxcbr0 10" | sudo tee /etc/lxc/lxc-usernet
  echo
