@@ -170,6 +170,7 @@ if [ "x$(id -u)" == "x0" ]; then
 fi
 #
 if checkpackage ${REQUIRED}; then
+ printf "${CYAN}"
  echo "All Components found, continueing."
  echo
 else
@@ -180,6 +181,7 @@ else
 fi
 #
 if [ ! -d "${HOME}" ]; then
+ printf "${CYAN}"
  echo "\$HOME appears to be invalid, Aborting!"
  echo
  printf "${WHITE}"
@@ -191,6 +193,7 @@ fi
 # Proceed with Configuring unprivilaged LXC containers
 #
 if [ ! -d "${HOME}/.config/lxc" ]; then
+ printf "${CYAN}"
  echo "Can't find unprivileged container setup"
  echo "this will add subuid/gids ${SUBIDS} to your account"
  echo "if these id's are in use, please update SUBIDS in script config"
@@ -224,7 +227,7 @@ EOF
   sudo systemctl start lxc-net
   #
   sudo cp /etc/lxc/default.conf /etc/lxc/default.conf.backup
-  sudo cp /tmp/lxc-net.$$ /etc/default/lxc.net
+  sudo cp /tmp/lxc-net.$$ /etc/default/lxc-net
   rm /tmp/lxc-net.$$
   sudo sed -i "/^lxc.net.0/d" /etc/lxc/default.conf
   cp /etc/lxc/default.conf /tmp/default.conf.$$
