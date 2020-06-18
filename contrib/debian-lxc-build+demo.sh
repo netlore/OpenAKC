@@ -32,7 +32,7 @@ CONTAINEROPTS="-d $(lsb_release -si | tr 'A-Z' 'a-z') -r $(lsb_release -sc | tr 
 #
 checkpackage () {
  UPDATE=0
- LXCINS=0
+ RELOG=0
  for i in $@
  do
   printf "${CYAN}"
@@ -50,7 +50,7 @@ checkpackage () {
     sudo apt update
     UPDATE=1
    fi
-   [ "x${i}" == "xlxc" ]&&LXCINS=1
+   [ "x${i}" == "xlxc" ]&&RELOG=1
    sudo apt -y install $i
    if [ $? -ne 0 ]; then
     printf "${CYAN}"
@@ -60,21 +60,7 @@ checkpackage () {
   fi
  done
 echo 
-printf "${CYAN}"
-if [ ${LXCINS} -eq 1 ]; then
- echo "We installed some components which likely require that you log out"
- echo -n "and back in before continueing. "
- if [ -f /var/run/reboot-required ]; then
-  echo "Please also consider rebooting before continueing."
- else
-  echo
- fi
- echo
- echo "Aborting, please re-un this script once you are ready."
- echo
- printf "${WHITE}"
- exit 1
-fi
+[ -f /var/run/reboot-required ]&&REBOOT=1
 return 0   
 }
 
@@ -88,6 +74,27 @@ sudocheck () {
  fi
 }
 
+useraction () {
+ printf "${CYAN}"
+ if [ ${REBOOT} -eq 0 ]&&[ ${RELOG} -eq 1 ]; then
+  echo "We installed some components which likely require that you log out"
+  echo "and back in before continueing."
+  echo
+  echo "Aborting, please re-un this script once you are ready."
+  echo
+  printf "${WHITE}"
+  exit 1
+ elif [ ${REBOOT} -eq 1 ]; then
+  echo "We installed some components or applied configuration which require"
+  echo "that you REBOOT before continueing."
+  echo
+  echo "Aborting, please re-un this script once you are ready."
+  echo
+  printf "${WHITE}"
+  exit 1
+ fi
+}
+
 
 #
 # Setup & Arguments
@@ -98,6 +105,8 @@ SCRIPTPATH=$(dirname "$0")
 SUBIDS="${SUBID}-$((${SUBID}+65536))"
 CONTAINEROPTS=$(echo $CONTAINEROPTS | sed -e "s,-d pop,-d ubuntu,g" | sed -e "s,-d linuxmint,-d mint,g")
 DNSFIX=0
+REBOOT=0
+RELOG
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -149,7 +158,6 @@ if [ ! -f /etc/debian_version ]; then
 fi
 #
 if [ "x$(lsb_release -si)" == "xDebian" ]; then
- DNSFIX=1
  sudocheck
  echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
 fi
@@ -200,6 +208,37 @@ if [ ! -d "${HOME}/.config/lxc" ]; then
  sudo usermod --add-subuids ${SUBIDS} $(whoami)
  sudo usermod --add-subgids ${SUBIDS} $(whoami)
  #
+ if [ ! -f /etc/default/lxc-net ]; then
+  cat <<EOF > /tmp/lxc-net.$$
+USE_LXC_BRIDGE="true"
+LXC_BRIDGE="lxcbr0"
+LXC_ADDR="10.0.7.1"
+LXC_NETMASK="255.255.255.0"
+LXC_NETWORK="10.0.7.0/24"
+LXC_DHCP_RANGE="10.0.7.2,10.0.7.254"
+LXC_DHCP_MAX="253"
+LXC_DHCP_CONFILE=""
+LXC_DOMAIN=""
+EOF
+  sudo systemctl enable lxc-net
+  sudo systemctl start lxc-net
+  #
+  sudo cp /etc/lxc/default.conf /etc/lxc/default.conf.backup
+  sudo cp /tmp/lxc-net.$$ /etc/default/lxc.net
+  rm /tmp/lxc-net.$$
+  sudo sed -i "/^lxc.net.0/d" /etc/lxc/default.conf
+  cp /etc/lxc/default.conf /tmp/default.conf.$$
+  cat <<EOF >> /tmp/default.conf.$$
+lxc.net.0.type = veth
+lxc.net.0.link = lxcbr0
+lxc.net.0.flags = up
+lxc.net.0.hwaddr = 00:16:3e:xx:xx:xx
+EOF
+  sudo cp /tmp/default.conf.$$ /etc/lxc/default.conf
+  rm /tmp/default.conf.$$
+  REBOOT=1
+ fi
+ #
  mkdir -p "${HOME}/.config"
  mkdir -p "${HOME}/.local/share/lxc"
  mkdir -p "${HOME}/.cache/lxc" 
@@ -213,8 +252,10 @@ if [ ! -d "${HOME}/.config/lxc" ]; then
  echo -n "Updating /etc/lxc/lxc-usernet, adding - "
  echo "$(whoami) veth lxcbr0 10" | sudo tee /etc/lxc/lxc-usernet
  echo
+ useraction
 else
  echo "Looks like unprivileged LXC containers are set up, assuming it works!"
+ echo "If containers fails to work, you will need to fix it before continuing"
  echo
 fi
 
@@ -275,6 +316,13 @@ fi
 #
 printf "${CYAN}Setting up containers${WHITE}\n"
 echo
+if [ ${DNSFIX} -eq 1 ]; then
+ echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/resolv.conf"
+ echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/resolv.conf"
+ lxc-attach -n openakc-combined -- cp /tmp/resolv.conf /etc/resolv.conf
+ lxc-attach -n openakc-client -- cp /tmp/resolv.conf /etc/resolv.conf
+fi
+#
 lxc-attach -n openakc-combined -- apt update
 lxc-attach -n openakc-combined -- apt -q -y dist-upgrade
 lxc-attach -n openakc-combined -- apt -q -y install build-essential unzip libcap-dev libssl-dev
@@ -353,13 +401,6 @@ echo ${SERVERIP}%openakc-combined openakc01 openakc02 | tr '%' '\t' >> "${HOME}/
 printf "${WHITE}"
 cat "${HOME}/.local/share/lxc/openakc-combined/rootfs/etc/hosts" | grep -v openakc >> "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
 cp "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts" "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/hosts"
-#
-if [ ${DNSFIX} -eq 1 ]; then
- echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/resolv.conf"
- echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/resolv.conf"
- lxc-attach -n openakc-combined -- cp /tmp/resolv.conf /etc/resolv.conf
- lxc-attach -n openakc-client -- cp /tmp/resolv.conf /etc/resolv.conf
-fi
 #
 lxc-attach -n openakc-combined -- cp /tmp/hosts /etc/hosts
 lxc-attach -n openakc-client -- cp /tmp/hosts /etc/hosts
