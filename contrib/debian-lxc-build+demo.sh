@@ -46,6 +46,7 @@ checkpackage () {
    echo
    printf "${WHITE}"
    if [ ${UPDATE} -eq 0 ]; then
+    sudocheck
     sudo apt update
     UPDATE=1
    fi
@@ -77,6 +78,17 @@ fi
 return 0   
 }
 
+sudocheck () {
+ if ! sudo -V 1> /dev/null 2> /dev/null; then
+  printf "${CYAN}Sorry, we need to use sudo to complete the script, but it is not found. Aborted!${WHITE}\n"
+  exit 1
+  return 1
+ else
+  return 0
+ fi
+}
+
+
 #
 # Setup & Arguments
 #
@@ -84,6 +96,8 @@ REQUIRED="lxc uidmap bridge-utils debootstrap dnsmasq-base gnupg iproute2 iptabl
 SCRIPT=$(basename "$0")
 SCRIPTPATH=$(dirname "$0")
 SUBIDS="${SUBID}-$((${SUBID}+65536))"
+CONTAINEROPTS=$(echo $CONTAINEROPTS | sed -e "s,-d pop,-d ubuntu,g" | sed -e "s,-d linuxmint,-d mint,g")
+DNSFIX=0
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -114,6 +128,9 @@ while true; do
   --noinstall) 
    INSTALL=0
    ;;
+  --dnsfix)
+   DNSFIX=1
+   ;;
   *)
    echo "Usage: $0 [--norebuild] [--yes]"
    exit 1
@@ -129,6 +146,12 @@ if [ ! -f /etc/debian_version ]; then
  echo
  printf "${WHITE}"
  exit 1
+fi
+#
+if [ "x$(lsb_release -si)" == "xDebian" ]; then
+ DNSFIX=1
+ sudocheck
+ echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
 fi
 #
 if [ "x$(id -u)" == "x0" ]; then
@@ -173,6 +196,7 @@ if [ ! -d "${HOME}/.config/lxc" ]; then
  echo "Setting up unprivileged LXC containers"
  echo
  printf "${WHITE}"
+ sudocheck
  sudo usermod --add-subuids ${SUBIDS} $(whoami)
  sudo usermod --add-subgids ${SUBIDS} $(whoami)
  #
@@ -329,20 +353,31 @@ echo ${SERVERIP}%openakc-combined openakc01 openakc02 | tr '%' '\t' >> "${HOME}/
 printf "${WHITE}"
 cat "${HOME}/.local/share/lxc/openakc-combined/rootfs/etc/hosts" | grep -v openakc >> "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
 cp "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts" "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/hosts"
+#
+if [ ${DNSFIX} -eq 1 ]; then
+ echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/resolv.conf"
+ echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/resolv.conf"
+ lxc-attach -n openakc-combined -- cp /tmp/resolv.conf /etc/resolv.conf
+ lxc-attach -n openakc-client -- cp /tmp/resolv.conf /etc/resolv.conf
+fi
+#
 lxc-attach -n openakc-combined -- cp /tmp/hosts /etc/hosts
 lxc-attach -n openakc-client -- cp /tmp/hosts /etc/hosts
+#
 printf "${CYAN}"
 echo "Creating users on OpenAKC combined container (openakc-combined)- admin-user & normal-user"
 echo "Use these for testing!"
 printf "${WHITE}"
 lxc-attach -n openakc-combined -- useradd -c "OpenAKC Admin" -k /etc/skel -s /bin/bash -m admin-user
 lxc-attach -n openakc-combined -- useradd -c "Standard User" -k /etc/skel -s /bin/bash -m normal-user
+#
 printf "${CYAN}"
 echo
 echo "Creating users on OpenAKC client container (openakc-client) - app-user"
 echo "Use this & root for testing!"
 printf "${WHITE}"
 lxc-attach -n openakc-client -- useradd -c "Application User" -k /etc/skel -s /bin/bash -m app-user
+#
 printf "${CYAN}"
 echo
 printf "Creating ssh private key used by \"admin-user\". ${RED}NOTE: ENTER PASSPHRASE - ${TITLE}\"adminkey\"${CYAN}\n"
@@ -356,6 +391,7 @@ echo "Running \"openakc register\" as user \"admin-user\", please enter the pass
 echo
 printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - admin-user openakc register
+#
 printf "${CYAN}"
 echo
 printf "Creating ssh private key used by \"normal-user\". ${RED}NOTE: ENTER PASSPHRASE - ${TITLE}\"userkey\"${CYAN}\n"
@@ -369,6 +405,7 @@ echo "Running \"openakc register\" as user \"normal-user\", please enter the pas
 echo
 printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - normal-user openakc register
+#
 printf "${CYAN}"
 echo
 echo "If you need another attempt to register keys for demo users,"
@@ -377,6 +414,7 @@ echo "\"--norebuild --nocompile --noinstall\""
 echo
 echo "Press ^C now if if you need to try again, or ENTER to continue"
 read i
+#
 echo
 echo "About to copy \"admin-user\"'s openakc public key to the system keys folder, to grant admin privilages"
 echo "Eg: cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/"
@@ -385,6 +423,7 @@ printf "${WHITE}"
 lxc-attach -n openakc-combined -- cp /home/admin-user/.openakc/openakc-user-client-admin-user-pubkey.pem /var/lib/openakc/keys/
 printf "${CYAN}"
 echo "Done!"
+#
 echo
 echo "Attempting to ssh to \"app-user@openakc-client\", this SHOULD FAIL as no access has been configured yet"
 echo
@@ -394,6 +433,7 @@ lxc-attach -n openakc-combined -- su - normal-user -c "ssh -o Batchmode=true -o 
 printf "${CYAN}"
 echo
 echo "Done!"
+#
 echo
 echo "Using openakc setrole (as admin-user) to upload the example role configuration"
 echo "openakc setrole app-user@openakc-client /tmp/examplerole"
@@ -405,6 +445,7 @@ printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole
 printf "${CYAN}"
 echo "Done!"
+#
 echo
 echo "You should now connect to the \"openakc-combined\" container,"
 echo "Then verify that the \"normal-user\" account can successfully connect"
