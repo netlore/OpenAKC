@@ -4,14 +4,29 @@ test/demo environment for the user to experiment with.... setting up ssh
 keys, registering them, and setting a basic role configuration to allow a
 test user to gain access to an account.
 
+WARNING!!! - Ultimately this script has turned out to be mostly about making
+sure Unprivilaged LXC containers work on your system. It turns out that this
+is a much harder task than installing OpenAKC.  We do our best to configure
+everything for you, however if it's already configuredm simply assume it works
+rather than change existing config.  Please keep this in mind as you
+proceed.  If you are unsure, please consider following the "quickstart"
+guide instead.
+
+This has been tested on vanilla installs of Debian 10 (Buster), Ubuntu 18.04
+(Bionic), Ubuntu 20.04 (Focal) - including PopOS.
+
+
 --yes - Don't ask questions and proceed
 (will still stop if root password is needed)
+
+--dnsfix - will override container dns config with google DNS servers.
 
 --norebuild - Don't rebuild containers.
 
 --nocompile - Dont compile packages (only useful for debugging etc.)
 
 --noinstall - Don't install packages (only useful for debugging etc.)
+
 
 
 Enjoy.
