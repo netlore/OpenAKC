@@ -106,7 +106,6 @@ SUBIDS="${SUBID}-$((${SUBID}+65536))"
 CONTAINEROPTS=$(echo $CONTAINEROPTS | sed -e "s,-d pop,-d ubuntu,g" | sed -e "s,-d linuxmint,-d mint,g")
 DNSFIX=0
 REBOOT=0
-RELOG
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -336,11 +335,11 @@ fi
 lxc-attach -n openakc-combined -- apt update
 lxc-attach -n openakc-combined -- apt -q -y dist-upgrade
 lxc-attach -n openakc-combined -- apt -q -y install build-essential unzip libcap-dev libssl-dev
-lxc-attach -n openakc-combined -- apt -q -y install xinetd
+lxc-attach -n openakc-combined -- apt -q -y install xinetd openssl sudo
 #
 lxc-attach -n openakc-client -- apt update
 lxc-attach -n openakc-client -- apt -q -y dist-upgrade
-lxc-attach -n openakc-client -- apt -q -y install openssh-server
+lxc-attach -n openakc-client -- apt -q -y install openssh-server openssl sudo
 #
 if [ ! -f "${SCRIPTPATH}/../openakc.spec" ]; then
  printf "${CYAN}Can't find source code, exiting.${WHITE}\n"
@@ -384,18 +383,18 @@ fi
 # Install OpenAKC packages in our containers
 #
 if [ ${INSTALL} -eq 1 ]; then
- COMBINED=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc-")
- CLIENT=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc_")
+ COMBINED=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc-" | tr '\n' ' ')
+ CLIENT=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc_" | tr '\n' ' ')
  printf "${CYAN}Installing packages in container \"openakc-combined\"${WHITE}\n"
  echo
- lxc-attach -n openakc-combined -- dpkg -P openakc-tools openakc-server 2> /dev/null
- lxc-attach -n openakc-combined -- dpkg -i ${COMBINED}
+ lxc-attach -n openakc-combined -- su - -c "dpkg -P openakc-tools openakc-server" 2> /dev/null
+ lxc-attach -n openakc-combined -- su - -c "dpkg -i ${COMBINED}"
  echo
  echo
  printf "${CYAN}Installing packages in container \"openakc-client\"${WHITE}\n"
  echo
- lxc-attach -n openakc-client -- dpkg -P openakc 2> /dev/null
- lxc-attach -n openakc-client -- dpkg -i ${CLIENT}
+ lxc-attach -n openakc-client -- su - -c "dpkg -P openakc" 2> /dev/null
+ lxc-attach -n openakc-client -- su - -c "dpkg -i ${CLIENT}"
  echo
  echo
 fi
@@ -419,15 +418,15 @@ printf "${CYAN}"
 echo "Creating users on OpenAKC combined container (openakc-combined)- admin-user & normal-user"
 echo "Use these for testing!"
 printf "${WHITE}"
-lxc-attach -n openakc-combined -- useradd -c "OpenAKC Admin" -k /etc/skel -s /bin/bash -m admin-user
-lxc-attach -n openakc-combined -- useradd -c "Standard User" -k /etc/skel -s /bin/bash -m normal-user
+lxc-attach -n openakc-combined -- su - -c "useradd -c \"OpenAKC Admin\" -k /etc/skel -s /bin/bash -m admin-user"
+lxc-attach -n openakc-combined -- su - -c "useradd -c \"Standard User\" -k /etc/skel -s /bin/bash -m normal-user"
 #
 printf "${CYAN}"
 echo
 echo "Creating users on OpenAKC client container (openakc-client) - app-user"
 echo "Use this & root for testing!"
 printf "${WHITE}"
-lxc-attach -n openakc-client -- useradd -c "Application User" -k /etc/skel -s /bin/bash -m app-user
+lxc-attach -n openakc-client -- su - -c "useradd -c \"Application User\" -k /etc/skel -s /bin/bash -m app-user"
 #
 printf "${CYAN}"
 echo
@@ -508,6 +507,6 @@ echo "To access the container, type \"lxc-attach -n openakc-combined\""
 echo "then, \"su - normal-user\""
 echo "then, \"ssh app-user@openakc-client\""
 echo
-echo "If everything above worked, you should be able to connect using the \"normal-user\" key (Passphrase: userkey)"
+printf "If everything above worked, you should be able to connect using the ${TITLE}\"normal-user\"${CYAN} key (Use passphrase: ${TITLE}\"userkey\"${CYAN})\n"
 echo
 printf "${WHITE}"
