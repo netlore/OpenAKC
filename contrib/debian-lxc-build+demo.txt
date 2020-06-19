@@ -1,20 +1,39 @@
-This script sets up unprivilaged lxc for the current user, builds 2
-containers, and uses them to build the debian packages, and install a
-test/demo environment for the user to experiment with.... setting up ssh
+This script is designed to work on "debian/ubuntu" based systems, and
+derivatives.  It sets up unprivilaged lxc for the current user, builds 2
+containers and uses them to build/install the debian packages for OpenAKC
+in test/demo environment for the user to experiment with.... setting up ssh
 keys, registering them, and setting a basic role configuration to allow a
 test user to gain access to an account.
+
+Once the build is done, ssh keys will be automatically created for 2 test
+users "admin-user" and "normal-user", but as part of the demo, you need to
+enter these  to "register" with OpenAKC.  Note that you must enter the 2
+(different) keys as instructed for the demo to work.
 
 WARNING!!! - Ultimately this script has turned out to be mostly about making
 sure Unprivilaged LXC containers work on your system. It turns out that this
 is a much harder task than installing OpenAKC.  We do our best to configure
-everything for you, however if it's already configuredm simply assume it works
-rather than change existing config.  Please keep this in mind as you
+everything for you, however if it's already configured we simply assume it
+works rather than change existing config.  Please keep this in mind as you
 proceed.  If you are unsure, please consider following the "quickstart"
 guide instead.
 
-This has been tested on vanilla installs of Debian 10 (Buster), Ubuntu 18.04
+Note that some trivial errors which do not impact the setup are not
+deliberately hidden so that any more serious issues are visible, they can be
+safely ignored.  For example:-
+
+"sudo: setrlimit(RLIMIT_CORE): Operation not permitted" - This is caused by
+a bug in "sudo", which is being fixed at the time or writing.
+&
+"mesg: ttyname failed: No such device" - this is generated because roots
+environment on some distributions runs the "mesg" tool to update the
+environment and this may complain if there is no TTY to write messages to,
+as when automating installation.
+
+This script has been tested on vanilla installs of Debian 10 (Buster), Ubuntu 18.04
 (Bionic), Ubuntu 20.04 (Focal) - including PopOS.
 
+Command line options are:-
 
 --yes - Don't ask questions and proceed
 (will still stop if root password is needed)
