@@ -16,7 +16,9 @@ is a much harder task than installing OpenAKC.  We do our best to configure
 everything for you, however if it's already configured we simply assume it
 works rather than change existing config.  Please keep this in mind as you
 proceed.  If you are unsure, please consider following the "quickstart"
-guide instead.
+guide instead.  It's also worth noting that some of the pre-built container
+images we rely on, particularly the more obscure ones are not always
+working, YMMV!
 
 Note that some trivial errors which do not impact the setup are not
 deliberately hidden so that any more serious issues are visible, they can be

@@ -317,21 +317,26 @@ fi
 #
 if [ ${REBUILD} -eq 1 ]; then
  printf "${CYAN}Waiting for new containers to settle${WHITE}\n"
+ echo
  sleep 10
 fi 
 
 #
 # OK, lets get our containers ready to use, and build our packages
 #
-printf "${CYAN}Setting up containers${WHITE}\n"
-echo
 if [ ${DNSFIX} -eq 1 ]; then
+ printf "${CYAN}Applying DNS fix to containers${WHITE}\n"
+ echo
  echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/resolv.conf"
  echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/resolv.conf"
+ lxc-attach -n openakc-combined -- rm /etc/resolv.conf 2> /dev/null
+ lxc-attach -n openakc-client -- rm /etc/resolv.conf 2> /dev/null
  lxc-attach -n openakc-combined -- cp /tmp/resolv.conf /etc/resolv.conf
  lxc-attach -n openakc-client -- cp /tmp/resolv.conf /etc/resolv.conf
 fi
 #
+printf "${CYAN}Setting up containers${WHITE}\n"
+echo
 lxc-attach -n openakc-combined -- apt update
 lxc-attach -n openakc-combined -- apt -q -y dist-upgrade
 lxc-attach -n openakc-combined -- apt -q -y install build-essential unzip libcap-dev libssl-dev
