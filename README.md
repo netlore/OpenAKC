@@ -53,7 +53,7 @@ You no-longer have to require users to log in to servers with personal accounts 
 
 WARNING: This is pre-release software and although it is functional, plenty of work remains to ensure it is robust and secure.
 
-Documentation is still being created, but you may like to see an [impromptu demo video] [demo].
+Documentation is still being created, but you may like to see an [impromptu demo video][demo].
 
 Any contributions of in regard to documentation, code or suggestions would be greatly appreciated.
 
