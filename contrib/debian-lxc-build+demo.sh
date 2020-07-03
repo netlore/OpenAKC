@@ -42,16 +42,24 @@ checkpackage () {
   else
    echo "Not Found."
    echo 
-   echo "Attempting install using sudo"
+   echo "Attempting install packages"
    echo
    printf "${WHITE}"
    if [ ${UPDATE} -eq 0 ]; then
-    sudocheck
-    sudo apt update
+    if [ "x${MODE}" == "xunprivilaged" ]; then
+     sudocheck
+     sudo apt update
+    else
+     apt update
+    fi    
     UPDATE=1
    fi
    [ "x${i}" == "xlxc" ]&&RELOG=1
-   sudo apt -y install $i
+   if [ "x${MODE}" == "xunprivilaged" ]; then
+    sudo apt -y install $i
+   else
+    apt -y install $i
+   fi
    if [ $? -ne 0 ]; then
     printf "${CYAN}"
     echo "Error Installing, Aborted!"
@@ -147,27 +155,15 @@ while true; do
  shift
 done
 #
-printf "${TITLE}Setting up OpenAKC demo environment, using unprivilaged LXC containers.${CYAN}\n"
+MODE="unprivilaged"
+if [ "x$(id -u)" == "x0" ]; then
+ MODE="standard"
+fi
+#
+printf "${TITLE}Setting up OpenAKC demo environment, using ${MODE} LXC containers.${CYAN}\n"
 echo
 if [ ! -f /etc/debian_version ]; then
  echo "Sorry, this script requires a debian/ubuntu based distribution. Aborted!"
- echo
- printf "${WHITE}"
- exit 1
-fi
-#
-if [ "x$(lsb_release -si)" == "xDebian" ]; then
- sudocheck
- if [ $(cat /proc/sys/kernel/unprivileged_userns_clone) -eq 0 ]; then
-  printf "${CYAN}Writing To /etc/sysctl.d/00-local-userns.conf${WHITE}\n"
-  echo "kernel.unprivileged_userns_clone = 1" | sudo tee /etc/sysctl.d/00-local-userns.conf
-  echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
- fi
-fi
-#
-if [ "x$(id -u)" == "x0" ]; then
- printf "${CYAN}"
- echo "Sorry, this script must be run as a non-root user. Aborted!"
  echo
  printf "${WHITE}"
  exit 1
@@ -184,39 +180,50 @@ else
  exit 1
 fi
 #
-if [ ! -d "${HOME}" ]; then
- printf "${CYAN}"
- echo "\$HOME appears to be invalid, Aborting!"
- echo
- printf "${WHITE}"
- exit 1
-fi
-#
+
 
 #
-# Proceed with Configuring unprivilaged LXC containers
+# Configure unprivilaged LXC containers if required.
 #
-if [ ! -d "${HOME}/.config/lxc" ]; then
- printf "${CYAN}"
- echo "Can't find unprivileged container setup"
- echo "this will add subuid/gids ${SUBIDS} to your account"
- echo "if these id's are in use, please update SUBIDS in script config"
- echo "in this case, also check ${HOME}/.config/lxc/default.conf"
- echo
- if [ ${YES} -eq 0 ]; then
-  echo "Press ENTER to configure, or ^C to abort"
-  read i
-  echo
+if [ "x${MODE}" == "xunprivilaged" ]; then
+ if [ "x$(lsb_release -si)" == "xDebian" ]; then
+  sudocheck
+  if [ $(cat /proc/sys/kernel/unprivileged_userns_clone) -eq 0 ]; then
+   printf "${CYAN}Writing To /etc/sysctl.d/00-local-userns.conf${WHITE}\n"
+   echo "kernel.unprivileged_userns_clone = 1" | sudo tee /etc/sysctl.d/00-local-userns.conf
+   echo 1 | sudo tee /proc/sys/kernel/unprivileged_userns_clone > /dev/null
+  fi
  fi
- echo "Setting up unprivileged LXC containers"
- echo
- printf "${WHITE}"
- sudocheck
- sudo usermod --add-subuids ${SUBIDS} $(whoami)
- sudo usermod --add-subgids ${SUBIDS} $(whoami)
- #
- if [ ! -f /etc/default/lxc-net ]; then
-  cat <<EOF > /tmp/lxc-net.$$
+#
+ if [ ! -d "${HOME}" ]; then
+  printf "${CYAN}"
+  echo "\$HOME appears to be invalid, Aborting!"
+  echo
+  printf "${WHITE}"
+  exit 1
+ fi
+#
+ if [ ! -d "${HOME}/.config/lxc" ]; then
+  printf "${CYAN}"
+  echo "Can't find unprivileged container setup"
+  echo "this will add subuid/gids ${SUBIDS} to your account"
+  echo "if these id's are in use, please update SUBIDS in script config"
+  echo "in this case, also check ${HOME}/.config/lxc/default.conf"
+  echo
+  if [ ${YES} -eq 0 ]; then
+   echo "Press ENTER to configure, or ^C to abort"
+   read i
+   echo
+  fi
+  echo "Setting up unprivileged LXC containers"
+  echo
+  printf "${WHITE}"
+  sudocheck
+  sudo usermod --add-subuids ${SUBIDS} $(whoami)
+  sudo usermod --add-subgids ${SUBIDS} $(whoami)
+#
+  if [ ! -f /etc/default/lxc-net ]; then
+   cat <<EOF > /tmp/lxc-net.$$
 USE_LXC_BRIDGE="true"
 LXC_BRIDGE="lxcbr0"
 LXC_ADDR="10.0.7.1"
@@ -227,45 +234,46 @@ LXC_DHCP_MAX="253"
 LXC_DHCP_CONFILE=""
 LXC_DOMAIN=""
 EOF
-  sudo systemctl enable lxc-net
-  sudo systemctl start lxc-net
-  #
-  sudo cp /etc/lxc/default.conf /etc/lxc/default.conf.backup
-  sudo cp /tmp/lxc-net.$$ /etc/default/lxc-net
-  rm /tmp/lxc-net.$$
-  sudo sed -i "/^lxc.net.0/d" /etc/lxc/default.conf
-  cp /etc/lxc/default.conf /tmp/default.conf.$$
-  cat <<EOF >> /tmp/default.conf.$$
+   sudo systemctl enable lxc-net
+   sudo systemctl start lxc-net
+#
+   sudo cp /etc/lxc/default.conf /etc/lxc/default.conf.backup
+   sudo cp /tmp/lxc-net.$$ /etc/default/lxc-net
+   rm /tmp/lxc-net.$$
+   sudo sed -i "/^lxc.net.0/d" /etc/lxc/default.conf
+   cp /etc/lxc/default.conf /tmp/default.conf.$$
+   cat <<EOF >> /tmp/default.conf.$$
 lxc.net.0.type = veth
 lxc.net.0.link = lxcbr0
 lxc.net.0.flags = up
 lxc.net.0.hwaddr = 00:16:3e:xx:xx:xx
 EOF
-  sudo cp /tmp/default.conf.$$ /etc/lxc/default.conf
-  rm /tmp/default.conf.$$
-  REBOOT=1
+   sudo cp /tmp/default.conf.$$ /etc/lxc/default.conf
+   rm /tmp/default.conf.$$
+   REBOOT=1
+  fi
+#
+  mkdir -p "${HOME}/.config"
+  mkdir -p "${HOME}/.local/share/lxc"
+  mkdir -p "${HOME}/.cache/lxc" 
+  setfacl -m u:${SUBID}:x "${HOME}/.local"
+  setfacl -m u:${SUBID}:x "${HOME}/.local/share"
+  setfacl -m u:${SUBID}:x "${HOME}/.local/share/lxc"
+  cp -dpR /etc/lxc/ "${HOME}/.config"
+  printf "${CYAN}"
+  echo "lxc.idmap = u 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
+  echo "lxc.idmap = g 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
+#  sed -i "s,lxc.apparmor.profile = generated,lxc.apparmor.profile = lxc-container-default-cgns,g" "${HOME}/.config/lxc/default.conf"
+  sed -i "s,^lxc.apparmor.profile.*,lxc.apparmor.profile = unconfined,g" "${HOME}/.config/lxc/default.conf"
+  echo -n "Updating /etc/lxc/lxc-usernet, adding - "
+  echo "$(whoami) veth lxcbr0 10" | sudo tee /etc/lxc/lxc-usernet
+  echo
+  useraction
+ else
+  echo "Looks like unprivileged LXC containers are set up, assuming it works!"
+  echo "If containers fails to work, you will need to fix it before continuing"
+  echo
  fi
- #
- mkdir -p "${HOME}/.config"
- mkdir -p "${HOME}/.local/share/lxc"
- mkdir -p "${HOME}/.cache/lxc" 
- setfacl -m u:${SUBID}:x "${HOME}/.local"
- setfacl -m u:${SUBID}:x "${HOME}/.local/share"
- setfacl -m u:${SUBID}:x "${HOME}/.local/share/lxc"
- cp -dpR /etc/lxc/ "${HOME}/.config"
- printf "${CYAN}"
- echo "lxc.idmap = u 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
- echo "lxc.idmap = g 0 ${SUBID} 65536" >> "${HOME}/.config/lxc/default.conf"
-# sed -i "s,lxc.apparmor.profile = generated,lxc.apparmor.profile = lxc-container-default-cgns,g" "${HOME}/.config/lxc/default.conf"
- sed -i "s,^lxc.apparmor.profile.*,lxc.apparmor.profile = unconfined,g" "${HOME}/.config/lxc/default.conf"
- echo -n "Updating /etc/lxc/lxc-usernet, adding - "
- echo "$(whoami) veth lxcbr0 10" | sudo tee /etc/lxc/lxc-usernet
- echo
- useraction
-else
- echo "Looks like unprivileged LXC containers are set up, assuming it works!"
- echo "If containers fails to work, you will need to fix it before continuing"
- echo
 fi
 
 #
@@ -324,11 +332,17 @@ fi
 #
 # OK, lets get our containers ready to use, and build our packages
 #
+if [ "x${MODE}" == "xunprivilaged" ]; then
+ LXCROOT="${HOME}/.local/share/lxc"
+else
+ LXCROOT="/var/lib/lxc"
+fi
+#
 if [ ${DNSFIX} -eq 1 ]; then
  printf "${CYAN}Applying DNS fix to containers${WHITE}\n"
  echo
- echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/resolv.conf"
- echo "nameserver 8.8.8.8" > "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/resolv.conf"
+ echo "nameserver 8.8.8.8" > "${LXCROOT}/openakc-combined/rootfs/tmp/resolv.conf"
+ echo "nameserver 8.8.8.8" > "${LXCROOT}/openakc-client/rootfs/tmp/resolv.conf"
  lxc-attach -n openakc-combined -- rm /etc/resolv.conf 2> /dev/null
  lxc-attach -n openakc-client -- rm /etc/resolv.conf 2> /dev/null
  lxc-attach -n openakc-combined -- cp /tmp/resolv.conf /etc/resolv.conf
@@ -355,27 +369,27 @@ fi
 OUTPUT=0
 if [ ${COMPILE} -eq 1 ]; then
  lxc-attach -n openakc-combined -- mkdir -p /tmp/OpenAKC
- rm -fr "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/"*
+ rm -fr "${LXCROOT}/openakc-combined/rootfs/tmp/OpenAKC/"*
  lxc-attach -n openakc-combined -- rmdir /tmp/OpenAKC
  lxc-attach -n openakc-combined -- mkdir -p /tmp/OpenAKC
  lxc-attach -n openakc-combined -- chmod 777 /tmp/OpenAKC
  lxc-attach -n openakc-client -- mkdir -p /tmp/OpenAKC
- rm -fr "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/OpenAKC/"*
+ rm -fr "${LXCROOT}/openakc-client/rootfs/tmp/OpenAKC/"*
  lxc-attach -n openakc-client -- rmdir /tmp/OpenAKC
  lxc-attach -n openakc-client -- mkdir -p /tmp/OpenAKC
  lxc-attach -n openakc-client -- chmod 777 /tmp/OpenAKC
- cp -dpR "${SCRIPTPATH}/../"* "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/"
+ cp -dpR "${SCRIPTPATH}/../"* "${LXCROOT}/openakc-combined/rootfs/tmp/OpenAKC/"
  lxc-attach -n openakc-combined -- /tmp/OpenAKC/makedeb.sh
 fi
 #
-if [ -f "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/openakc-server"*.deb ]; then
+if [ -f "${LXCROOT}/openakc-combined/rootfs/tmp/OpenAKC/openakc-server"*.deb ]; then
  OUTPUT=1
  printf "${CYAN}Output packages copied to your home folder - ${HOME}${WHITE}\n"
  echo
- ls "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/"*.deb
+ ls "${LXCROOT}/openakc-combined/rootfs/tmp/OpenAKC/"*.deb
  echo
- cp "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/"*.deb "${HOME}"
- cp "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/OpenAKC/"*.deb "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/OpenAKC/"
+ cp "${LXCROOT}/openakc-combined/rootfs/tmp/OpenAKC/"*.deb "${HOME}"
+ cp "${LXCROOT}/openakc-combined/rootfs/tmp/OpenAKC/"*.deb "${LXCROOT}/openakc-client/rootfs/tmp/OpenAKC/"
 fi
 #
 if [ ${OUTPUT} -eq 0 ]; then
@@ -410,11 +424,11 @@ fi
 printf "${CYAN}"
 SERVERIP=$(lxc-attach -n openakc-combined -- ip a show eth0 | grep "inet " | sed -e "s,/, ,g" | awk '{print $2}')
 CLIENTIP=$(lxc-attach -n openakc-client -- ip a show eth0 | grep "inet " | sed -e "s,/, ,g" | awk '{print $2}')
-echo "${CLIENTIP}%openakc-client" | tr '%' '\t' > "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
-echo ${SERVERIP}%openakc-combined openakc01 openakc02 | tr '%' '\t' >> "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
+echo "${CLIENTIP}%openakc-client" | tr '%' '\t' > "${LXCROOT}/openakc-combined/rootfs/tmp/hosts"
+echo ${SERVERIP}%openakc-combined openakc01 openakc02 | tr '%' '\t' >> "${LXCROOT}/openakc-combined/rootfs/tmp/hosts"
 printf "${WHITE}"
-cat "${HOME}/.local/share/lxc/openakc-combined/rootfs/etc/hosts" | grep -v openakc >> "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts"
-cp "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/hosts" "${HOME}/.local/share/lxc/openakc-client/rootfs/tmp/hosts"
+cat "${LXCROOT}/openakc-combined/rootfs/etc/hosts" | grep -v openakc >> "${LXCROOT}/openakc-combined/rootfs/tmp/hosts"
+cp "${LXCROOT}/openakc-combined/rootfs/tmp/hosts" "${LXCROOT}/openakc-client/rootfs/tmp/hosts"
 #
 lxc-attach -n openakc-combined -- cp /tmp/hosts /etc/hosts
 lxc-attach -n openakc-client -- cp /tmp/hosts /etc/hosts
@@ -495,7 +509,7 @@ echo "openakc setrole app-user@openakc-client /tmp/examplerole"
 echo "NB: use \"openakc editrole app-user@openakc-client\" for interactive configuation"
 echo
 printf "${WHITE}"
-cp -dpR "${SCRIPTPATH}/debian-lxc-build+demo.role_example" "${HOME}/.local/share/lxc/openakc-combined/rootfs/tmp/examplerole"
+cp -dpR "${SCRIPTPATH}/debian-lxc-build+demo.role_example" "${LXCROOT}/openakc-combined/rootfs/tmp/examplerole"
 printf "${YELLOW}"
 lxc-attach -n openakc-combined -- su - admin-user openakc setrole app-user@openakc-client /tmp/examplerole
 printf "${CYAN}"
