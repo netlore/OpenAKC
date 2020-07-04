@@ -330,45 +330,54 @@ apicall () {
   exit 1
  fi 
  
+ TMPFILE="$(mktemp -u).openakc-$(whoami)-${RPPID}-$(hostid)"
+ TMPHEAD="${TMPFILE}.head"
+# TMPFIFO="${TMPFILE}.fifo"
+# if [ "x${REC}" == "xyes" ]; then
+#  TMPOUT=${TMPFIFO}
+# else
+#  TMPOUT="/dev/null"
+# fi
+
+# FIXME Buffer issue if keystroke logging process is sent SIGSTOP.
+# FIXME Session key in process table
+ 
  if [ "x$SSH_TTY" != "x" ]; then
   logdebug "Going to interactive mode"
   echo "OpenAKC Interactive Session Initialized"
-  echo 
-
-# FIXME kill session if keystroke logging using fifo is broken.
-
+  echo  
+#
   if [ "x${QUIZ}" == "xyes" ]; then
    logstatus "Presenting user quiz for session ${RPPID}-$(hostid)"
    echo "Please enter the reason for your connection"
    echo -n "Title / Change Number: "
    read -t 30 i
-   echo "Title: $i" > "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
+   echo "Title: $i" > "${TMPHEAD}"
    echo "Description (blank line to end)"
    while true
    do
    read -t 45 j
-   echo "Summary: $j" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
+   echo "Summary: $j" >> "${TMPHEAD}"
    [ "x$j" == "x" ]&&break
    done
   else
-   echo "Title: Quiz Disabled" > "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
+   echo "Title: Quiz Disabled" > "${TMPHEAD}"
   fi
-  echo "" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "Network Source: ${SSH_CLIENT}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "Key Used: ${KEYF}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "TTY: ${SSH_TTY}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "Term Type: ${TERM}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "Term Language: ${LANG}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "Shell: ${SHL}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "Restricted Capabilties: ${CAP}" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
-  echo "" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz"
+  echo "" >> "${TMPHEAD}"
+  echo "Network Source: ${SSH_CLIENT}" >> "${TMPHEAD}"
+  echo "Key Used: ${KEYF}" >> "${TMPHEAD}"
+  echo "TTY: ${SSH_TTY}" >> "${TMPHEAD}"
+  echo "Term Type: ${TERM}" >> "${TMPHEAD}"
+  echo "Term Language: ${LANG}" >> "${TMPHEAD}"
+  echo "Shell: ${SHL}" >> "${TMPHEAD}"
+  echo "Restricted Capabilties: ${CAP}" >> "${TMPHEAD}"
+  echo "Session Logging Enabled: ${REC}" >> "${TMPHEAD}"
+  echo "" >> "${TMPHEAD}"
 
   MESSAGE=$(echo "logturn ${USR}@${HNS}.${RUSR}.${RPPID}-$(hostid)");sendmessage
   KLOG=1
-  mkfifo "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
-  ( cat "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).quiz" "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k $SESSKEY >&5 ) &
-
-
+#
+#
   if [ "x$RESTRICT" != "x" ]; then
    echo "Restrictions Applied":-
    for i in `echo $RESTRICT | tr ',' ' '`
@@ -384,9 +393,9 @@ apicall () {
    fi
    logauth "Remote user ${RUSR} : granted access ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
    if [ "x${REC}" == "xyes" ]; then
-    /usr/bin/openakc-cap --drop=$RESTRICT -- -c "script -ec \"${SHL}\" -qaf \"/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp\""
+    /usr/bin/openakc-cap --drop=$RESTRICT -- -c "script -ec \"${SHL}\" -qaf >(cat \"${TMPHEAD}\" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5)"
    else
-    echo "Session Logging Disabled By Role" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
+    cat "${TMPHEAD}" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5
     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "${SHL}"
    fi
    KEXIT=$?
@@ -397,21 +406,18 @@ apicall () {
    logauth "Remote user ${RUSR} : OpenAKC root login not allowed by client config ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
    echo "This host is configured to deny root access via OpenAKC"
    echo "You will be disconnected, please contact your system administrator"
-   echo "PERMITROOT configuration blocked this login" > "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
+   echo "PERMITROOT configuration blocked this login" |(cat "${TMPHEAD}" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5)
    logauth "PERMITROOT configuration blocked access to root account by ${KEYF}(${RUSR}) from ${SSH_CLIENT}"
    sleep 3
   fi
 #
 # 
-#   
  else
   if [ "x${REC}" == "xyes" ]; then
    MESSAGE=$(echo "logturn ${USR}@${HNS}.${RUSR}.${RPPID}-$(hostid)");sendmessage
    KLOG=1
-   echo "\"$SSH_ORIGINAL_COMMAND\" called via ssh" > "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).cmd"
-   echo "" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).cmd"
-   mkfifo "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
-   ( cat "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).cmd" "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k $SESSKEY >&5 ) &
+   echo "\"$SSH_ORIGINAL_COMMAND\" called via ssh" > "${TMPHEAD}"
+   echo "" >> "${TMPHEAD}"
   fi
  
   if [ "x${PERMITROOT}${EUID}" != "xno0" ]; then
@@ -426,7 +432,7 @@ apicall () {
     KEXIT=$?
     [ "x${SCPCMD}" == "xscp -f" ]&&SCPCMD="GET"
     [ "x${SCPCMD}" == "xscp -t" ]&&SCPCMD="PUT"
-    echo "SCP ${SCPCMD} ${SCPVAL} executed, exit code $KEXIT" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
+    echo "SCP ${SCPCMD} ${SCPVAL} executed, exit code $KEXIT" |(cat "${TMPHEAD}" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5)
     SCPEXIT="Failed"
     [ $KEXIT -eq 0 ]&&SCPEXIT="Succeeded"
     logger -t openakc-scp -p local6.info "${SCPCMD} ${SCPVAL} ; ${SCPEXIT} for user $(whoami)"
@@ -434,11 +440,12 @@ apicall () {
     [[ $SSH_ORIGINAL_COMMAND == *"/sftp-server" ]]&&SSH_ORIGINAL_COMMAND="${SSH_ORIGINAL_COMMAND} -f LOCAL6 -l INFO"
     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "$SSH_ORIGINAL_COMMAND"
     KEXIT=$?
-    echo "$SSH_ORIGINAL_COMMAND executed" >> "/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp"
+    echo "$SSH_ORIGINAL_COMMAND executed" |(cat "${TMPHEAD}" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5)
    else
     if [ "x${REC}" == "xyes" ]; then
-     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "script -ec \"${SSH_ORIGINAL_COMMAND}\" -qaf \"/tmp/openakc-$(whoami)-${RPPID}-$(hostid).tmp\""
+     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "script -ec \"${SSH_ORIGINAL_COMMAND}\" -qaf >(cat \"${TMPHEAD}\" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5)"
     else
+     cat "${TMPHEAD}" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -k ${SESSKEY} >&5
      /usr/bin/openakc-cap --drop=$RESTRICT -- -c "${SSH_ORIGINAL_COMMAND}"
     fi
     KEXIT=$?
@@ -453,7 +460,7 @@ apicall () {
   fi
  fi
 #
-  rm "/tmp/openakc-$(whoami)-${RPPID}-$(hostid)."* 2> /dev/null
+ rm "${TMPHEAD}" 2> /dev/null
  
  logstatus "Remote user ${RUSR} : session ended ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; OPENAKC_SESSION=${RPPID}-$(hostid)"
  [ $KLOG -eq 0 ]&&echo "quit" >&5
