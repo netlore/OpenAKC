@@ -360,7 +360,6 @@ apicall () {
    do
    read -t 45 j
    [ $? -gt 100 ]&&echo "Timeout!"
-   echo
    echo "Summary: $j" >> "${TMPHEAD}"
    [ "x$j" == "x" ]&&break
    done
