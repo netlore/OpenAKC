@@ -822,7 +822,9 @@ rblog () {
  if which chattr; then
   chattr +a "${DATADIR}/keylogs/$LOGFN"
  fi
- cat | /usr/bin/openakc-hpenc -d -k $SESSKEY >> "${DATADIR}/keylogs/$LOGFN"
+ PSK=${SESSKEY}
+ cat | /usr/bin/openakc-hpenc -d -K PSK >> "${DATADIR}/keylogs/$LOGFN"
+ unset PSK
 }
 
 ENC=0
