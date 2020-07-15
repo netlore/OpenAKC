@@ -111,6 +111,10 @@ logerr () {
  logger -p authpriv.err -t "openakc-server[$$]" "ERROR - $1"
 }
 
+randsn() {
+ < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-10};
+}
+
 greeter () {
  echo "OpenAKC-$RELEASE $(uname -o) $(uname -r)"
  echo "OK: OpenAKC Server Ready"
@@ -277,12 +281,13 @@ data_registerkey () {
 data_statickey () {
 #FIXME Error checks
  mkdir -p ${DATADIR}/data/keys
+ KEYSN="$(randsn)"
  fp=$(echo "${fp}" | tr '/' '-')
  fn="${DATADIR}/data/keys/${fp}"
  kd=$(echo $kd | base64 -d | gzip -d)
  cmt=$(echo $cmt | base64 -d | gzip -d)
  echo "${fp}" > "${fn}"
- echo "_none" >> "${fn}"
+ echo ${KEYSN} >> "${fn}"
  echo "${kd}" >> "${fn}"
  echo "static" >> "${fn}"
  echo "${DAT}" >> "${fn}"
@@ -437,6 +442,9 @@ data_idkeyf () {
  exec 7>&-
 }
 
+#
+# ^^ End of Data Section ^^
+#
 
 ################################
 
@@ -564,9 +572,11 @@ rbauth () {
    [ "x${rdata:0:4}" == "xCAP=" ]&&CAP=$(echo $rdata | awk -F= '{print $2}')
    [ "x${rdata:0:5}" == "xFROM=" ]&&FRM=$(echo $rdata | awk -F= '{print $2}')
    [ "x${rdata:0:4}" == "xTIM=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
+   [ "x${rdata:0:5}" == "xTIME=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
    [ "x${rdata:0:4}" == "xDAY=" ]&&DAY=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
    [ "x${rdata:0:4}" == "xCMD=" ]&&CMD=$(echo $rdata | awk -F= '{print $2}')
    [ "x${rdata:0:4}" == "xREC=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
+   [ "x${rdata:0:7}" == "xRECORD=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
    [ "x${FRM}" == "xany" ]&&FRM="0.0.0.0/0"
    #
    if [ "x${rdata:0:5}" == "xROLE=" ]; then
@@ -640,7 +650,11 @@ rbauth () {
      fi
      logdebug "Checking Key ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
      if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${KEYF}" ]; then
-      logdebug "Key looks OK"
+      logdebug "Key looks OK by fingerprint"
+      grant=1
+     fi
+     if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${RUSR}" ]; then
+      logdebug "Key looks OK by serial"
       grant=1
      fi
     fi
@@ -764,7 +778,7 @@ rbsubmit () {
   cmt=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
   DAT=$(date +%s)
   data_statickey
-  echo "OK: Stored static key - ${cmt}"
+  echo "OK: Stored static key - S/N = ${KEYSN}"
  else
   logstatus "Invalid static key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
   echo "ERR: Permission denied"
