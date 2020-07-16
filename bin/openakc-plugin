@@ -52,27 +52,30 @@ PLUGINUSER="openakc"
 # Functions
 #
 logstatus () {
- logger -p authpriv.info -t "openakc-plugin[$$]" "INFO - $1"
+ logger -p daemon.info -t "openakc-plugin[$$]" "INFO - $1"
 }
 
 logauth () {
  logger -p authpriv.notice -t "openakc-plugin[$$]" "AUTH - $1"
 }
 
+loginfo () {
+ logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
+}
+
 logdebug () {
  if [ "x$DEBUG" == "xyes" ];then
-  logger -p authpriv.debug -t "openakc-plugin[$$]" "DEBUG - $1"
+  logger -p auth.debug -t "openakc-plugin[$$]" "DEBUG - $1"
  fi
 }
 
 logwarn () {
- logger -p authpriv.warn -t "openakc-plugin[$$]" "WARNING - $1"
+ logger -p auth.warn -t "openakc-plugin[$$]" "WARNING - $1"
 }
 
 logerr () {
- logger -p authpriv.err -t "openakc-plugin[$$]" "ERROR - $1"
+ logger -p auth.err -t "openakc-plugin[$$]" "ERROR - $1"
 }
-
 
 isok () {
  ISOK=$(echo "${OK}" | cut -d ":" -f 1)
@@ -145,9 +148,13 @@ if [ "x$TMPCMD" != "xsshd" ]; then
  echo
  case "${USER}" in
   resetkeys)
-   touch "${DATADIR}/keys/$$.tmp"
-   rm -f ${DATADIR}/keys/*
-   echo "Keys Deleted"
+   if [ "x$(id -u)" == "x0" ]; then
+    touch "${DATADIR}/keys/$$.tmp"
+    rm -f ${DATADIR}/keys/*
+    echo "Keys Deleted!"
+   else
+    echo "Error: Must be root to reset openakc keys."
+   fi
    ;;
   ping)
    NOEXIT=1

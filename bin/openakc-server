@@ -90,25 +90,29 @@ export PGPASSWORD=${pgpassword}
 # Functions
 #
 logstatus () {
- logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
+ logger -p daemon.info -t "openakc-server[$$]" "INFO - $1"
 }
 
 logauth () {
  logger -p authpriv.notice -t "openakc-server[$$]" "AUTH - $1"
 }
 
+loginfo () {
+ logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
+}
+
 logdebug () {
  if [ "x$DEBUG" == "xyes" ];then
-  logger -p authpriv.debug -t "openakc-server[$$]" "DEBUG - $1"
+  logger -p auth.debug -t "openakc-server[$$]" "DEBUG - $1"
  fi
 }
 
 logwarn () {
- logger -p authpriv.warn -t "openakc-server[$$]" "WARNING - $1"
+ logger -p auth.warn -t "openakc-server[$$]" "WARNING - $1"
 }
 
 logerr () {
- logger -p authpriv.err -t "openakc-server[$$]" "ERROR - $1"
+ logger -p auth.err -t "openakc-server[$$]" "ERROR - $1"
 }
 
 randsn() {
@@ -432,14 +436,19 @@ data_sessionupd () {
 }
 
 data_idkeyf () {
-#FIXME check only 1 result
+#FIXME check filename format
  fp=$(echo "${KEYF}" | tr '/' '-')
- fn=$(ls ${DATADIR}/data/keys/${fp})
- exec 7<>${fn}
- read RUSR <&7
- read RUSR <&7
- read PUBKEY <&7
- exec 7>&-
+ fn=$(ls ${DATADIR}/data/keys/${fp} 2> /dev/null)
+ if [ $? -eq 0 ]; then
+  exec 7<>${fn}
+  read RUSR <&7
+  read RUSR <&7
+  read PUBKEY <&7
+  exec 7>&-
+ else
+  RUSR=""
+  PUBKEY=""
+ fi
 }
 
 #
@@ -548,123 +557,126 @@ rbauth () {
  DAY="any"
  REC="yes"
  EXT="none"
- data_sessionlog 
- if [ $TDIF -lt 10 ]; then
-  REPLYFLG="NOLOG"
- else
-  REPLYFLG="LOG"
- fi
- logdebug "Reply flag set to ${REPLYFLG}"
  #
- data_openroles
- logdebug "Opening Roles ${reply} - ${fn}"
- 
  grant=0
- 
- if [ "x${reply:0:3}" != "xERR" ]; then
-  logdebug "Trying to read role file"
-  rfn="/tmp/openakc_rolecheck.$$"
-  touch ${rfn}
-  while read rdata <&6
-  do
-   [ "x${rdata:0:6}" == "xSHELL=" ]&&SHL=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${rdata:0:4}" == "xSCP=" ]&&SCP=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${rdata:0:4}" == "xCAP=" ]&&CAP=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${rdata:0:5}" == "xFROM=" ]&&FRM=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${rdata:0:4}" == "xTIM=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
-   [ "x${rdata:0:5}" == "xTIME=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
-   [ "x${rdata:0:4}" == "xDAY=" ]&&DAY=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
-   [ "x${rdata:0:4}" == "xCMD=" ]&&CMD=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${rdata:0:4}" == "xREC=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${rdata:0:7}" == "xRECORD=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
-   [ "x${FRM}" == "xany" ]&&FRM="0.0.0.0/0"
-   #
-   if [ "x${rdata:0:5}" == "xROLE=" ]; then
-    logdebug "Starting to process ROLE - ${rdata}"
-    if [ $grant -eq 1 ]; then
-     logdebug "Inside final grant"
-     TOK=0
-     DOK=0
-     DNOW=$(date +%a | tr 'A-Z' 'a-z')
-     TNOW=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
-     logdebug "Starting time check"
-     if [ "x${TIM}" != "xany" ]; then
-      echo $TIM|egrep "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
-      if [ $? -eq 0 ]; then
-       TBEF=$(((10#${TIM:0:2}*10#60)+10#${TIM:3:2}))
-       TAFT=$(((10#${TIM:6:2}*10#60)+10#${TIM:9:2}))
-      else
-       TBEF=0
-       TAFT=0
-#       logerr "Time format invalid in role for ${USR}@${HNS}" #FIXME check at upload
-      fi   
-      [ ${TBEF} -lt ${TNOW} ]&&[ ${TAFT} -gt ${TNOW} ]&&TOK=1
-     else
-      TOK=1
-     fi
-     logdebug "Time check done"
-     echo $DAY | grep $DNOW 1> /dev/null 2> /dev/null
-     [ $? -eq 0 ]&&DOK=1
-     [ "x${DAY}" == "xany" ]&&DOK=1
+ if [ "x${PUBKEY}" != "x" ]; then
+  #
+  data_sessionlog 
+  if [ $TDIF -lt 10 ]; then
+   REPLYFLG="NOLOG"
+  else
+   REPLYFLG="LOG"
+  fi
+  logdebug "Reply flag set to ${REPLYFLG}"
+  #
+  data_openroles
+  logdebug "Opening Roles ${reply} - ${fn}"
+ # 
+  if [ "x${reply:0:3}" != "xERR" ]; then
+   logdebug "Trying to read role file"
+   rfn="/tmp/openakc_rolecheck.$$"
+   touch ${rfn}
+   while read rdata <&6
+   do
+    [ "x${rdata:0:6}" == "xSHELL=" ]&&SHL=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${rdata:0:4}" == "xSCP=" ]&&SCP=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${rdata:0:4}" == "xCAP=" ]&&CAP=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${rdata:0:5}" == "xFROM=" ]&&FRM=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${rdata:0:4}" == "xTIM=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
+    [ "x${rdata:0:5}" == "xTIME=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
+    [ "x${rdata:0:4}" == "xDAY=" ]&&DAY=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
+    [ "x${rdata:0:4}" == "xCMD=" ]&&CMD=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${rdata:0:4}" == "xREC=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${rdata:0:7}" == "xRECORD=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
+    [ "x${FRM}" == "xany" ]&&FRM="0.0.0.0/0"
      #
-     logdebug "Role Day = ${DAY}, Role Time = ${TIM}, Current Day = ${DNOW}, Current Mins = ${TNOW}, Before Mins = ${TBEF}, After Mins = ${TAFT}"
-     logdebug "Day OK = ${DOK}, Time OK = ${TOK}"
-     if [ "x${TOK}" != "x1" ]; then
-      logdebug "Denied Based on time of day"
-      grant=0
+    if [ "x${rdata:0:5}" == "xROLE=" ]; then
+     logdebug "Starting to process ROLE - ${rdata}"
+     if [ $grant -eq 1 ]; then
+      logdebug "Inside final grant"
+      TOK=0
+      DOK=0
+      DNOW=$(date +%a | tr 'A-Z' 'a-z')
+      TNOW=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
+      logdebug "Starting time check"
+      if [ "x${TIM}" != "xany" ]; then
+       echo $TIM|egrep "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
+       if [ $? -eq 0 ]; then
+        TBEF=$(((10#${TIM:0:2}*10#60)+10#${TIM:3:2}))
+        TAFT=$(((10#${TIM:6:2}*10#60)+10#${TIM:9:2}))
+       else
+        TBEF=0
+        TAFT=0
+#        logerr "Time format invalid in role for ${USR}@${HNS}" #FIXME check at upload
+       fi   
+       [ ${TBEF} -lt ${TNOW} ]&&[ ${TAFT} -gt ${TNOW} ]&&TOK=1
+      else
+       TOK=1
+      fi
+      logdebug "Time check done"
+      echo $DAY | grep $DNOW 1> /dev/null 2> /dev/null
+      [ $? -eq 0 ]&&DOK=1
+      [ "x${DAY}" == "xany" ]&&DOK=1
+      #
+      logdebug "Role Day = ${DAY}, Role Time = ${TIM}, Current Day = ${DNOW}, Current Mins = ${TNOW}, Before Mins = ${TBEF}, After Mins = ${TAFT}"
+      logdebug "Day OK = ${DOK}, Time OK = ${TOK}"
+      if [ "x${TOK}" != "x1" ]; then
+       logdebug "Denied Based on time of day"
+       grant=0
+      fi
+      if [ "x${DOK}" != "x1" ]; then
+       logdebug "Denied Based on day of week"
+       grant=0
+      fi
+      break
      fi
-     if [ "x${DOK}" != "x1" ]; then
-      logdebug "Denied Based on day of week"
-      grant=0
-     fi
-     break
-    fi
-    rdata=$(echo $rdata | awk -F= '{print $2}')
-    srole=$(echo $rdata | awk -F, '{print $1}')
-    srole=$(date +%s --date "$srole" 2> /dev/null)
-    [ $? -ne 0 ]&&srole=0
-    erole=$(echo $rdata | awk -F, '{print $2}')
-    erole=$(date +%s --date "$erole" 2> /dev/null)
-    [ $? -ne 0 ]&&erole=0
-    [ $srole -eq 0 ]&&erole=0
-    [ $erole -eq 0 ]&&srole=0
-    mrole="group"
-    [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xuser" ]&&mrole="user"
-    [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xkey" ]&&mrole="key"
-    krole=$(echo $rdata | awk -F, '{print $4}' | tr 'A-Z' 'a-z')
-    if [ "${srole}" -lt "${SDAT}" ] && [ "${erole}" -gt "${SDAT}" ]; then
-     logdebug "Checking User ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
-     if [ "x${mrole}${krole}" == "xuser${RUSR}" ]; then
-      logdebug "User looks OK"
-      grant=1
-     fi
-     logdebug "Checking Group ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
-     if [ "x${mrole}" == "xgroup" ]; then
-      chown "${RUSR}:daemon" ${rfn} 2> /dev/null
-      su "${RUSR}" -c "chgrp "${krole}" /tmp/openakc_rolecheck.$$ 2> /dev/null" 2> /dev/null
-      GROUPCHECK=${?}
-      if [ ${GROUPCHECK} -eq 0 ]; then
-       logdebug "Group looks OK"
+     rdata=$(echo $rdata | awk -F= '{print $2}')
+     srole=$(echo $rdata | awk -F, '{print $1}')
+     srole=$(date +%s --date "$srole" 2> /dev/null)
+     [ $? -ne 0 ]&&srole=0
+     erole=$(echo $rdata | awk -F, '{print $2}')
+     erole=$(date +%s --date "$erole" 2> /dev/null)
+     [ $? -ne 0 ]&&erole=0
+     [ $srole -eq 0 ]&&erole=0
+     [ $erole -eq 0 ]&&srole=0
+     mrole="group"
+     [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xuser" ]&&mrole="user"
+     [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xkey" ]&&mrole="key"
+     krole=$(echo $rdata | awk -F, '{print $4}' | tr 'A-Z' 'a-z')
+     if [ "${srole}" -lt "${SDAT}" ] && [ "${erole}" -gt "${SDAT}" ]; then
+      logdebug "Checking User ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
+      if [ "x${mrole}${krole}" == "xuser${RUSR}" ]; then
+       logdebug "User looks OK"
+       grant=1
+      fi
+      logdebug "Checking Group ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
+      if [ "x${mrole}" == "xgroup" ]; then
+       chown "${RUSR}:daemon" ${rfn} 2> /dev/null
+       su "${RUSR}" -c "chgrp "${krole}" /tmp/openakc_rolecheck.$$ 2> /dev/null" 2> /dev/null
+       GROUPCHECK=${?}
+       if [ ${GROUPCHECK} -eq 0 ]; then
+        logdebug "Group looks OK"
+        grant=1
+       fi
+      fi
+      logdebug "Checking Key ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
+      if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${KEYF}" ]; then
+       logdebug "Key looks OK by fingerprint"
+       grant=1
+      fi
+      if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${RUSR}" ]; then
+       logdebug "Key looks OK by serial"
        grant=1
       fi
      fi
-     logdebug "Checking Key ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
-     if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${KEYF}" ]; then
-      logdebug "Key looks OK by fingerprint"
-      grant=1
-     fi
-     if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${RUSR}" ]; then
-      logdebug "Key looks OK by serial"
-      grant=1
-     fi
     fi
-   fi
-   logdebug "Repeating auth loop"
-  done
-  logdebug "Auth loop done"
-  rm ${rfn} 2> /dev/null
-  logdebug "Updating Session Log"
-  data_sessionlog
+    logdebug "Repeating auth loop"
+   done
+   logdebug "Auth loop done"
+   rm ${rfn} 2> /dev/null
+   logdebug "Updating Session Log"
+   data_sessionlog
+  fi
  fi
  if [ ${grant} -eq 1 ]; then
   REPLYLOG="User $USR authenticated on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
@@ -830,7 +842,7 @@ fi
 rblog () {
 # FIXME Validate session with data from authentication phase using backend.
  LOGFN="$(date "+%Y/%m/%d")/$(date "+%H:%M:%S")-${PARAM}.log"
- logstatus "Session with $REMOTE_HOST transitioned to keystroke log receiver, see log:- $LOGFN"
+ loginfo "Session with $REMOTE_HOST transitioned to keystroke log receiver, see log:- $LOGFN"
  mkdir -p "${DATADIR}/keylogs/$(date "+%Y/%m/%d")"
  touch "${DATADIR}/keylogs/$LOGFN"
  if which chattr; then

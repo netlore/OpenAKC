@@ -51,25 +51,29 @@ FAKESUDO="no"
 # Functions
 #
 logstatus () {
- logger -p authpriv.info -t "openakc-session[$$]" "INFO - $1"
+ logger -p daemon.info -t "openakc-session[$$]" "INFO - $1"
 }
 
 logauth () {
  logger -p authpriv.notice -t "openakc-session[$$]" "AUTH - $1"
 }
 
+loginfo () {
+ logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
+}
+
 logdebug () {
  if [ "x$DEBUG" == "xyes" ];then
-  logger -p authpriv.debug -t "openakc-session[$$]" "DEBUG - $1"
+  logger -p auth.debug -t "openakc-session[$$]" "DEBUG - $1"
  fi
 }
 
 logwarn () {
- logger -p authpriv.warn -t "openakc-session[$$]" "WARNING - $1"
+ logger -p auth.warn -t "openakc-session[$$]" "WARNING - $1"
 }
 
 logerr () {
- logger -p authpriv.err -t "openakc-session[$$]" "ERROR - $1"
+ logger -p auth.err -t "openakc-session[$$]" "ERROR - $1"
 }
 
 isok () {
