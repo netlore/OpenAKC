@@ -285,7 +285,7 @@ data_registerkey () {
 data_statickey () {
 #FIXME Error checks
  mkdir -p ${DATADIR}/data/keys
- KEYSN="$(randsn)"
+ KEYSN="key-$(randsn)"
  fp=$(echo "${fp}" | tr '/' '-')
  fn="${DATADIR}/data/keys/${fp}"
  kd=$(echo $kd | base64 -d | gzip -d)
