@@ -10,7 +10,7 @@
 
 ##### Do you wish you could protect critical system files, or user data from junior sysadmins?
 
-#### OpenAKC provides SSH "Role Based Access Control", and "Centralised SSH Key Management" for Linux.
+#### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
 
 
 It a can be used as a stand alone tool or as part of a more advanced "Privilaged Access Management" tool if integrated with a system for approving access, either via a directory such as AD / LDAP or direcetly via the API.
