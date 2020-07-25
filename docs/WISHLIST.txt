@@ -4,9 +4,9 @@
 
 * Default role definition assigned to a host with no other role config.
 
-* Review "key" type, can we refer to a key by some "tag" other than
+* DONE - Review "key" type, can we refer to a key by some "tag" other than
   fingerprint.  This would allow the key to be updated without editing the
-  role config.  Separate static keys from user keys in data store.
+  role config. Separate static keys from user keys in data store.
 
 * Client package needs to set bins, and sshd_config to be immutable, and
   handle resetting the flag on upgrade/removal.
@@ -16,6 +16,8 @@
   as force directory refresh for user details incase of recent group changes.
 
 *Possible Future Enhancements*
+
+* Can we add passphrase to admin private key for making role updates?
 
 * Offer some method to push values into users shell profile, like aliases,
   default, or read only environment variables.
@@ -27,3 +29,7 @@
   (require SYSTEM (or lower?) rights so it's not publically available).
 
 * Move audit name/command list into a configuration file.
+
+* Merge multiple matching permissions.
+
+* for static keys, put comment in logs to show which key it is.

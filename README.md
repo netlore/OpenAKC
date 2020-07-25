@@ -1,6 +1,17 @@
 # OpenAKC
 
-##### OpenAKC provides SSH "Role Based Access Control", and "Centralised Key Management" tool for Linux.
+##### Do you have wish you could take control of your SSH trust, stop users from altering or adding trust relationships inside your environment and control when, or how keys can be used?
+
+##### Do you wish you could meet your security teams requirements for identifying which users are accessing role accounts (or even root accounts) without needing to join a directory such as AD or LDAP on every server, with the management overhead that brings?
+
+##### Do you wish your users could manage their own private keys and you didn't need to keep track which personal key grants access where and who owns it?
+
+##### Do you wish you could instantly update or remove a key across an entire estate, without even having to log in to the servers in question?
+
+##### Do you wish you could protect critical system files, or user data from junior sysadmins?
+
+#### OpenAKC provides SSH "Role Based Access Control", and "Centralised SSH Key Management" for Linux.
+
 
 It a can be used as a stand alone tool or as part of a more advanced "Privilaged Access Management" tool if integrated with a system for approving access, either via a directory such as AD / LDAP or direcetly via the API.
 

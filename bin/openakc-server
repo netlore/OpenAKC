@@ -270,10 +270,11 @@ PROTO=$(echo $PROTO | awk -F. '{print $1}')
 ################################
 
 data_registerkey () {
-#FIXME Error checks
+#FIXME Error checks & input validation
  mkdir -p ${DATADIR}/data/keys
  fp=$(echo "${fp}" | tr '/' '-')
- fn="${DATADIR}/data/keys/${fp}"
+ fn="${DATADIR}/data/keys/${fp}.${usr}"
+ rm ${DATADIR}/data/keys/*.${usr} 2> /dev/null
  echo "${fp}" > "${fn}"
  echo "${usr}" >> "${fn}"
  echo "${pkey}" >> "${fn}"
@@ -287,7 +288,7 @@ data_statickey () {
  mkdir -p ${DATADIR}/data/keys
  KEYSN="key-$(randsn)"
  fp=$(echo "${fp}" | tr '/' '-')
- fn="${DATADIR}/data/keys/${fp}"
+ fn="${DATADIR}/data/keys/${fp}.${KEYSN}"
  kd=$(echo $kd | base64 -d | gzip -d)
  cmt=$(echo $cmt | base64 -d | gzip -d)
  echo "${fp}" > "${fn}"
@@ -297,6 +298,28 @@ data_statickey () {
  echo "${DAT}" >> "${fn}"
  echo "${cmt}" >> "${fn}"
 }  
+
+data_updatekey () {
+#FIXME Error checks & input validation
+#FIXME Preserve comment if new comment not supplied
+ mkdir -p ${DATADIR}/data/keys
+ fp=$(echo "${fp}" | tr '/' '-')
+ fn="${DATADIR}/data/keys/${fp}.${sn}"
+ if [ $(ls ${DATADIR}/data/keys/*.${sn} 2> /dev/null | wc -l) -ne 0 ]; then
+  reply="OK: Updated public key - S/N = ${sn}"
+  rm ${DATADIR}/data/keys/*.${sn} 2> /dev/null
+  kd=$(echo $kd | base64 -d | gzip -d)
+  cmt=$(echo $cmt | base64 -d | gzip -d)
+  echo "${fp}" > "${fn}"
+  echo ${sn} >> "${fn}"
+  echo "${kd}" >> "${fn}"
+  echo "static" >> "${fn}"
+  echo "${DAT}" >> "${fn}"
+  echo "${cmt}" >> "${fn}"
+ else
+  reply="ERR: Error no key with serial number exists"
+ fi
+}
 
 data_openroles () {
  reply="ERR: Cant open roles file"
@@ -436,9 +459,9 @@ data_sessionupd () {
 }
 
 data_idkeyf () {
-#FIXME check filename format
+#FIXME check filename format & check for duplicates
  fp=$(echo "${KEYF}" | tr '/' '-')
- fn=$(ls ${DATADIR}/data/keys/${fp} 2> /dev/null)
+ fn=$(ls ${DATADIR}/data/keys/${fp}.* 2> /dev/null)
  if [ $? -eq 0 ]; then
   exec 7<>${fn}
   read RUSR <&7
@@ -783,16 +806,33 @@ rbsetrole () {
 
 rbsubmit () {
 #FIXME Input Validation
- logdebug "Adding static key data - \"$APIIN\""
+ logdebug "Adding public key data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
   fp=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
   kd=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
   cmt=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
   DAT=$(date +%s)
   data_statickey
-  echo "OK: Stored static key - S/N = ${KEYSN}"
+  echo "OK: Stored public key - S/N = ${KEYSN}"
  else
-  logstatus "Invalid static key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  logstatus "Invalid submit key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  echo "ERR: Permission denied"
+ fi
+}
+
+rbupdate () {
+#FIXME Input Validation
+ logdebug "Updating public key data - \"$APIIN\""
+ if [ "x$PERMS" == "xUSER" ]; then
+  sn=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
+  fp=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+  kd=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
+  cmt=$(echo $APIIN | tr -d '\r' | awk '{print $5}')
+  DAT=$(date +%s)
+  data_updatekey
+  echo ${reply}
+ else
+  logstatus "Invalid update key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
   echo "ERR: Permission denied"
  fi
 }
@@ -891,6 +931,9 @@ if [ "x$PROTO" == "xakcrsa1" ]; then
     ;;
    submit)
     rbsubmit
+    ;;
+   update)
+    rbupdate
     ;;
    sessiondata)
     rbsessiondata

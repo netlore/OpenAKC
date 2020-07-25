@@ -117,7 +117,10 @@ usage () {
  echo "   - Register personal SSH key pair"
  echo ""
  echo "$0 submit {public key file} {\"Description\"}"
- echo "   - Submit key for trust relationship"
+ echo "   - Submit public key for trust relationship"
+ echo ""
+ echo "$0 update {key-serialno} {public key file} {\"Description\"}"
+ echo "   - Submit update to existing stored public"
  echo ""
  echo "$0 setrole {user@hostname} {filename}"
  echo "   - Add permission"
@@ -373,6 +376,35 @@ apicall () {
    read OK <&5
    isok
    logdebug "Submit Key - $OK"
+   echo "${OK}"
+   ;;
+#
+  update)
+#  FIXME Do more input validation
+   echo "Sending key update request"
+   if [ -r ${KEYFILE} ]; then
+    KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
+    COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
+   else
+    echo "Error: Key file (${KEYFILE}) not found, exiting"
+    break
+   fi
+   MESSAGE=$(echo "challenge user $(whoami)");sendmessage
+   read CHALCODE <&5
+   read OK <&5
+   isok
+   CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+   CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+#   echo ""
+   logdebug "Update Key - $OK"
+   MESSAGE=$(echo "handshake ${CHAL}");sendmessage
+   read OK <&5
+   isok
+   logdebug "Update Key - $OK"
+   MESSAGE=$(echo "update ${KEYSN} ${fp} ${KEYDATA} ${COMMENT}");sendmessage
+   read OK <&5
+   isok
+   logdebug "Update Key - $OK"
    echo "${OK}"
    ;;
 #
@@ -672,7 +704,7 @@ case "$MODE" in
   echo -n ""
   KEYFILE=$(echo "${ARGS}" | awk '{print $2}')
   COMMENT=$(echo "${3}")
-  echo "Storing static key ${KEYFILE} with comment \"${3}\""
+  echo "Storing public key ${KEYFILE} with comment \"${3}\""
   if [ ! -r "$KEYFILE" ]; then
    echo "Can't read key file (${KEYFILE}). aborting!"
    exit 1
@@ -693,6 +725,34 @@ case "$MODE" in
   #
   netcall
   ;;
+ update)
+  # FIXME Do some input validation
+  echo -n ""
+  KEYSN=$(echo "${ARGS}" | awk '{print $2}')
+  KEYFILE=$(echo "${ARGS}" | awk '{print $3}')
+  COMMENT=$(echo "${4}")
+  echo "Updating public key ${KEYFILE} with comment \"${4}\""
+  if [ ! -r "$KEYFILE" ]; then
+   echo "Can't read key file (${KEYFILE}). aborting!"
+   exit 1
+  fi
+  #
+  fp=$(ssh-keygen -lf "$KEYFILE")
+  if [ ${?} -ne 0 ]; then
+   echo "Cannot generate key fingerprint. aborting!"
+   exit 1
+  fi
+  fp=$(echo ${fp} | awk '{print $2}')
+  #
+  echo ${fp} | grep -q "^SHA" 2>/dev/null
+  if [ ${?} -ne 0 ]; then
+   echo "Key Fingerprint format unknown (old ssh version?). aborting!"
+   exit 1
+  fi
+  #
+  netcall
+  ;;
+  
  listusers)
   # FIXME Do some input validation
   echo -n ""
