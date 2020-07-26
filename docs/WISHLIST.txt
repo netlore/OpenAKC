@@ -8,6 +8,8 @@
   fingerprint.  This would allow the key to be updated without editing the
   role config. Separate static keys from user keys in data store.
 
+* Key delete function.
+
 * Client package needs to set bins, and sshd_config to be immutable, and
   handle resetting the flag on upgrade/removal.
 
@@ -18,6 +20,9 @@
 *Possible Future Enhancements*
 
 * Can we add passphrase to admin private key for making role updates?
+
+* Managed login / debug wrapper to help users understand why, if they are
+  unable to connect.
 
 * Offer some method to push values into users shell profile, like aliases,
   default, or read only environment variables.
