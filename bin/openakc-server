@@ -310,12 +310,16 @@ data_updatekey () {
   rm ${DATADIR}/data/keys/*.${sn} 2> /dev/null
   kd=$(echo $kd | base64 -d | gzip -d)
   cmt=$(echo $cmt | base64 -d | gzip -d)
-  echo "${fp}" > "${fn}"
-  echo ${sn} >> "${fn}"
-  echo "${kd}" >> "${fn}"
-  echo "static" >> "${fn}"
-  echo "${DAT}" >> "${fn}"
-  echo "${cmt}" >> "${fn}"
+  if [ "x${kd}" == "xDELETE" ]; then
+   reply="OK: Deleted public key - S/N = ${sn}"
+  else 
+   echo "${fp}" > "${fn}"
+   echo ${sn} >> "${fn}"
+   echo "${kd}" >> "${fn}"
+   echo "static" >> "${fn}"
+   echo "${DAT}" >> "${fn}"
+   echo "${cmt}" >> "${fn}"
+  fi
  else
   reply="ERR: Error no key with serial number exists"
  fi

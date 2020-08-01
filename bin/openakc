@@ -382,7 +382,10 @@ apicall () {
   update)
 #  FIXME Do more input validation
    echo "Sending key update request"
-   if [ -r ${KEYFILE} ]; then
+   if [ "x${KEYFILE}" == "xDELETE" ]; then
+    KEYDATA=$(echo -n "DELETE" | gzip | base64 -w 0)
+    COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
+   elif [ -r ${KEYFILE} ]; then
     KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
     COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
    else
@@ -731,23 +734,28 @@ case "$MODE" in
   KEYSN=$(echo "${ARGS}" | awk '{print $2}')
   KEYFILE=$(echo "${ARGS}" | awk '{print $3}')
   COMMENT=$(echo "${4}")
-  echo "Updating public key ${KEYFILE} with comment \"${4}\""
-  if [ ! -r "$KEYFILE" ]; then
-   echo "Can't read key file (${KEYFILE}). aborting!"
-   exit 1
-  fi
-  #
-  fp=$(ssh-keygen -lf "$KEYFILE")
-  if [ ${?} -ne 0 ]; then
-   echo "Cannot generate key fingerprint. aborting!"
-   exit 1
-  fi
-  fp=$(echo ${fp} | awk '{print $2}')
-  #
-  echo ${fp} | grep -q "^SHA" 2>/dev/null
-  if [ ${?} -ne 0 ]; then
-   echo "Key Fingerprint format unknown (old ssh version?). aborting!"
-   exit 1
+  if [ "x${KEYFILE}" == "xDELETE" ]; then
+   echo "Deleting public key ${KEYSN}"
+   fp="None"
+  else
+   echo "Updating public key ${KEYSN} with comment \"${4}\""
+   if [ ! -r "$KEYFILE" ]; then
+    echo "Can't read key file (${KEYFILE}). aborting!"
+    exit 1
+   fi
+   #
+   fp=$(ssh-keygen -lf "$KEYFILE")
+   if [ ${?} -ne 0 ]; then
+    echo "Cannot generate key fingerprint. aborting!"
+    exit 1
+   fi
+   fp=$(echo ${fp} | awk '{print $2}')
+   #
+   echo ${fp} | grep -q "^SHA" 2>/dev/null
+   if [ ${?} -ne 0 ]; then
+    echo "Key Fingerprint format unknown (old ssh version?). aborting!"
+    exit 1
+   fi
   fi
   #
   netcall
