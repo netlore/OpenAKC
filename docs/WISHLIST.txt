@@ -8,7 +8,7 @@
   fingerprint.  This would allow the key to be updated without editing the
   role config. Separate static keys from user keys in data store.
 
-* Key delete function.
+* DONE - Key delete function.
 
 * Client package needs to set bins, and sshd_config to be immutable, and
   handle resetting the flag on upgrade/removal.
@@ -33,8 +33,13 @@
   and/or to determine why they were not permitted access,
   (require SYSTEM (or lower?) rights so it's not publically available).
 
-* Move audit name/command list into a configuration file.
+* Move audit name/command list into a configuration file.  Collect sshd_config if possible.
 
 * Merge multiple matching permissions.
 
 * for static keys, put comment in logs to show which key it is.
+
+* Migrate data functions into a libexec folder to allow alternate data stores.
+
+* Default role definition added to all hosts in addition to role config.
+
