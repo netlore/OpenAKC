@@ -64,7 +64,7 @@ You no-longer have to require users to log in to servers with personal accounts 
 
 WARNING: This is pre-release software and although it is functional, plenty of work remains to ensure it is robust and secure.
 
-Documentation is still being created, but you may like to see an [impromptu demo video][demo].
+Documentation is still being created, but you may like to see an [Demo Video][demo], I won't be offended if you want to play this at double speed.
 
 Any contributions of in regard to documentation, code or suggestions would be greatly appreciated.
 
@@ -72,5 +72,5 @@ Please note that most of this tool is created using shell code, I hope this make
 
 
 
-[demo]: https://www.youtube.com/watch?v=r2hv-WivqHY
+[demo]: https://youtu.be/58i_cknmzvc
 [caps]: https://man7.org/linux/man-pages/man7/capabilities.7.html
