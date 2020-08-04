@@ -44,6 +44,7 @@ SESSKEY=""
 TMOUT=5
 DEBUG="yes"
 PERMITROOT="no"
+HIDE="no"
 QUIZ="yes"
 FAKESUDO="no"
 
@@ -348,8 +349,13 @@ apicall () {
  
  if [ "x$SSH_TTY" != "x" ]; then
   logdebug "Going to interactive mode"
-  echo "OpenAKC Interactive Session Initialized"
-  echo  
+  if [ "x${HIDE}" == "xno" ]; then
+   echo "OpenAKC (v${RELEASE}) - Interactive Session Initialized"
+   echo
+  elif [ "x${QUIZ}" == "xyes" ]; then
+   echo "OpenAKC - Interactive Session Initialized"
+   echo
+  fi
 #
   if [ "x${QUIZ}" == "xyes" ]; then
    logstatus "Presenting user quiz for session ${RPPID}-$(hostid)"
@@ -385,7 +391,7 @@ apicall () {
   KLOG=1
 #
 #
-  if [ "x$RESTRICT" != "x" ]; then
+  if [ "x$RESTRICT" != "x" ]&&[ "x${HIDE}" == "xno" ]; then
    echo "Restrictions Applied":-
    for i in `echo $RESTRICT | tr ',' ' '`
    do

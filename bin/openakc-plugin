@@ -358,14 +358,14 @@ apicall () {
  if [ "x${DOAUDIT}" == "xyes" ]; then 
   logstatus "Sending audit data to server"
  #
-  for i in "lshw:lshw" "routes:ip r" "cpuinfo:cat /proc/cpuinfo" "network:ip a" "memory:cat /proc/meminfo" "mounts:cat /proc/mounts" "swaps:cat /proc/swaps" "partitions:cat /proc/partitions" "lsusb:lsusb" "lspci:lspci" "uname:uname -a"
+  for i in "lshw:lshw" "routes:ip r" "cpuinfo:cat /proc/cpuinfo" "network:ip a" "memory:cat /proc/meminfo" "mounts:cat /proc/mounts" "swaps:cat /proc/swaps" "partitions:cat /proc/partitions" "lsusb:lsusb" "lspci:lspci" "uname:uname -a" "sshdconfig:cat /etc/ssh/sshd_config"
   do
    j=$(echo "${i}"|awk -F\: '{print $1}')
    k=$(echo "${i}"|awk -F\: '{print $2}')
    l=$(echo "${k}"|awk '{print $1}')
  #
    if [ -x "$(which $l 2> /dev/null)" ]; then
-    MESSAGE=$(echo "audit ${j}:$(${k} | base64 -w 0 | tr -d '\r')");sendmessage
+    MESSAGE=$(echo "audit ${j}:$(${k} 2> /dev/null | base64 -w 0 | tr -d '\r')");sendmessage
     read OK <&5
     isok
    else

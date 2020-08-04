@@ -2,20 +2,15 @@
 
 * Code review, fix up input validation and graceful error handling/logging.
 
-* Default role definition assigned to a host with no other role config.
-
-* DONE - Review "key" type, can we refer to a key by some "tag" other than
-  fingerprint.  This would allow the key to be updated without editing the
-  role config. Separate static keys from user keys in data store.
-
-* DONE - Key delete function.
-
 * Client package needs to set bins, and sshd_config to be immutable, and
   handle resetting the flag on upgrade/removal.
 
 * Implement PREEXEC/POSTEXEC feature to allow external script to be executed
   before/after authentication process on server, to allow functionality such
   as force directory refresh for user details incase of recent group changes.
+
+
+
 
 *Possible Future Enhancements*
 
@@ -29,11 +24,11 @@
 
 * Allow roles to be associated with a user or hostname including wildcards.
 
-* Tool to allow users to query via API what is required for access to a given host,
-  and/or to determine why they were not permitted access,
+* Tool to allow users to query via API what is required for access to a given
+  host, and/or to determine why they were not permitted access,
   (require SYSTEM (or lower?) rights so it's not publically available).
 
-* Move audit name/command list into a configuration file.  Collect sshd_config if possible.
+* Move audit name/command list into a configuration file.  
 
 * Merge multiple matching permissions.
 
@@ -42,4 +37,22 @@
 * Migrate data functions into a libexec folder to allow alternate data stores.
 
 * Default role definition added to all hosts in addition to role config.
+  Hostname = ALL?
+
+
+
+
+*Archive/Completed Fixes & Changes
+
+* DONE - Default role definition assigned to a host with no other role config.
+
+* DONE - Review "key" type, can we refer to a key by some "tag" other than
+  fingerprint.  This would allow the key to be updated without editing the
+  role config. Separate static keys from user keys in data store.
+
+* DONE - Key delete function.
+
+* DONE - Option to disable Banner and restrictions messages (Hide OpenAKC?)
+
+* DONE - Audit should collect sshd_config if possible.
 

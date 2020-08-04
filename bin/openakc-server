@@ -328,9 +328,13 @@ data_updatekey () {
 data_openroles () {
  reply="ERR: Cant open roles file"
  fn="${DATADIR}/data/roles/${USR}@${HNS}.${HND}.roles" 
+ fnd="${DATADIR}/data/roles/${USR}@DEFAULT.roles"
  if [ -r ${fn} ]; then 
   exec 6<>"$fn"
   [ $? -eq 0 ]&&reply="OK: Roles file open"
+ elif [ -r ${fnd} ]; then
+  exec 6<>"$fnd"
+  [ $? -eq 0 ]&&reply="OK: Default roles file open"
  else
   reply="ERR: Error opening roles file"
  fi
@@ -348,9 +352,13 @@ data_resolve () {
 data_setrole () {
 #FIXME Error Checks
  cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
- if [ $cnt -eq 1 ]; then
-  hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
-  hn=$(basename "$hnl")
+ if [ $cnt -eq 1 ]||[ "x${hn}" == "xdefault" ]; then
+  if [ "x${hn}" != "xdefault" ]; then
+   hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
+   hn=$(basename "$hnl")
+  else
+   hn="DEFAULT"
+  fi
   mkdir -p ${DATADIR}/data/roles
   mkdir -p ${DATADIR}/data/history
   fn="${DATADIR}/data/roles/${usr}@${hn}.roles"
@@ -376,9 +384,13 @@ data_getrole () {
 # FIXME Input validation on $usr & $hn
  mkdir -p ${DATADIR}/data/roles
  cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
- if [ $cnt -eq 1 ]; then
-  hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
-  hn=$(basename "$hnl")
+ if [ $cnt -eq 1 ]||[ "x${hn}" == "xdefault" ]; then
+  if [ "x${hn}" != "xdefault" ]; then
+   hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
+   hn=$(basename "$hnl")
+  else
+   hn="DEFAULT"
+  fi
   fn="${DATADIR}/data/roles/${usr}@${hn}.roles"
   if [ ! -r "${fn}" ];then
    cat <<EOF > "${fn}.tmp"

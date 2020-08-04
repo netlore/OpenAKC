@@ -679,12 +679,16 @@ case "$MODE" in
   ROLEFN="/tmp/.openakc_edit.$$"
   MODE="getrole"
   netcall
-  echo "Role configuration below:- $PAGER"
-  [ ! -x "$(which ${PAGER})" ]&&PAGER="more"
-  if [ ! -x "$(which ${PAGER})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
-  $PAGER "$ROLEFN"
-  rm "$ROLEFN"
-  exit 0
+  if [ -f ${ROLEFN} ]; then 
+   echo "Role configuration below:- $PAGER"
+   [ ! -x "$(which ${PAGER})" ]&&PAGER="more"
+   if [ ! -x "$(which ${PAGER})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
+   $PAGER "$ROLEFN"
+   rm "$ROLEFN"
+   exit 0
+  else
+   exit 1
+  fi
   ;;
  editrole)
   # FIXME Do some input validation

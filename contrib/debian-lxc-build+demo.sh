@@ -354,10 +354,12 @@ echo
 lxc-attach -n openakc-combined -- apt update
 lxc-attach -n openakc-combined -- apt -q -y dist-upgrade
 lxc-attach -n openakc-combined -- apt -q -y install build-essential unzip libcap-dev libssl-dev
+lxc-attach -n openakc-combined -- apt -q -y install joe
 lxc-attach -n openakc-combined -- apt -q -y install xinetd openssl sudo
 #
 lxc-attach -n openakc-client -- apt update
 lxc-attach -n openakc-client -- apt -q -y dist-upgrade
+lxc-attach -n openakc-client -- apt -q -y install joe
 lxc-attach -n openakc-client -- apt -q -y install openssh-server openssl sudo
 #
 if [ ! -f "${SCRIPTPATH}/../openakc.spec" ]; then
