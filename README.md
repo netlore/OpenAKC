@@ -1,19 +1,29 @@
 # OpenAKC
 
-##### Do you have wish you could take control of your SSH trust, stop users from altering or adding trust relationships inside your environment and control when, or how keys can be used?
+<img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys.jpg"></a>
 
-##### Do you wish you could meet your security teams requirements for identifying which users are accessing role accounts (or even root accounts) without needing to join a directory such as AD or LDAP on every server, with the management overhead that brings?
+##### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
 
-##### Do you wish your users could manage their own private keys and you didn't need to keep track which personal key grants access where and who owns it?
+* Centrally and control all of your SSH trust.
 
-##### Do you wish you could instantly update or remove a key across an entire estate, without even having to log in to the servers in question?
+* Stop users from altering or adding trust relationships.
 
-##### Do you wish you could protect critical system files, or user data from junior sysadmins?
+* Control when, and how keys can be used.
 
-#### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
+* Meet your security requirements related to logging privilage escalation without needing to roll out a directory such as AD or LDAP across your entire estate.
+
+* Allow users to manage their own private keys and use those keys to access role accounts with based on rules you define.
+
+* Never manage an "authorized_keys" file again.
+
+* Instantly update or remove a key across an entire estate, without even having to log in to the servers in question.
+
+* Define rules for access to servers that are not yet configured
+
+* Creative use of the interface to "Linux Capabilities" allows you to apply controls other systems can only dream of. Protect critical system files, or user data from junior sysadmins and oportunistic developers alike.... the possibilities are endless.
 
 
-It a can be used as a stand alone tool or as part of a more advanced "Privilaged Access Management" tool if integrated with a system for approving access, either via a directory such as AD / LDAP or direcetly via the API.
+OpenAKC is a building block which can be used as a stand alone tool or as part of an integrated "Privilaged Access Management" tool if combined with a system for approving access, either via a directory such as AD / LDAP or direcetly via the API, perhaps from a web application.
 
 With a client server model, you are free to completely disable local ssh authentication methods your users might leverage to bypass access control!  Confound your troublesome users, or hackers with ssh configuration like this:-
 
