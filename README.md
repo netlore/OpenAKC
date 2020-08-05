@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys.jpg"></a>
 
-##### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
+#### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
 
 * Centrally and control all of your SSH trust.
 
