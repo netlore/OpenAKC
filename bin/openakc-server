@@ -598,7 +598,12 @@ rbauth () {
  EXT="none"
  #
  grant=0
+ 
  if [ "x${PUBKEY}" != "x" ]; then
+  ( ${PREEXEC} ${HNS}.${HND} ${HIP} ${KEYF} ${USR} ) 2> /dev/null 1> /dev/null
+  PRERES=${?}
+ fi
+ if [ "x${PUBKEY}" != "x" ]&&[ ${PRERES} -eq 0 ]; then
   #
   data_sessionlog 
   if [ $TDIF -lt 10 ]; then
@@ -609,7 +614,7 @@ rbauth () {
   logdebug "Reply flag set to ${REPLYFLG}"
   #
   data_openroles
-  logdebug "Opening Roles ${reply} - ${fn}"
+  logdebug "Opening Roles ${reply}"
  # 
   if [ "x${reply:0:3}" != "xERR" ]; then
    logdebug "Trying to read role file"
@@ -632,41 +637,6 @@ rbauth () {
     if [ "x${rdata:0:5}" == "xROLE=" ]; then
      logdebug "Starting to process ROLE - ${rdata}"
      if [ $grant -eq 1 ]; then
-      logdebug "Inside final grant"
-      TOK=0
-      DOK=0
-      DNOW=$(date +%a | tr 'A-Z' 'a-z')
-      TNOW=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
-      logdebug "Starting time check"
-      if [ "x${TIM}" != "xany" ]; then
-       echo $TIM|egrep "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
-       if [ $? -eq 0 ]; then
-        TBEF=$(((10#${TIM:0:2}*10#60)+10#${TIM:3:2}))
-        TAFT=$(((10#${TIM:6:2}*10#60)+10#${TIM:9:2}))
-       else
-        TBEF=0
-        TAFT=0
-#        logerr "Time format invalid in role for ${USR}@${HNS}" #FIXME check at upload
-       fi   
-       [ ${TBEF} -lt ${TNOW} ]&&[ ${TAFT} -gt ${TNOW} ]&&TOK=1
-      else
-       TOK=1
-      fi
-      logdebug "Time check done"
-      echo $DAY | grep $DNOW 1> /dev/null 2> /dev/null
-      [ $? -eq 0 ]&&DOK=1
-      [ "x${DAY}" == "xany" ]&&DOK=1
-      #
-      logdebug "Role Day = ${DAY}, Role Time = ${TIM}, Current Day = ${DNOW}, Current Mins = ${TNOW}, Before Mins = ${TBEF}, After Mins = ${TAFT}"
-      logdebug "Day OK = ${DOK}, Time OK = ${TOK}"
-      if [ "x${TOK}" != "x1" ]; then
-       logdebug "Denied Based on time of day"
-       grant=0
-      fi
-      if [ "x${DOK}" != "x1" ]; then
-       logdebug "Denied Based on day of week"
-       grant=0
-      fi
       break
      fi
      rdata=$(echo $rdata | awk -F= '{print $2}')
@@ -711,19 +681,61 @@ rbauth () {
     fi
     logdebug "Repeating auth loop"
    done
-   logdebug "Auth loop done"
+   logdebug "Auth loop done, checking negatives"
+#   
+   if [ $grant -eq 1 ]; then
+    logdebug "Inside final grant"
+    TOK=0
+    DOK=0
+    DNOW=$(date +%a | tr 'A-Z' 'a-z')
+    TNOW=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
+    logdebug "Starting time check"
+    if [ "x${TIM}" != "xany" ]; then
+     echo $TIM|egrep "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
+     if [ $? -eq 0 ]; then
+      TBEF=$(((10#${TIM:0:2}*10#60)+10#${TIM:3:2}))
+      TAFT=$(((10#${TIM:6:2}*10#60)+10#${TIM:9:2}))
+     else
+      TBEF=0
+      TAFT=0
+#      logerr "Time format invalid in role for ${USR}@${HNS}" #FIXME check at upload
+     fi   
+     [ ${TBEF} -lt ${TNOW} ]&&[ ${TAFT} -gt ${TNOW} ]&&TOK=1
+    else
+     TOK=1
+    fi
+    logdebug "Time check done"
+    echo $DAY | grep $DNOW 1> /dev/null 2> /dev/null
+    [ $? -eq 0 ]&&DOK=1
+    [ "x${DAY}" == "xany" ]&&DOK=1
+    #
+    logdebug "Role Day = ${DAY}, Role Time = ${TIM}, Current Day = ${DNOW}, Current Mins = ${TNOW}, Before Mins = ${TBEF}, After Mins = ${TAFT}"
+    logdebug "Day OK = ${DOK}, Time OK = ${TOK}"
+    if [ "x${TOK}" != "x1" ]; then
+     logdebug "Denied Based on time of day"
+     grant=0
+    fi
+    if [ "x${DOK}" != "x1" ]; then
+     logdebug "Denied Based on day of week"
+     grant=0
+    fi
+   fi
+#
+   logdebug "Auth done"
    rm ${rfn} 2> /dev/null
    logdebug "Updating Session Log"
    data_sessionlog
   fi
  fi
  if [ ${grant} -eq 1 ]; then
+  ( ${POSTEXEC} ${HNS}.${HND} ${HIP} ${KEYF} ${USR} ACCEPT ${RPPID}-${HID} ) 2> /dev/null 1> /dev/null
   REPLYLOG="User $USR authenticated on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
   REPLYKEY="no-port-forwarding,no-X11-forwarding,from=\"$FRM\",command=\"/usr/bin/openakc-session $API $RPPID $HID $HNS\" $PUBKEY"
   if [ "x${CMD}" == "xinternal-sftp" ]; then
    REPLYKEY="no-port-forwarding,no-X11-forwarding,from=\"$FRM\",command=\"internal-sftp -f LOCAL6 -l INFO\" $PUBKEY"
   fi
  else
+  ( ${POSTEXEC} ${HNS}.${HND} ${HIP} ${KEYF} ${USR} DENY ${RPPID}-${HID} ) 2> /dev/null 1> /dev/null
   REPLYLOG="User $USR denied on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
   REPLYKEY="command=\"/usr/bin/openakc-session $API $RPPID $HID $HNS\" ssh-rsa DENIED"
  fi

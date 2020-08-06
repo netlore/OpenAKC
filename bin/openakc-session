@@ -349,7 +349,7 @@ apicall () {
  
  if [ "x$SSH_TTY" != "x" ]; then
   logdebug "Going to interactive mode"
-  if [ "x${HIDE}" == "xno" ]; then
+  if [ "x${HIDE}" != "xyes" ]; then
    echo "OpenAKC (v${RELEASE}) - Interactive Session Initialized"
    echo
   elif [ "x${QUIZ}" == "xyes" ]; then
