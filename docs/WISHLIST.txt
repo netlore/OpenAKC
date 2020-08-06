@@ -2,12 +2,8 @@
 
 * Code review, fix up input validation and graceful error handling/logging.
 
-* Client package needs to set bins, and sshd_config to be immutable, and
+* Client package needs to set bins, (and sshd_config?) to be immutable, and
   handle resetting the flag on upgrade/removal.
-
-* Implement PREEXEC/POSTEXEC feature to allow external script to be executed
-  before/after authentication process on server, to allow functionality such
-  as force directory refresh for user details incase of recent group changes.
 
 
 
@@ -56,3 +52,6 @@
 
 * DONE - Audit should collect sshd_config if possible.
 
+* DONE - Implement PREEXEC/POSTEXEC feature to allow external script to be executed
+  before/after authentication process on server, to allow functionality such
+  as force directory refresh for user details incase of recent group changes.
