@@ -1,0 +1,42 @@
+Package: openakc-server
+Architecture: amd64
+Version: 1.0.0~alpha1-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, xinetd, openakc-tools
+Filename: ./openakc-server_1.0.0~alpha1~ubuntu20.04-1_amd64.deb
+Size: 154046
+MD5sum: 6c40a7984d2b095b87bcd8241c190a3a
+SHA1: 8b089a976630225d997a1978c4bc0fba295fc748
+SHA256: 086749aa349fbd19609fe40771a38c22dad9a992a485bb6ac163eefbac8d2f85
+SHA512: aa66a50a578d65a7c3123cbdc584ca2ab68de879908b6904af25ce4030e7416692bbb2db2cb6d77c07b9b19b87268291449437ca496c8259f674985f6f04f016
+Homepage: http://www.fsck.co/uk/openakc/
+Description: OpenAKC API Server
+
+Package: openakc-tools
+Architecture: amd64
+Version: 1.0.0~alpha1-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, sudo, debianutils
+Filename: ./openakc-tools_1.0.0~alpha1~ubuntu20.04-1_amd64.deb
+Size: 16126
+MD5sum: 3d4009313fe992580053a5ad1dcb757e
+SHA1: 648f1e1539231e21087e20f5b1593f718658e8da
+SHA256: 9f4c853f6cffed30769f37eec82c220a51deffa23aa0a813d323e3f670af83b8
+SHA512: 050c80f469b6ebfca9c4ee7f296f4ddcfe18b3272689ad84e0de62609dce1709c033700309aafa8c85c0ce938d693bde383790408eb9702740bb64860f2db3fc
+Homepage: http://www.fsck.co.uk/openakc/
+Description: OpenAKC API Tools
+
+Package: openakc
+Architecture: amd64
+Version: 1.0.0~alpha1-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: openssh-server (>= 7.0), openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, debianutils, e2fsprogs, libcap2
+Filename: ./openakc_1.0.0~alpha1~ubuntu20.04-1_amd64.deb
+Size: 154218
+MD5sum: d3035cdc95f45896778cc3646632d939
+SHA1: 8f29a3d71454592ea1c53613d49775698b188582
+SHA256: 4d5da6d3d9e5b47d97ed652eb69d34a72bd7a51823b474cd99191a587a658d7b
+SHA512: b9214dca116e699a6b7f260b4f83fea241bb575c44f8cf2e6b22e8e77baa2354012d1894bbbe850187e384afdbda5cc1c3b4821ed3a38e39a3eaeabbb60e9834
+Homepage: http://www.fsck.co/uk/openakc/
+Description: OpenAKC Agent
+
