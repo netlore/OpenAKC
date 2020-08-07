@@ -4,11 +4,11 @@ Version: 1.0.0~alpha1-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, xinetd, openakc-tools
 Filename: ./openakc-server_1.0.0~alpha1~ubuntu18.04-1_amd64.deb
-Size: 154342
-MD5sum: 7d71c4a7a5538542928f825d33e43ebd
-SHA1: 582649429c73b4e3cd410243a87e653c42d41fc0
-SHA256: 79f79110c0dc38576c73c7c96a2ee98631909c40e32cbe730c8ed68a21b07925
-SHA512: b3879c82f25dd1c9e48fa83bbb6945a78deff3cbfdeb27bd613d371799581f20e034b9cc82dc85804406229e2c30d001a643b2f87a989c73e47cd41d36904709
+Size: 154418
+MD5sum: a5cd4e230b137a0197712677ca7789fd
+SHA1: 0c24385a27fce8f26f4516fdc5affa218ea3e890
+SHA256: fa087d73c909a15287b499f8a3b483a3f62a5e23ba7474632c66c217e9db3812
+SHA512: f38a56bf0a1c37851325bc6feb15f17508d779e2c141cc875cc6c46bd59bf87d3614c47d2e4e2403c00ff4cb8f0b429102c3c774e9b9ef80956cc014e17723b9
 Homepage: http://www.fsck.co/uk/openakc/
 Description: OpenAKC API Server
 
@@ -19,10 +19,10 @@ Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, sudo, debianutils
 Filename: ./openakc-tools_1.0.0~alpha1~ubuntu18.04-1_amd64.deb
 Size: 16122
-MD5sum: 0dfc45aa83e0836550f52a25c1597ebb
-SHA1: 41cf6eae23c12b5787cb30bff898270480c8ddff
-SHA256: 182ee8d40e31f1b9c6e24a5e0fe09e6f2b6840e66c128d87a5291974d0b8312d
-SHA512: 816007c6fe03e354fd0019dfc8f685882302ffd7bb20ec410426026ab5b9572eeb52acaed85b8309652db62bbd4f44a54622e543a5f2481ac73e414a0c91841e
+MD5sum: da1827927b6dea4091a6bd2d018b96b7
+SHA1: 2451b2da3fbd91f66993ff1a2aa7062960b2393c
+SHA256: 55b5f23b0823610232cb0b9daf08acb988dd71de1fd97c44b9500ed5c6eb8fa3
+SHA512: b6cb31a34a5ababef7cf0139ffd0fc3549c25a7c07df544d0c0f637dcf9b9eba92411112d532b13c28dcbd2cafb534dec1053315e622b0202e2040c72d4cc888
 Homepage: http://www.fsck.co.uk/openakc/
 Description: OpenAKC API Tools
 
@@ -32,11 +32,11 @@ Version: 1.0.0~alpha1-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: openssh-server (>= 7.0), openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, debianutils, e2fsprogs, libcap2
 Filename: ./openakc_1.0.0~alpha1~ubuntu18.04-1_amd64.deb
-Size: 154610
-MD5sum: 42a51b32f24e89f580db89c0f0ec5b4a
-SHA1: 58f9f2dad120cff6ebd6b8e1fd4b4c77c389640c
-SHA256: f60e3e992375eebc28fc8491a09213c45584e331b865d6f9bd06dc3a736df3d8
-SHA512: 8a667517f2f4ce0103c21fb2c6d963ced0b2e66315257d7d09108996fc7cda8c99909439524f146766469bfd0032320921d34499102e705f3cb6fb59f7d8cb48
+Size: 154630
+MD5sum: 766e5a1d63c7651db102f9dd23288cb8
+SHA1: fbcac2772962a0ffcd577b2923f98ec0495538ef
+SHA256: 4d6ad566fad514f89f10d056429934e6a63e1c7e53895aa4dfa3e88d46e28da1
+SHA512: 9de63c3b1805776eb8382a368668e59322a14640f3e9abe88b83f321f86177c56576633e7fc359f8c56f371dac77627accff3e8e25c32e83cd173223571378f1
 Homepage: http://www.fsck.co/uk/openakc/
 Description: OpenAKC Agent
 
