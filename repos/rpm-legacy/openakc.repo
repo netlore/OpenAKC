@@ -1,0 +1,7 @@
+[OpenAKC Legacy]
+name=OpenAKC packages for older OS
+type=rpm-md
+baseurl=https://netlore.github.io/OpenAKC/repos/rpm-legacy
+gpgcheck=1
+gpgkey=https://raw.githubusercontent.com/netlore/OpenAKC/master/resources/openakc.key
+enabled=1
