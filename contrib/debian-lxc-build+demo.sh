@@ -23,8 +23,8 @@
 # User Config
 #
 SUBID="100000" # Update by adding 100000 if range in use.
-CONTAINEROPTS="-d $(lsb_release -si | tr 'A-Z' 'a-z') -r $(lsb_release -sc | tr 'A-Z' 'a-z') -a amd64"
-#CONTAINEROPTS="-d ubuntu -r bionic -a amd64" # Set null to be asked.
+#CONTAINEROPTS="-d $(lsb_release -si | tr 'A-Z' 'a-z') -r $(lsb_release -sc | tr 'A-Z' 'a-z') -a amd64"
+CONTAINEROPTS="-d ubuntu -r focal -a amd64" # Set null to be asked.
 #
 
 #
