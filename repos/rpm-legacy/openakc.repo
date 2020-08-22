@@ -1,4 +1,4 @@
-[OpenAKC Legacy]
+[OpenAKC-Legacy]
 name=OpenAKC packages for older OS
 type=rpm-md
 baseurl=https://netlore.github.io/OpenAKC/repos/rpm-legacy
