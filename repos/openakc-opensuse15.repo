@@ -1,0 +1,7 @@
+[OpenAKC]
+name=OpenAKC packages
+type=rpm-md
+baseurl=https://netlore.github.io/OpenAKC/repos/opensuse15
+gpgcheck=1
+gpgkey=https://raw.githubusercontent.com/netlore/OpenAKC/master/resources/openakc.key
+enabled=1
