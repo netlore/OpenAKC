@@ -57,11 +57,28 @@ Add the repository:
 
 Note that it is likely that the "openakc-el7.repo" will work on any Fedora version from 19 onwards, and the "openakc-el8.repo" will work on any Fedora 28 onwards, but this has not been explicitly tested.  Your feedback is welcomed.
 
+Install one of the following (use yum or dnf as appropriate:
+
+| Host Type              | Install Package             |
+|------------------------------------|-------------|
+| OpenAKC Security Server            | sudo yum/dnf install openakc-server |
+| OpenAKC Client                     | sudo yum/dnf install openakc        |
+| OpenAKC Remote Management Host     | sudo yum/dnf install openakc        |
+
+
 #### OpenSuSE/SuSE Enterprise based distros
 
 | OS Version                         | Add Repo      |
 |------------------------------------|---------------|
 | OpenSuSE 15  |wget -O - https://netlore.github.io/OpenAKC/repos/openakc-opensuse15.repo &#124; sudo tee /etc/zypp/repos.d/openakc.repo|
+
+Install one of the following:
+
+| Host Type              | Install Package             |
+|------------------------------------|-------------|
+| OpenAKC Security Server            | sudo zypper install openakc-server |
+| OpenAKC Client                     | sudo zypper install openakc        |
+| OpenAKC Remote Management Host     | sudo zypper install openakc        |
 
 
 ### Basic Setup
