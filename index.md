@@ -1,5 +1,7 @@
 <center> <h1> OpenAKC downloads. </h1> </center>
 
+<img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys-short.jpg"></a>
+
 You can find the [source code for the project on GitHub](https://github.com/netlore/OpenAKC/) if you are interested in contributing to the code, reporting issues, or helping with documentation etc, but to simply make use of the project to support your users, please use the repo's below.
 
 If you don't see a package for the distributuion you are using, please feel free to open an issue in the GitHub page above, if at all possible I will assist.  It may simply be that I need someone with access to that platform to test packages, and in cases where a specific OS package cannot be created, I will endevour to create an install script. If you can assist with testing, or packaging for a particular platform, please make yourself known!.
