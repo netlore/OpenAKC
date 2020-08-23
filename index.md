@@ -8,14 +8,14 @@ If you don't see a package for the distributuion you are using, please feel free
 
 #### Debian / Ubuntu based distros
 
-Download and add the repository key:
+##### Download and add the repository key:
 
 ```markdown
 wget -nc https://raw.githubusercontent.com/netlore/OpenAKC/master/resources/openakc.key
 sudo apt-key add openakc.key
 ```
 
-Add the repository: 
+##### Add the repository: 
 
 
 | OS Version                         | Add Repo      |
@@ -24,13 +24,13 @@ Add the repository:
 | Ubuntu/PopOS 20.04+<br>Mint 20.x   |echo "deb https://netlore.github.io/OpenAKC/repos/ubuntu/18.04 ./" &#124; sudo tee /etc/apt/sources.list.d/openakc.list|
 | Debian 10(buster)                  | Coming Soon                                                                                                           |
 
-Update packages:
+##### Update packages:
 
 ```markdown
 sudo apt update
 ```
 
-Install one of the following:
+##### Install one of the following:
 
 | Host Type              | Install Package             |
 |------------------------------------|-------------|
@@ -40,13 +40,13 @@ Install one of the following:
 
 #### Redhat / Fedora based distros
 
-DNF based distros may need to install the DNF config manager module:
+##### DNF based distros may need to install the DNF config manager module:
 
 ```markdown
 sudo dnf install 'dnf-command(config-manager)'
 ```
 
-Add the repository: 
+##### Add the repository: 
 
 | OS Version                         | Add Repo      |
 |------------------------------------|---------------|
@@ -57,7 +57,7 @@ Add the repository:
 
 Note that it is likely that the "openakc-el7.repo" will work on any Fedora version from 19 onwards, and the "openakc-el8.repo" will work on any Fedora 28 onwards, but this has not been explicitly tested.  Your feedback is welcomed.
 
-Install one of the following (use yum or dnf as appropriate:
+##### Install one of the following (use yum or dnf as appropriate:
 
 | Host Type              | Install Package             |
 |------------------------------------|-------------|
@@ -68,11 +68,13 @@ Install one of the following (use yum or dnf as appropriate:
 
 #### OpenSuSE/SuSE Enterprise based distros
 
+##### Add the repository:
+
 | OS Version                         | Add Repo      |
 |------------------------------------|---------------|
 | OpenSuSE 15  |wget -O - https://netlore.github.io/OpenAKC/repos/openakc-opensuse15.repo &#124; sudo tee /etc/zypp/repos.d/openakc.repo|
 
-Install one of the following:
+##### Install one of the following:
 
 | Host Type              | Install Package             |
 |------------------------------------|-------------|
