@@ -4,7 +4,8 @@ You can find the [source code for the project on GitHub](https://github.com/netl
 
 If you don't see a package for the distributuion you are using, please feel free to open an issue in the GitHub page above, if at all possible I will assist.  It may simply be that I need someone with access to that platform to test packages, and in cases where a specific OS package cannot be created, I will endevour to create an install script. If you can assist with testing, or packaging for a particular platform, please make yourself known!.
 
-### Repos for Debian / Ubuntu based distros
+
+### Debian / Ubuntu
 
 #### Download and add the repository key:
 
@@ -36,7 +37,7 @@ sudo apt update
 | OpenAKC Client                     | sudo apt install openakc        |
 | OpenAKC Remote Management Host     | sudo apt install openakc        |
 
-### Repos for Redhat / Fedora based distros
+### Redhat / Fedora
 
 #### DNF based distros may need to install the DNF config manager module:
 
@@ -64,7 +65,7 @@ Note that it is likely that the "openakc-el7.repo" will work on any Fedora versi
 | OpenAKC Remote Management Host     | sudo yum/dnf install openakc        |
 
 
-### Repos for OpenSuSE/SuSE Enterprise based distros
+### OpenSuSE/SuSE Enterprise
 
 #### Add the repository:
 
