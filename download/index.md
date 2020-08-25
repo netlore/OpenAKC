@@ -52,9 +52,9 @@ sudo dnf install 'dnf-command(config-manager)'
 | OS Version                         | Add Repo      |
 |------------------------------------|---------------|
 | Redhat Enterprise 7<br>Centos 7<br>Oracle Linux 7  |wget -O - https://netlore.github.io/OpenAKC/repos/openakc-el7.repo &#124; sudo tee /etc/yum.repos.d/openakc.repo|
-| Redhat Enterprise 8<br>Centos 8<br>Oracle Linux 8  |dnf config-manager --add-repo https://netlore.github.io/OpenAKC/repos/openakc-el8.repo                          |
-| Fedora 31                                          |dnf config-manager --add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora31.repo                     |
-| Fedora 32                                          |dnf config-manager --add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora32.repo                     |
+| Redhat Enterprise 8<br>Centos 8<br>Oracle Linux 8  |dnf config-manager &#45;-add-repo https://netlore.github.io/OpenAKC/repos/openakc-el8.repo                          |
+| Fedora 31                                          |dnf config-manager &#45;-add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora31.repo                     |
+| Fedora 32                                          |dnf config-manager &#45;-add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora32.repo                     |
 
 Note that it is likely that the "openakc-el7.repo" will work on any Fedora version from 19 onwards, and the "openakc-el8.repo" will work on any Fedora 28 onwards, but this has not been explicitly tested.  Your feedback is welcomed.
 
