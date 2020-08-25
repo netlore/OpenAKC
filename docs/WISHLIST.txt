@@ -5,10 +5,15 @@
 * Client package needs to set bins, (and sshd_config?) to be immutable, and
   handle resetting the flag on upgrade/removal.
 
+* Fix rolefile interpreter bug
+
+* Review log levels due to issues with rhel8
 
 
 
 *Possible Future Enhancements*
+
+* Write reason for authentication failure into the session record.
 
 * Can we add passphrase to admin private key for making role updates?
 

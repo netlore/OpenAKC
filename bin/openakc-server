@@ -178,7 +178,7 @@ else
  logerr "OpenSSL too old, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 10100 ];then
+if [ $OSSLV -ge 10101 ];then
  PROTOS="akcrsa1 akcrsa1.1" # Space Separated List
 fi
 

@@ -109,7 +109,7 @@ else
  logerr "OpenSSL too old, exiting."
  exit 1
 fi
-if [ ${OSSLV} -ge 908 ];then
+if [ ${OSSLV} -ge 10101 ];then
  CPROTOS="akcrsa1 akcrsa1.1" # Space Separated List
 fi
 
@@ -330,7 +330,7 @@ apicall () {
  #
  # Generate Session Key and register it.
  #
- SESSKEY=$(openssl rand -hex 26)
+ SESSKEY=$(openssl rand -hex 26 2> /dev/null)
  SESSCODE=$(echo ${SESSKEY} | openssl rsautl -encrypt -inkey "${DATADIR}/keys/openakc-server-pubkey-${1}.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
 
  echo "sessioncode ${SESSCODE}" >&5
