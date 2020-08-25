@@ -362,7 +362,7 @@ lxc-attach -n openakc-client -- apt -q -y dist-upgrade
 lxc-attach -n openakc-client -- apt -q -y install joe
 lxc-attach -n openakc-client -- apt -q -y install openssh-server openssl sudo
 #
-if [ ! -f "${SCRIPTPATH}/../openakc.spec" ]; then
+if [ ! -f "${SCRIPTPATH}/../openakc-rhel.spec" ]; then
  printf "${CYAN}Can't find source code, exiting.${WHITE}\n"
  echo
  exit 1
