@@ -20,7 +20,7 @@ sudo apt-key add openakc.key
 
 
 | OS Version                         | Add Repo      |
-|------------------------------------|:-------------:|
+|------------------------------------|---------------|
 | Ubuntu/PopOS 18.04+<br>Mint 19.x   |echo "deb https://netlore.github.io/OpenAKC/repos/ubuntu/18.04 ./" &#124; sudo tee /etc/apt/sources.list.d/openakc.list|
 | Ubuntu/PopOS 20.04+<br>Mint 20.x   |echo "deb https://netlore.github.io/OpenAKC/repos/ubuntu/20.04 ./" &#124; sudo tee /etc/apt/sources.list.d/openakc.list|
 | Debian 10(buster)                  |echo "deb https://netlore.github.io/OpenAKC/repos/debian/10 ./" &#124; sudo tee /etc/apt/sources.list.d/openakc.list   |
