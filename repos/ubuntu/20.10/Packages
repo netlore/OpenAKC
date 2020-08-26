@@ -1,0 +1,56 @@
+Package: createrepo
+Architecture: amd64
+Version: 0.16.0+git3bd9d9c-1
+Maintainer: Tomas Mlcoch <tmlcoch@redhat.com
+Depends: rpm (>= 4.9.0), libxml2-utils, libbz2-1.0, libcurl4, libmagic1, libxml2, liblzma5, libssl1.1, sqlite, librpm8, libdrpm0, libmodulemd2, libcap2
+Filename: ./createrepo-0.16.0+git3bd9d9c~ubuntu20.10-1_amd64.deb
+Size: 401914
+MD5sum: 069acf6b0b29dee319a41e0f7b0d0b88
+SHA1: 35126083429272868dd402f34c5783d4681694b5
+SHA256: 3b378d4fa0e7121dfaed9f134bfccc500bc908677f48a512c772526ff4172dc9
+SHA512: 0de3942cfb0913031b611aeb252bfd25897b943137f97c2c3931822b3a731df9edc78144b90459857ef4bc492da61f72a3381bfd224bd34807985b3aa06a1e28
+Homepage: https://github.com/rpm-software-management/createrepo_c
+Description: Creates a common metadata RPM repository
+
+Package: openakc-server
+Architecture: amd64
+Version: 1.0.0~alpha2-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, xinetd, openakc-tools
+Filename: ./openakc-server_1.0.0~alpha2~ubuntu20.10-1_amd64.deb
+Size: 155870
+MD5sum: 11ca862d388216354894865d7ab9111d
+SHA1: 95ec66164dc759b047c13fb998070672196df548
+SHA256: a5f47ff3fd281d307b45f58f6083385daa2f15c95de2b805ac3a2bbd77709829
+SHA512: b7d5013b5892bd3a0ac8b972dab3e040a10b4301f81a522a19af35cf4c85ca61d680947575d2a0e5da9dac10a445894525804c203895feb898be8eed710bc786
+Homepage: http://www.fsck.co/uk/openakc/
+Description: OpenAKC API Server
+
+Package: openakc-tools
+Architecture: amd64
+Version: 1.0.0~alpha2-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, sudo, debianutils
+Filename: ./openakc-tools_1.0.0~alpha2~ubuntu20.10-1_amd64.deb
+Size: 16122
+MD5sum: 8b85f9f85aa9d49bd4aa427dbe5b8ba9
+SHA1: a3fd677f3d79a9b53d5ab5214d7dcb2df9c199d7
+SHA256: e25cc5b2a48ac6510a5736d4e7a1c7483994e47635cacb584caaf1762f83436f
+SHA512: 1f9aed27a0806950ef510e0b0ac686d6b8b0152511f5359cacac4122e19f3b177326ae70aa779f52382587831d10834a6b3a4f01ccf90b21924f17e783383da6
+Homepage: http://www.fsck.co.uk/openakc/
+Description: OpenAKC API Tools
+
+Package: openakc
+Architecture: amd64
+Version: 1.0.0~alpha2-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: openssh-server (>= 7.0), openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, debianutils, e2fsprogs, libcap2
+Filename: ./openakc_1.0.0~alpha2~ubuntu20.10-1_amd64.deb
+Size: 155930
+MD5sum: 8615e7627459b401b6317744dca15b94
+SHA1: ac4aa0f09939ba069b7e9b5d596a00fd6d5af1a7
+SHA256: 9611da49bb15f0c94d65244a7c48fcccc6f0674a7e10218a0a3a3f920f76942e
+SHA512: 93f9d8192a763242049e190ee7b65c48cded797f0bc89fb09da3a5363c8a2c1efde4fa5790097139375be58ef4c8a16dafd73f75d9dbb33d632c80013971dba3
+Homepage: http://www.fsck.co/uk/openakc/
+Description: OpenAKC Agent
+
