@@ -51,7 +51,7 @@ sudo dnf install 'dnf-command(config-manager)'
 
 | OS Version                         | Add Repo      |
 |------------------------------------|---------------|
-| Redhat Enterprise 7<br>Centos 7<br>Oracle Linux 7  |wget -O - https://netlore.github.io/OpenAKC/repos/openakc-el7.repo &#124; sudo tee /etc/yum.repos.d/openakc.repo|
+| Redhat Enterprise 7<br>Centos 7<br>Oracle Linux 7  |curl https://netlore.github.io/OpenAKC/repos/openakc-el7.repo &#124; sudo tee /etc/yum.repos.d/openakc.repo|
 | Redhat Enterprise 8<br>Centos 8<br>Oracle Linux 8  |dnf config-manager &#45;-add-repo https://netlore.github.io/OpenAKC/repos/openakc-el8.repo                          |
 | Fedora 31                                          |dnf config-manager &#45;-add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora31.repo                     |
 | Fedora 32                                          |dnf config-manager &#45;-add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora32.repo                     |
@@ -73,7 +73,9 @@ Note that it is likely that the "openakc-el7.repo" will work on any Fedora versi
 
 | OS Version                         | Add Repo      |
 |------------------------------------|---------------|
-| OpenSuSE 15  |wget -O - https://netlore.github.io/OpenAKC/repos/openakc-opensuse15.repo &#124; sudo tee /etc/zypp/repos.d/openakc.repo|
+| OpenSuSE 15  |curl https://netlore.github.io/OpenAKC/repos/openakc-opensuse15.repo &#124; sudo tee /etc/zypp/repos.d/openakc.repo|
+| SuSE Enterprise 15  |curl https://netlore.github.io/OpenAKC/repos/openakc-sles15.repo &#124; sudo tee /etc/zypp/repos.d/openakc.repo|
+| SuSE Enterprise 12  |curl https://netlore.github.io/OpenAKC/repos/openakc-sles12.repo &#124; sudo tee /etc/zypp/repos.d/openakc.repo|
 
 #### Install one of the following:
 
@@ -90,4 +92,4 @@ For a simple setup using a single security server with either no users or where 
 
 ### Support or Contact
 
-Having trouble with OpenAKC? Check out our [documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC%20Admin%20Guide.pdf) or [contact](openakc@default.co.uk) and we’ll help you sort it out.
+Having trouble with OpenAKC? Check out our [documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC%20Admin%20Guide.pdf) or [contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query)) and we’ll help you sort it out.
