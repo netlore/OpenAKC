@@ -7,14 +7,14 @@ License:        GPLv2.0
 URL:            https://github.com/netlore/OpenAKC
 Source0:	https://github.com/netlore/OpenAKC/archive/master.zip
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Requires:	openssh >= 7.0, openssl >= 0.9.8, bash, coreutils, hostname, which, e2fsprogs, libcap2, libcap-progs
+Requires:	openssh >= 7.0, openssl >= 0.9.8, bash, coreutils, which, e2fsprogs, libcap2, libcap-progs
 BuildRequires:  gcc, gcc-c++, bash, libcap-devel, openssl-devel, patch, unzip, tar
 #, shc < 3.9
 
 
 %package tools
 Summary:       This OpenAKC "tools" package contains tools for registering with the server and for managing OpenAKC via the API.
-Requires:      openssl >= 0.9.8, bash, coreutils, hostname, sudo, which
+Requires:      openssl >= 0.9.8, bash, coreutils, sudo, which
 
 %package server
 Summary:	This OpenAKC "server" package contains the API server which answers client authentication requests.
