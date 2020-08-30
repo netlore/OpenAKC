@@ -1,5 +1,5 @@
 Name:           openakc
-Version:        1.0.0~alpha2
+Version:        1.0.0~alpha3
 Release:        1%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
@@ -61,6 +61,7 @@ mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/var/lib/openakc
 mkdir -p %{buildroot}/etc/sudoers.d
 mkdir -p %{buildroot}/etc/xinetd.d
+mkdir -p %{buildroot}/etc/rsyslog.d
 #mkdir -p %{buildroot}/etc/cron.daily
 #mkdir -p %{buildroot}/tmp
 
@@ -127,6 +128,7 @@ cp bin/openakc-session.x %{buildroot}/usr/bin/openakc-session
 cp bin/openakc-server.x %{buildroot}/usr/sbin/openakc-server
 cp resources/openakc-sudoers %{buildroot}/etc/sudoers.d/openakc
 cp resources/openakc-xinetd %{buildroot}/etc/xinetd.d/openakc
+cp resources/openakc-rsyslog %{buildroot}/etc/rsyslog.d/99-openakc.conf
 cp resources/openakc.conf %{buildroot}/etc/openakc/openakc.conf
 
 
@@ -176,7 +178,6 @@ echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /e
 exit 0
 
 
-
 %postun
 case "$*" in
  0) # This is a remove.
@@ -192,6 +193,7 @@ case "$*" in
   echo "Please refer to your system administrator, this should never happen."
 esac
 exit 0
+
 
 %postun server
 case "$*" in
@@ -209,7 +211,6 @@ esac
 exit 0
 
 
-
 %files
 %defattr(-,root,root,-)
 %attr(755, root, root) /usr/bin/openakc-cap
@@ -219,18 +220,19 @@ exit 0
 %dir %attr(755, root, root) /etc/openakc
 %dir %attr(755, openakc, root) /var/lib/openakc
 %attr(644, root, openakc) %config /etc/openakc/openakc.conf
+%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
 %doc OpenAKC*/QUICKSTART.txt
 
-
 %files tools
 %defattr(-,root,root,-)
 %attr(755, root, root) /usr/bin/openakc
+%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/QUICKSTART.txt
-#%doc OpenAKC*/docs/OpenAKC_Instructions-Tools.pdf
+#%doc OpenAKC*/docs/OpenAKC_Tools_Guide.pdf
 
 %files server
 %defattr(-,root,root,-)
@@ -238,13 +240,18 @@ exit 0
 %attr(755, root, root) /usr/sbin/openakc-server
 %attr(640, root, root) %config(missingok) /etc/sudoers.d/openakc
 %attr(640, root, root) %config(missingok) /etc/xinetd.d/openakc
+%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
 %doc OpenAKC*/QUICKSTART.txt
+%doc OpenAKC*/docs/OpenAKC_Admin_Guide.pdf
 
 
 %changelog
+* Sun Aug 30 2020 James Lewis <james@fsck.co.uk>
+- Added rsyslog filter for debug messages for consistency, as RHEL ignores them.
+
 * Sat Aug 22 2020 James Lewis <james@fsck.co.uk>
 - Forked spec for building on SuSE
 

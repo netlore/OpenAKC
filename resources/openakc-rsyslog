@@ -1,0 +1,4 @@
+if $syslogtag contains "openakc" then {
+  *.debug /var/log/openakc.debug
+  & stop
+}

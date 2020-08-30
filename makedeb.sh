@@ -4,7 +4,7 @@
 # Constants
 #
 source /etc/os-release
-VERSION="1.0.0~alpha2"
+VERSION="1.0.0~alpha3"
 BUILD="1"
 
 #
@@ -118,8 +118,10 @@ mkdir -p "${PDIR}/var/lib/openakc"
 mkdir -p "${PDIR}/usr/sbin"
 mkdir -p "${PDIR}/usr/bin"
 mkdir -p "${PDIR}/usr/share/doc/openakc"
+mkdir -p "${PDIR}/etc/rsyslog.d"
 #
 cp resources/openakc.conf "${PDIR}/etc/openakc/"
+cp resources/openakc-rsyslog "${PDIR}/etc/rsyslog.d/99-openakc.conf"
 cp bin/openakc-cap "${PDIR}/usr/bin/openakc-cap"
 cp bin/openakc-hpenc "${PDIR}/usr/bin/openakc-hpenc"
 cp bin/openakc-session.x "${PDIR}/usr/bin/openakc-session"
@@ -135,6 +137,7 @@ cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc/"
 chmod 755 "${PDIR}/var/lib/openakc"
 chmod 755 "${PDIR}/etc/openakc"
 chmod 644 "${PDIR}/etc/openakc/openakc.conf"
+chmod 644 "${PDIR}/etc/rsyslog.d/99-openakc.conf"
 
 #
 echo "Package: openakc" > "${PDIR}/DEBIAN/control"
@@ -158,12 +161,15 @@ PDIR="openakc-tools_${RELEASE}_amd64"
 mkdir -p "${PDIR}/DEBIAN"
 mkdir -p "${PDIR}/usr/bin"
 mkdir -p "${PDIR}/usr/share/doc/openakc-tools"
+mkdir -p "${PDIR}/etc/rsyslog.d"
 #
 cp bin/openakc "${PDIR}/usr/bin/openakc"
+cp resources/openakc-rsyslog "${PDIR}/etc/rsyslog.d/99-openakc.conf"
 cp LICENSE "${PDIR}/usr/share/doc/openakc-tools/"
 cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc-tools/"
 #
 chmod 755 "${PDIR}/usr/bin/openakc"
+chmod 644 "${PDIR}/etc/rsyslog.d/99-openakc.conf"
 
 #
 echo "Package: openakc-tools" > "${PDIR}/DEBIAN/control"
@@ -192,6 +198,8 @@ mkdir -p "${PDIR}/usr/bin"
 mkdir -p "${PDIR}/etc/sudoers.d"
 mkdir -p "${PDIR}/etc/xinetd.d"
 mkdir -p "${PDIR}/usr/share/doc/openakc-server"
+mkdir -p "${PDIR}/etc/rsyslog.d"
+
 #
 cp bin/openakc-hpenc "${PDIR}/usr/bin/openakc-hpenc"
 cp bin/openakc-server.x "${PDIR}/usr/sbin/openakc-server"
@@ -199,7 +207,8 @@ cp resources/deb_postinst-server "${PDIR}/DEBIAN/postinst"
 cp resources/deb_postrm-server "${PDIR}/DEBIAN/postrm"
 cp resources/openakc-sudoers "${PDIR}/etc/sudoers.d/openakc"
 cp resources/openakc-xinetd "${PDIR}/etc/xinetd.d/openakc"
-#cp docs/OpenAKC.pdf "${PDIR}/usr/share/doc/openakc/"
+cp resources/openakc-rsyslog "${PDIR}/etc/rsyslog.d/99-openakc.conf"
+cp docs/OpenAKC_Admin_Guide.pdf "${PDIR}/usr/share/doc/openakc-server/"
 cp LICENSE "${PDIR}/usr/share/doc/openakc-server/"
 cp LICENSE-hpenc "${PDIR}/usr/share/doc/openakc-server/"
 cp LICENSE-libsodium "${PDIR}/usr/share/doc/openakc-server/"
@@ -208,6 +217,7 @@ cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc-server/"
 #
 chmod 640 "${PDIR}/etc/sudoers.d/openakc"
 chmod 640 "${PDIR}/etc/xinetd.d/openakc"
+chmod 644 "${PDIR}/etc/rsyslog.d/99-openakc.conf"
 
 #
 echo "Package: openakc-server" > "${PDIR}/DEBIAN/control"

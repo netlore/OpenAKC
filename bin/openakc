@@ -66,25 +66,29 @@ NAMEHOST_REGEX="${NAME_REGEX}@${HOST_REGEX}$"
 # Functions
 #
 logstatus () {
- logger -p authpriv.info -t "openakc-tool[$$]" "INFO - $1"
+ logger -p daemon.info -t "openakc-tool[$$]" "INFO - $1"
 }
 
 logauth () {
  logger -p authpriv.notice -t "openakc-tool[$$]" "AUTH - $1"
 }
 
+loginfo () {
+ logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
+}
+
 logdebug () {
  if [ "x$DEBUG" == "xyes" ];then
-  logger -p authpriv.debug -t "openakc-tool[$$]" "DEBUG - $1"
+  logger -p auth.debug -t "openakc-tool[$$]" "DEBUG - $1"
  fi
 }
 
 logwarn () {
- logger -p authpriv.warn -t "openakc-tool[$$]" "WARNING - $1"
+ logger -p auth.warn -t "openakc-tool[$$]" "WARNING - $1"
 }
 
 logerr () {
- logger -p authpriv.err -t "openakc-tool[$$]" "ERROR - $1"
+ logger -p auth.err -t "openakc-tool[$$]" "ERROR - $1"
 }
 
 
@@ -697,6 +701,7 @@ case "$MODE" in
   MODE="getrole"
   netcall
   [ ! -f ${ROLEFN} ]&&exit 0
+  [ ! ${EDITOR} ]&&EDITOR="vi"
   echo "Running editor:- $EDITOR"
   [ ! -x "$(which ${EDITOR})" ]&&EDITOR="vi"
   if [ ! -x "$(which ${EDITOR})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
