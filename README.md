@@ -72,7 +72,7 @@ Examples:
 
 You no-longer have to require users to log in to servers with personal accounts and escalate privilages just to ensure complete logging.  OpenAKC relieves you from managing user permissions, home folders, and authentication across large numbers of machines while ensuring detailed records showing which users accessed which servers, and what they did!
 
-WARNING: This is pre-release software and although it is functional, plenty of work remains to ensure it is robust and secure.
+**WARNING: This is pre-release software and although it is functional, plenty of work remains to ensure it is robust and secure.**
 
 Documentation is still being created, but you may like to see an [Demo Video][demo], I won't be offended if you want to play this at double speed.
 
