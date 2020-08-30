@@ -92,4 +92,5 @@ For a simple setup using a single security server with either no users or where 
 
 ### Support or Contact
 
-Having trouble with OpenAKC? Check out our [documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC%20Admin%20Guide.pdf) or [contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query)) and we’ll help you sort it out.
+Having trouble with OpenAKC? Check out our
+[documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf) or [contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query)) and we’ll help you sort it out.
