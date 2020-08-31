@@ -1,0 +1,15 @@
+#!/bin/bash
+
+[ -d /etc/openakc ]&&chattr -i /etc/openakc
+[ -d /var/lib/openakc ]&&chattr -a /var/lib/openakc
+[ -f /etc/openakc/openakc.conf ]&&chattr -i /etc/openakc/openakc.conf
+[ -f /usr/bin/openakc-cap ]&&chattr -i /usr/bin/openakc-cap
+[ -f /usr/bin/openakc-hpenc ]&&chattr -i /usr/bin/openakc-hpenc
+[ -f /usr/bin/openakc-session ]&&chattr -i /usr/bin/openakc-session
+[ -f /usr/sbin/openakc-plugin ]&&chattr -i /usr/sbin/openakc-plugin
+#chattr -a /etc/ssh
+#chattr -i /etc/ssh/sshd_config
+
+#DEBHELPER#
+
+exit 0

@@ -2,11 +2,7 @@
 
 * Code review, fix up input validation and graceful error handling/logging.
 
-* Client package needs to set bins, (and sshd_config?) to be immutable, and
-  handle resetting the flag on upgrade/removal.
-
 * Fix rolefile interpreter bug
-
 
 
 
@@ -34,10 +30,7 @@
 
 * for static keys, put comment in logs to show which key it is.
 
-* Migrate data functions into a libexec folder to allow alternate data stores.
-
-* Default role definition added to all hosts in addition to role config.
-  Hostname = ALL?
+* STARTED - Migrate data functions into a libexec folder to allow alternate data stores.
 
 
 
@@ -61,3 +54,9 @@
   as force directory refresh for user details incase of recent group changes.
 
 * DONE - Review log levels due to issues with rhel8
+
+* DONE - Client package needs to set bins, (and sshd_config?) to be immutable, and
+  handle resetting the flag on upgrade/removal.
+
+* DONE - Default role definition added to all hosts in addition to role config.
+  Hostname = DEFAULT?

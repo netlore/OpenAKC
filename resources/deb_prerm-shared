@@ -1,0 +1,9 @@
+#!/bin/bash
+
+chattr -a /var/lib/openakc
+chattr -i /var/lib/openakc/libexec
+chattr -i /var/lib/openakc/libexec/functions-%RELEASE%
+
+#DEBHELPER#
+
+exit 0

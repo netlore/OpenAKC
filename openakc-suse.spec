@@ -1,5 +1,5 @@
 Name:           openakc
-Version:        1.0.0~alpha3
+Version:        1.0.0~alpha14
 Release:        1%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
@@ -7,18 +7,24 @@ License:        GPLv2.0
 URL:            https://github.com/netlore/OpenAKC
 Source0:	https://github.com/netlore/OpenAKC/archive/master.zip
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Requires:	openssh >= 7.0, openssl >= 0.9.8, bash, coreutils, which, e2fsprogs, libcap2, libcap-progs
+Requires:	openssh >= 7.0, openssl >= 0.9.8, openakc-shared, bash, coreutils, hostname, which, e2fsprogs, libcap >= 2.0
+Conflicts:	openakc-server
 BuildRequires:  gcc, gcc-c++, bash, libcap-devel, openssl-devel, patch, unzip, tar
 #, shc < 3.9
 
 
 %package tools
 Summary:       This OpenAKC "tools" package contains tools for registering with the server and for managing OpenAKC via the API.
-Requires:      openssl >= 0.9.8, bash, coreutils, sudo, which
+Requires:      openssl >= 0.9.8, openakc-shared, bash, coreutils, sudo, which
 
 %package server
 Summary:	This OpenAKC "server" package contains the API server which answers client authentication requests.
-Requires:       xinetd, openakc-tools, openssh >= 7.0, openssl >= 0.9.8, bash, coreutils
+Requires:       xinetd, openssh >= 7.0, openssl >= 0.9.8, openakc-tools, openakc-shared, bash, coreutils
+Conflicts:	openakc
+
+%package shared
+Summary:	This OpenAKC "shared" package contains shared components used by all packages.
+Requires:       openssl >= 0.9.8, bash, coreutils, e2fsprogs
 
 %description
 OpenAKC is a set of tools for managing SSH Keys and user access to role users
@@ -47,6 +53,15 @@ authorization, authentication and connection all rolled into one.  With
 optional management of statically deployed keys and session recording for
 security/review.  
 
+%description shared
+OpenAKC is a set of tools for managing SSH Keys and user access to role users
+on Linux hosts based on a server which has access to a directory such as
+AD/LDAP or even local users.  Only the server, which could be shared with a
+bastion requires directory access.  It provides privalage escalation,
+authorization, authentication and connection all rolled into one.  With
+optional management of statically deployed keys and session recording for
+security/review.  
+
 %prep
 %setup -q -c
 
@@ -59,6 +74,7 @@ mkdir -p %{buildroot}/etc/openakc
 mkdir -p %{buildroot}/usr/sbin
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/var/lib/openakc
+mkdir -p %{buildroot}/var/lib/openakc/libexec
 mkdir -p %{buildroot}/etc/sudoers.d
 mkdir -p %{buildroot}/etc/xinetd.d
 mkdir -p %{buildroot}/etc/rsyslog.d
@@ -126,16 +142,19 @@ cp bin/openakc.x %{buildroot}/usr/bin/openakc
 cp bin/openakc-plugin.x %{buildroot}/usr/sbin/openakc-plugin
 cp bin/openakc-session.x %{buildroot}/usr/bin/openakc-session
 cp bin/openakc-server.x %{buildroot}/usr/sbin/openakc-server
+cp bin/openakc-functions %{buildroot}/var/lib/openakc/libexec/functions-%{version}-%{release}
 cp resources/openakc-sudoers %{buildroot}/etc/sudoers.d/openakc
 cp resources/openakc-xinetd %{buildroot}/etc/xinetd.d/openakc
 cp resources/openakc-rsyslog %{buildroot}/etc/rsyslog.d/99-openakc.conf
 cp resources/openakc.conf %{buildroot}/etc/openakc/openakc.conf
+cp resources/openakc.conf.readme %{buildroot}/etc/openakc/openakc.conf.readme
 
 
 %clean
 rm -rf %{buildroot}
 
 %pre
+#echo "Preroll = $*"
 if ! getent group openakc >/dev/null ; then
   if ! getent group 889 >/dev/null ; then
     groupadd -r -g 889 openakc
@@ -154,16 +173,35 @@ fi
 chage -I -1 -m 0 -M 99999 -E -1 openakc 2> /dev/null 1> /dev/null
 chsh -s /bin/nologin openakc 2> /dev/null 1> /dev/null
 passwd -u openakc 2> /dev/null 1> /dev/null
+#
+[ -f /etc/openakc/openakc.conf ]&&chattr -i /etc/openakc/openakc.conf
+[ -d /etc/openakc ]&&chattr -i /etc/openakc
+[ -d /var/lib/openakc ]&&chattr -a /var/lib/openakc
+[ -f /usr/bin/openakc-cap ]&&chattr -i /usr/bin/openakc-cap
+[ -f /usr/bin/openakc-hpenc ]&&chattr -i /usr/bin/openakc-hpenc
+[ -f /usr/bin/openakc-session ]&&chattr -i /usr/bin/openakc-session
+[ -f /usr/sbin/openakc-plugin ]&&chattr -i /usr/sbin/openakc-plugin
 exit 0
 
-
-
 %post
+#echo "Postroll = $*"
 setcap CAP_SETPCAP+ep /usr/bin/openakc-cap
 chown -R root:openakc /etc/openakc
 sed -i "s,^#AuthorizedKeysCommand .*$,AuthorizedKeysCommand /usr/sbin/openakc-plugin %u %h %f,g" /etc/ssh/sshd_config
 sed -i "s,^#AuthorizedKeysCommandUser .*$,AuthorizedKeysCommandUser openakc,g" /etc/ssh/sshd_config
 /sbin/service sshd restart > /dev/null 2>&1 || :
+#
+chattr +i /etc/openakc/openakc.conf
+chattr +i /etc/openakc
+chattr +i /usr/bin/openakc-cap
+chattr +i /usr/bin/openakc-hpenc
+chattr +i /usr/bin/openakc-session
+chattr +i /usr/sbin/openakc-plugin
+chattr +i /var/lib/openakc/libexec/functions-%{version}-%{release}
+chattr +i /var/lib/openakc/libexec
+chattr +a /var/lib/openakc
+#chattr +a /etc/ssh
+#chattr +i /etc/ssh/sshd_config
 exit 0
 
 #%post tools
@@ -177,16 +215,34 @@ echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /e
 /sbin/service xinetd restart > /dev/null 2>&1 || :
 exit 0
 
+%preun
+[ -d /etc/openakc ]&&chattr -i /etc/openakc
+[ -d /var/lib/openakc ]&&chattr -a /var/lib/openakc
+[ -f /etc/openakc/openakc.conf ]&&chattr -i /etc/openakc/openakc.conf
+[ -f /usr/bin/openakc-cap ]&&chattr -i /usr/bin/openakc-cap
+[ -f /usr/bin/openakc-hpenc ]&&chattr -i /usr/bin/openakc-hpenc
+[ -f /usr/bin/openakc-session ]&&chattr -i /usr/bin/openakc-session
+[ -f /usr/sbin/openakc-plugin ]&&chattr -i /usr/sbin/openakc-plugin
+#chattr -a /etc/ssh
+#chattr -i /etc/ssh/sshd_config
+exit 0
+
+%preun shared
+chattr -a /var/lib/openakc
+chattr -i /var/lib/openakc/libexec
+chattr -i /var/lib/openakc/libexec/functions-%{version}-%{release}
+exit 0
 
 %postun
 case "$*" in
  0) # This is a remove.
+  #echo "OpenAKC Remove!"
   chsh -s /bin/nologin openakc 2> /dev/null 1> /dev/null
   passwd -l openakc 2> /dev/null 1> /dev/null
   sed -i "s,^AuthorizedKeysCommand,#AuthorizedKeysCommand,g" /etc/ssh/sshd_config
   ;;
- 1) # This is an update.
-    # do nothing
+ 1) # This is a update.
+  #echo "OpenAKC Update!"
   ;;
  *)
   echo "Warning: RPM says there is more than one version of openakc installed!"
@@ -194,15 +250,15 @@ case "$*" in
 esac
 exit 0
 
-
 %postun server
 case "$*" in
  0) # This is a remove.
+  #echo "OpenAKC Server Remove!"
   sed -i '/^openakc/ d' /etc/services
   /sbin/service xinetd restart > /dev/null 2>&1 || :
   ;;
- 1) # This is an update.
-    # do nothing
+ 1) # This is a update.
+  #echo "OpenAKC Server Update!"
   ;;
  *)
   echo "Warning: RPM says there is more than one version of openakc-server installed!"
@@ -220,18 +276,15 @@ exit 0
 %dir %attr(755, root, root) /etc/openakc
 %dir %attr(755, openakc, root) /var/lib/openakc
 %attr(644, root, openakc) %config /etc/openakc/openakc.conf
-%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
+%attr(644, root, openakc) %config(missingok) /etc/openakc/openakc.conf.readme
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
-%doc OpenAKC*/QUICKSTART.txt
 
 %files tools
 %defattr(-,root,root,-)
 %attr(755, root, root) /usr/bin/openakc
-%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
 %doc OpenAKC*/LICENSE
-%doc OpenAKC*/QUICKSTART.txt
 #%doc OpenAKC*/docs/OpenAKC_Tools_Guide.pdf
 
 %files server
@@ -246,10 +299,22 @@ exit 0
 %doc OpenAKC*/QUICKSTART.txt
 %doc OpenAKC*/docs/OpenAKC_Admin_Guide.pdf
 
+%files shared
+%defattr(-,root,root,-)
+%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
+%attr(644, root, root) /var/lib/openakc/libexec/functions-%{version}-%{release}
+%dir %attr(755, root, root) /var/lib/openakc/libexec
+%doc OpenAKC*/LICENSE
+
+
 
 %changelog
+* Mon Aug 31 2020 James Lewis <james@fsck.co.uk>
+- Added shared package to contain stuff that everything depends on
+- Added handling for immutable components
+
 * Sun Aug 30 2020 James Lewis <james@fsck.co.uk>
-- Added rsyslog filter for debug messages for consistency, as RHEL ignores them.
+- Added rsyslog filter for debug messages for consistency as RHEL ignores them
 
 * Sat Aug 22 2020 James Lewis <james@fsck.co.uk>
 - Forked spec for building on SuSE

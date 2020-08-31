@@ -405,16 +405,16 @@ fi
 #
 if [ ${INSTALL} -eq 1 ]; then
  COMBINED=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc-" | tr '\n' ' ')
- CLIENT=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | grep "openakc_" | tr '\n' ' ')
+ CLIENT=$(lxc-attach -n openakc-client -- find /tmp/OpenAKC | grep "deb$" | egrep "openakc_|openakc-shared" | tr '\n' ' ')
  printf "${CYAN}Installing packages in container \"openakc-combined\"${WHITE}\n"
  echo
- lxc-attach -n openakc-combined -- su - -c "dpkg -P openakc-tools openakc-server" 2> /dev/null
+ lxc-attach -n openakc-combined -- su - -c "dpkg -P openakc-tools openakc-server openakc-shared" 2> /dev/null
  lxc-attach -n openakc-combined -- su - -c "dpkg -i ${COMBINED}"
  echo
  echo
  printf "${CYAN}Installing packages in container \"openakc-client\"${WHITE}\n"
  echo
- lxc-attach -n openakc-client -- su - -c "dpkg -P openakc" 2> /dev/null
+ lxc-attach -n openakc-client -- su - -c "dpkg -P openakc openakc-shared" 2> /dev/null
  lxc-attach -n openakc-client -- su - -c "dpkg -i ${CLIENT}"
  echo
  echo

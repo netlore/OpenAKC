@@ -87,7 +87,12 @@ let TDAT=SDAT+$TMOUT
 export PGPASSWORD=${pgpassword}
 
 #
-# Functions
+# Includes Functions
+#
+source "/var/lib/openakc/libexec/functions-${RELEASE}"
+
+#
+# Local Functions
 #
 logstatus () {
  logger -p daemon.info -t "openakc-server[$$]" "INFO - $1"

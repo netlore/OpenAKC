@@ -18,6 +18,14 @@ fi
 chage -I -1 -m 0 -M 99999 -E -1 openakc 2> /dev/null 1> /dev/null
 chsh -s /bin/nologin openakc 2> /dev/null 1> /dev/null
 passwd -u openakc 2> /dev/null 1> /dev/null
+#
+[ -f /etc/openakc/openakc.conf ]&&chattr -i /etc/openakc/openakc.conf
+[ -d /etc/openakc ]&&chattr -i /etc/openakc
+[ -d /var/lib/openakc ]&&chattr -a /var/lib/openakc
+[ -f /usr/bin/openakc-cap ]&&chattr -i /usr/bin/openakc-cap
+[ -f /usr/bin/openakc-hpenc ]&&chattr -i /usr/bin/openakc-hpenc
+[ -f /usr/bin/openakc-session ]&&chattr -i /usr/bin/openakc-session
+[ -f /usr/sbin/openakc-plugin ]&&chattr -i /usr/sbin/openakc-plugin
 
 #DEBHELPER#
 

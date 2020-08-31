@@ -1,0 +1,20 @@
+NOTICE:
+
+OpenAKC marks this file "immutable" on clients to protect it from casual
+modification by users who you may need to grant root access.
+
+To edit the configuration, you will need to first remove the immutable flag
+so that you can edit the file:-
+
+#chattr -i openakc.conf
+
+Once you have edited the file, please replace the immutable flag with:-
+
+#chattr +i openakc.conf
+
+If you cannot remove the immutable flag, it may be because you have logged
+in using an OpenAKC role which restricts "cap_linux_immutable".  You will
+need to log in with a role without this restriction to make config changes
+to OpenAKC.
+
+Note that upgrading OpenAKC will restore the immutable flag.

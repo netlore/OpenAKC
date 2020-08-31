@@ -63,7 +63,12 @@ HOST_REGEX='[0-9a-zA-Z.-]*'
 NAMEHOST_REGEX="${NAME_REGEX}@${HOST_REGEX}$"
 
 #
-# Functions
+# Includes Functions
+#
+source "/var/lib/openakc/libexec/functions-${RELEASE}"
+
+#
+# Local Functions
 #
 logstatus () {
  logger -p daemon.info -t "openakc-tool[$$]" "INFO - $1"
