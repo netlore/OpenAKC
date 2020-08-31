@@ -4,13 +4,28 @@ Version: 0.16.0+git3bd9d9c-1
 Maintainer: Tomas Mlcoch <tmlcoch@redhat.com
 Depends: rpm (>= 4.9.0), libxml2-utils, libbz2-1.0, libcurl4, libmagic1, libxml2, liblzma5, libssl1.1, sqlite, librpm8, libdrpm0, libmodulemd2, libcap2
 Filename: ./createrepo-0.16.0+git3bd9d9c~ubuntu20.10-1_amd64.deb
-Size: 407314
-MD5sum: 343fb4019d14dfa57687d52c5bee12a7
-SHA1: 84865bb1496c080025a8021c5dcdc5d531e018ca
-SHA256: 033452c1962ee79c4d7481ef95a85f158f578b47fbdb2940f5b8d7a59ca69129
-SHA512: 21465d7b3b79581d2c4ee028c9a9d723ba3072e9d0968f2ec0d71144a88ebeb78566a0c1cb2fcc445ba7436253d99a6b57260dada8bd5960b7ec26e94d9df2c4
+Size: 408896
+MD5sum: 736fba8733157300749ffdef32dc29d4
+SHA1: acb7701976d5b1faccd6e6da2c6e29c3d75e1a16
+SHA256: 48cfacab157fc157ad0ed6e459351b0eecbb8ca2122c634dbeb1b7c78a4a595e
+SHA512: 78487b9398256aa4308e1a924b6feba49ad91a11064d2a541ec7f148391f28c797a9cf2d5365d0c28c980a2a310b7401519326b89bb765e6ae73afbce8437708
 Homepage: https://github.com/rpm-software-management/createrepo_c
 Description: Creates a common metadata RPM repository
+
+Package: openakc-server
+Architecture: amd64
+Version: 1.0.0~alpha14-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), openakc-shared, coreutils, xinetd, openakc-tools
+Conflicts: openakc
+Filename: ./openakc-server_1.0.0~alpha14~ubuntu20.10-1_amd64.deb
+Size: 4065716
+MD5sum: 916ea371b8414e6f5a195d8b788aaa5d
+SHA1: ff8006f9a50562090499ea7e3cb5eecfaad58658
+SHA256: f3e91693f8e3bae3e9df6f5d263317498c09c68765c4cc5e219bfbded8fae451
+SHA512: e4445d7a1e8867d8465039b05eb29d296103c4624639833cb95f121f94d42782604e12c406d0dd4df35b8594bd0f56de60342d515ec2935b7d3c376274e7e757
+Homepage: http://www.fsck.co/uk/openakc/
+Description: OpenAKC API Server
 
 Package: openakc-server
 Architecture: amd64
@@ -18,11 +33,11 @@ Version: 1.0.0~alpha2-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, xinetd, openakc-tools
 Filename: ./openakc-server_1.0.0~alpha2~ubuntu20.10-1_amd64.deb
-Size: 158216
-MD5sum: aca9dd4223e33b3447151d6dc3c62121
-SHA1: 07ad207d370dcffe56fd50287ec7b665c3c9344b
-SHA256: 62342d5c6efad9bc5b335f1a17d9b3f9ff5758cae621ee8d99d216c67c742822
-SHA512: 83f04bd55f1c249e3b065d1535be9e461140a9471d8332811f80cf6b256aca781d9d63e9bff4b6c6a3fbcbd665497fe44e7328ccf3d5e73a2d1fdbf0e2cfbd89
+Size: 159612
+MD5sum: c339b7a39164d330f4b281644739da6c
+SHA1: 9bd4aff06a688d351a41cc7428ebb16b109aa0cc
+SHA256: 91f32d684b51eb73afc493b0b43f927129dccbc19d776198f9c9f909cf439b4c
+SHA512: 0f19e7d2993363acc029d5671f72eab41e1ae2fee2e23ddc79d4f9d4cc6af840803aa560eae71eb7188253e40406987e438aab058f59ad8bf9d64cd9493ef4dd
 Homepage: http://www.fsck.co/uk/openakc/
 Description: OpenAKC API Server
 
@@ -32,13 +47,41 @@ Version: 1.0.0~alpha3-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, xinetd, openakc-tools
 Filename: ./openakc-server_1.0.0~alpha3~ubuntu20.10-1_amd64.deb
-Size: 4065768
-MD5sum: d66d6c8230463e8091e4647afe87b5f6
-SHA1: f9e35cfba02b83f8fb651af6d5966185e9a37bd0
-SHA256: 7ed7a9670bf3a7c1215cc6e770e26c27809a70030ab468e72db8ceec276498e5
-SHA512: 787ecc24c101d450dd5de00cff1dafb05958ce5d6e3f26ed3ec4c2f0b6866b7265530042823760fb1c44e63ebbe0b900589fdc29f60ba9b2ca074ac06ba060d1
+Size: 4066980
+MD5sum: 42184d663a4e92f08d37b23ce898d66a
+SHA1: 5da5af69fc492b77328e9b6b18910b3f36b5810d
+SHA256: cbc5bb4388cdc4ab50da429a7c338a0575bb9939eb7a265e12af44cf1561ba52
+SHA512: d225d4376301c5b7f6a42325ae25b4b29530c728eff75c93aeda7c5887ead4d11354587d26226e6b5b8f453de34d5b6d8c17d1e6cc2b3accfb204efe232eceec
 Homepage: http://www.fsck.co/uk/openakc/
 Description: OpenAKC API Server
+
+Package: openakc-shared
+Architecture: amd64
+Version: 1.0.0~alpha14-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: bash (>= 3.2), openssl (>= 0.9.8), coreutils, e2fsprogs
+Filename: ./openakc-shared_1.0.0~alpha14~ubuntu20.10-1_amd64.deb
+Size: 9208
+MD5sum: 5e4b8136e68dbd0c74fadf43fbba90db
+SHA1: 6095652fa540c0099be7340b24cc202b383acc85
+SHA256: 78cacde04c64d5dbb2f51c6c0ef396ecd35eecff01f0176c6d770c7b8f6574ae
+SHA512: e9ad061e6a8d3512037744203cde329a00464d04b4d5baca53f9ff8043c3d0a16c9c39fa445f32620a12b586f451b83d153e121461ba5ba634b3fb73b510f61e
+Homepage: http://www.fsck.co.uk/openakc/
+Description: OpenAKC Shared Components
+
+Package: openakc-tools
+Architecture: amd64
+Version: 1.0.0~alpha14-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: bash (>= 3.2), openssl (>= 0.9.8), openakc-shared, coreutils, hostname, sudo, debianutils
+Filename: ./openakc-tools_1.0.0~alpha14~ubuntu20.10-1_amd64.deb
+Size: 13754
+MD5sum: dbf51a57cae6a9eeb95d23c1a6a0c141
+SHA1: 5ec19e50d0a40dae75515b55c67f8f8c623e5d21
+SHA256: 3b2b7fa4bfd8503c285cde41ccba1b2f21a7f4b83629a6dd50509c617411603b
+SHA512: 04d6d0ce0fbf3fbd66e331dc152274260f44cfb9bb991f2c89090cb68f456551619ee2a66a436d7070e94429026f1bab22bce6857bcf37324496514a46582a98
+Homepage: http://www.fsck.co.uk/openakc/
+Description: OpenAKC API Tools
 
 Package: openakc-tools
 Architecture: amd64
@@ -46,11 +89,11 @@ Version: 1.0.0~alpha2-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, sudo, debianutils
 Filename: ./openakc-tools_1.0.0~alpha2~ubuntu20.10-1_amd64.deb
-Size: 18634
-MD5sum: fb2567280b16cdcdbdbdc1f9eb5731e5
-SHA1: e4fa75b4151bc4fd0a49b1d5d0eed3793b05a8d6
-SHA256: 586182f7c6c885a2687eefca48334e7b761bc1c6f60655cbabca0b99be419138
-SHA512: 9af55e6b62cd1afe59c2ad94d4cc7b0e4d85ea102e8840305b38d25b74b2b1c6fd8d2fc78b946c904b720d31e32e4d1b9791e6fdfe8ec87f8d6263684a3aea92
+Size: 20030
+MD5sum: 52b09622c73368e29394131866163cf1
+SHA1: 72ce413b0c49bddf888a30726e07194ef479cdee
+SHA256: d93cc279faf4e830142e3f8b9f094f57a0ec019a86803952ca40de5a0af93f47
+SHA512: c3ee874a36b7e73232db1b888e3becd289c98bd1eb233ee25f29d703894c08879ffafed3a4019d2978f10fbf3954b84d43e6e8af76a9863289d482d214b2a0f3
 Homepage: http://www.fsck.co.uk/openakc/
 Description: OpenAKC API Tools
 
@@ -60,13 +103,28 @@ Version: 1.0.0~alpha3-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, sudo, debianutils
 Filename: ./openakc-tools_1.0.0~alpha3~ubuntu20.10-1_amd64.deb
-Size: 16250
-MD5sum: e2b6a80775c85c59e204302918be6af8
-SHA1: d9a7b7cc0e155c55dab0bfdd9d7db1619df710a5
-SHA256: 9c57a0c191d72894fb833f32172bff27a395bae8c18574ea4987a7f02048d4c5
-SHA512: 5cd652ec81dee06be7326375e80e685510b584ecd671d18efe529784db0f70dfaabf379621beb30f2e25b5ac5685b22b074b1d4bd138daf322de500bb3ed0fe7
+Size: 17460
+MD5sum: dbb788525b6836c1562d6abaa13d9328
+SHA1: 6810372b13796b38576db60b3cb19d4f2f5d0c56
+SHA256: ef9c6cd89037b566ef3cda91a69f29074af198db02bfe7b8b042ee116ae6750e
+SHA512: fdeca7f462c7cdd7ce1da2eb1a7fb3424ef1b7bee4f20774902cfdb05955ba6a6b6956056a0ea9bd54f711c2d783e40defbaf3a48a1a87a4c80b7c7c49fb4a46
 Homepage: http://www.fsck.co.uk/openakc/
 Description: OpenAKC API Tools
+
+Package: openakc
+Architecture: amd64
+Version: 1.0.0~alpha14-1
+Maintainer: A. James Lewis <james@fsck.co.uk>
+Depends: openssh-server (>= 7.0), openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), openakc-shared, coreutils, hostname, debianutils, e2fsprogs, libcap2
+Conflicts: openakc-server
+Filename: ./openakc_1.0.0~alpha14~ubuntu20.10-1_amd64.deb
+Size: 156640
+MD5sum: 06547bbee047c3f78d5fea02c1943b64
+SHA1: 32088073a94f329aee1dde74dd12d2291e475921
+SHA256: 713c77f32ad22e5bc3fd6086cc57a7b59f311a120fb55c05d3438a03581161e3
+SHA512: 4c0d60a9dc366599802e9964d19e1493cede8e1ab1b41b9a53bcc4d69c3e3090ec54dcc611fe36aa1cc89c1d48351844461ff3d14baed9327b35695def98cc06
+Homepage: http://www.fsck.co/uk/openakc/
+Description: OpenAKC Agent
 
 Package: openakc
 Architecture: amd64
@@ -74,11 +132,11 @@ Version: 1.0.0~alpha2-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: openssh-server (>= 7.0), openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, debianutils, e2fsprogs, libcap2
 Filename: ./openakc_1.0.0~alpha2~ubuntu20.10-1_amd64.deb
-Size: 158404
-MD5sum: 3279b6976a85d1d687bfef635ba7360b
-SHA1: 56d1cad692db6178b488406c615948c4c9b52277
-SHA256: d8646ab3207b4c40f23fecfce4734bbc547f17c279ea1eee106c6499b7edaf18
-SHA512: 396796f31e2c4abf2745349863931263ea030743cf959b7a3f0faa55186dcc5635ce61eef7d0ef5ede0461be58b1f1f7a19fd23565004b1b8ddbd48a2a6fb343
+Size: 159800
+MD5sum: 34bb1d51f1a62c0ed62b9c19b74c67c9
+SHA1: ef84e1d8f6db7e611dec2ae3c341704aac04c7a5
+SHA256: 17d40f058c376cdf9543274a9dca565830e1d957d8e9f9fc9d22cf19b113f6f8
+SHA512: 8b5b568aa685a4edc6185e4510109dda141711cdc7d605a0595687375429888706228ac32670eef8e0ccd1ff662f4e8e55cb778ae693c8064016d94957efee45
 Homepage: http://www.fsck.co/uk/openakc/
 Description: OpenAKC Agent
 
@@ -88,11 +146,11 @@ Version: 1.0.0~alpha3-1
 Maintainer: A. James Lewis <james@fsck.co.uk>
 Depends: openssh-server (>= 7.0), openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), coreutils, hostname, debianutils, e2fsprogs, libcap2
 Filename: ./openakc_1.0.0~alpha3~ubuntu20.10-1_amd64.deb
-Size: 155974
-MD5sum: d8f80ca0b393445ceacfe7016c36a4e5
-SHA1: 1c9c7813e4530235f8cc73c8eb9304e0641a258d
-SHA256: 2e275586c2880d0c0a40523159b8fea463726eba785495d784934c5a76b6b0cf
-SHA512: e78cf21fd886240623dc50b729c8807b0cf10bd1fdca07381db0889d035c8b971f3a9542a0fe9649be05d9e34e48678432f4c1b9afd98dc9eb5a1a5051601a35
+Size: 157184
+MD5sum: 064f8c8b681a7fa379ff7767d2689372
+SHA1: f30954ee35be531e32eff05844315db28eaa17b1
+SHA256: 3a3452129bc782f9f81dff7eb4930cda891852381a9cab34db37db70a3759d61
+SHA512: 58696bbd42a7f7bb0bde9bedbc6ccdb2fe2717501e854ea5fcd18b2c78899673b97f28722f47e8a976ed1e9d93400ff80c942cc5e1c609a74908ad6b6ccbf3d0
 Homepage: http://www.fsck.co/uk/openakc/
 Description: OpenAKC Agent
 
