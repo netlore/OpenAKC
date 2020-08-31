@@ -240,7 +240,6 @@ exit 0
 %attr(755, root, root) /usr/sbin/openakc-server
 %attr(640, root, root) %config(missingok) /etc/sudoers.d/openakc
 %attr(640, root, root) %config(missingok) /etc/xinetd.d/openakc
-%attr(640, root, root) %config(missingok) /etc/rsyslog.d/99-openakc.conf
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
