@@ -1,13 +1,13 @@
 Name:           openakc
 Version:        1.0.0~alpha14
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
 License:        GPLv2.0
 URL:            https://github.com/netlore/OpenAKC
 Source0:	https://github.com/netlore/OpenAKC/archive/master.zip
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Requires:	openssh >= 7.0, openssl >= 0.9.8, openakc-shared, bash, coreutils, hostname, which, e2fsprogs, libcap2
+Requires:	openssh >= 7.0, openssl >= 0.9.8, openakc-shared, bash, coreutils, which, e2fsprogs, libcap2, libcap-progs
 Conflicts:	openakc-server
 BuildRequires:  gcc, gcc-c++, bash, libcap-devel, openssl-devel, patch, unzip, tar
 #, shc < 3.9
