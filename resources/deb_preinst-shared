@@ -1,0 +1,7 @@
+#!/bin/bash
+
+[ -d /var/lib/openakc/libexec ]&&chattr -i /var/lib/openakc/libexec
+
+#DEBHELPER#
+
+exit 0

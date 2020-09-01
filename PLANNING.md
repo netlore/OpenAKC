@@ -1,12 +1,21 @@
-*Blocking For 1.0 Release*
+**Blocking For 1.0 Release**
 
 * Code review, fix up input validation and graceful error handling/logging.
 
 * Fix rolefile interpreter bug
 
 
+**Planned Post 1.0 Enhancements**
 
-*Possible Future Enhancements*
+* Migrate server to systemd
+
+* IN PROGRESS - Migrate functions (including data) into a libexec folder to allow alternate data stores.
+
+* Merge multiple matching permissions.
+
+
+
+**Possible Future Enhancements (Suggestions)**
 
 * Write reason for authentication failure into the session record.
 
@@ -24,18 +33,12 @@
   host, and/or to determine why they were not permitted access,
   (require SYSTEM (or lower?) rights so it's not publically available).
 
-* Move audit name/command list into a configuration file.  
-
-* Merge multiple matching permissions.
+* Move audit name/command list into a configuration file.
 
 * for static keys, put comment in logs to show which key it is.
 
-* STARTED - Migrate data functions into a libexec folder to allow alternate data stores.
 
-
-
-
-*Archive/Completed Fixes & Changes
+**Archive/Completed Fixes & Changes**
 
 * DONE - Default role definition assigned to a host with no other role config.
 

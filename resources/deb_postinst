@@ -8,7 +8,8 @@ case "$1" in
         sed -i "s,^#AuthorizedKeysCommandUser .*$,AuthorizedKeysCommandUser openakc,g" /etc/ssh/sshd_config
         service sshd restart > /dev/null 2>&1 || :
         chown -R root:openakc /etc/openakc
-        chown -R openakc:root /var/lib/openakc
+        chattr -a /var/lib/openakc
+        chown openakc:root /var/lib/openakc
         ;;
     upgrade|abort-upgrade)
         exit 0
@@ -26,8 +27,6 @@ chattr +i /usr/bin/openakc-cap
 chattr +i /usr/bin/openakc-hpenc
 chattr +i /usr/bin/openakc-session
 chattr +i /usr/sbin/openakc-plugin
-chattr +i /var/lib/openakc/libexec/functions-%RELEASE%
-chattr +i /var/lib/openakc/libexec
 chattr +a /var/lib/openakc
 #chattr +a /etc/ssh
 #chattr +i /etc/ssh/sshd_config

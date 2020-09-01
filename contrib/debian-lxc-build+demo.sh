@@ -296,6 +296,16 @@ if [ ${REBUILD} -eq 1 ]; then
   echo
  fi
 #
+ if [ "x${MODE}" == "xunprivilaged" ]; then
+  LXCROOT="${HOME}/.local/share/lxc"
+ else
+  LXCROOT="/var/lib/lxc"
+  chattr -R -i /var/lib/lxc/openakc-combined 2> /dev/null
+  chattr -R -i /var/lib/lxc/openakc-client 2> /dev/null
+  chattr -R -a /var/lib/lxc/openakc-combined 2> /dev/null
+  chattr -R -a /var/lib/lxc/openakc-client 2> /dev/null
+ fi
+ #
  echo "Destroying old containers..."
  echo
  printf "${WHITE}"
@@ -331,12 +341,6 @@ fi
 
 #
 # OK, lets get our containers ready to use, and build our packages
-#
-if [ "x${MODE}" == "xunprivilaged" ]; then
- LXCROOT="${HOME}/.local/share/lxc"
-else
- LXCROOT="/var/lib/lxc"
-fi
 #
 if [ ${DNSFIX} -eq 1 ]; then
  printf "${CYAN}Applying DNS fix to containers${WHITE}\n"

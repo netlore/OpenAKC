@@ -5,7 +5,7 @@
 #
 source /etc/os-release
 VERSION="1.0.0~alpha14"
-BUILD="1"
+BUILD="4"
 
 #
 # Package requirements for build
@@ -204,6 +204,7 @@ cp bin/openakc-hpenc "${PDIR}/usr/bin/openakc-hpenc"
 cp bin/openakc-server.x "${PDIR}/usr/sbin/openakc-server"
 cp resources/deb_postinst-server "${PDIR}/DEBIAN/postinst"
 cp resources/deb_postrm-server "${PDIR}/DEBIAN/postrm"
+cp resources/deb_preinst-server "${PDIR}/DEBIAN/preinst"
 cp resources/openakc-sudoers "${PDIR}/etc/sudoers.d/openakc"
 cp resources/openakc-xinetd "${PDIR}/etc/xinetd.d/openakc"
 cp docs/OpenAKC_Admin_Guide.pdf "${PDIR}/usr/share/doc/openakc-server/"
@@ -238,22 +239,25 @@ PDIR="openakc-shared_${RELEASE}_amd64"
 #
 mkdir -p "${PDIR}/DEBIAN"
 mkdir -p "${PDIR}/var/lib/openakc/libexec"
-##mkdir -p "${PDIR}/usr/bin"
 mkdir -p "${PDIR}/usr/share/doc/openakc-shared"
 mkdir -p "${PDIR}/etc/rsyslog.d"
 #
 cp bin/openakc-functions "${PDIR}/var/lib/openakc/libexec/functions-${RELEASE}"
 cp resources/openakc-rsyslog "${PDIR}/etc/rsyslog.d/99-openakc.conf"
+cp resources/deb_preinst-shared "${PDIR}/DEBIAN/preinst"
+sed -e "s,%RELEASE%,$RELEASE,g" resources/deb_postinst-shared > "${PDIR}/DEBIAN/postinst"
 sed -e "s,%RELEASE%,$RELEASE,g" resources/deb_prerm-shared > "${PDIR}/DEBIAN/prerm"
-##cp resources/openakc-rsyslog "${PDIR}/etc/rsyslog.d/99-openakc.conf"
+cp resources/deb_postrm-shared "${PDIR}/DEBIAN/postrm"
 cp LICENSE "${PDIR}/usr/share/doc/openakc-shared/"
-##cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc-tools/"
 #
 ##chmod 755 "${PDIR}/usr/bin/openakc"
 chmod 640 "${PDIR}/etc/rsyslog.d/99-openakc.conf"
 chmod 644 "${PDIR}/var/lib/openakc/libexec/functions-${RELEASE}"
 chmod 755 "${PDIR}/var/lib/openakc/libexec"
+chmod 755 "${PDIR}/DEBIAN/preinst"
+chmod 755 "${PDIR}/DEBIAN/postinst"
 chmod 755 "${PDIR}/DEBIAN/prerm"
+chmod 755 "${PDIR}/DEBIAN/postrm"
 
 #
 echo "Package: openakc-shared" > "${PDIR}/DEBIAN/control"

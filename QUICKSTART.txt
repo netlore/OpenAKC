@@ -1,5 +1,9 @@
+**Building Packages**
 
-*Building Packages*
+NOTE: Building the packages is for advanced users/testers only, you can
+obtain packages in the normal way from OS repos by looking here:-
+
+https://netlore.github.io/OpenAKC/download/
 
 
 _Debian/Ubuntu_
@@ -7,19 +11,21 @@ _Debian/Ubuntu_
 To create ".deb" packages for Debian/Ubuntu, simply download the repo using
 whatever method you prefer, then, as the "root" user, cd into the folder, and
 run "./makedebs.sh".  Watch for unexpected errors, and assuming there are no
-issues you will find that the required 3 .deb packages appear in the same
-folder as the "makedebs.sh" script.
+issues you will find that the required 4 .deb packages appear in the same
+folder as the "makedebs.sh" script.  Be sure to move them aside as they may
+interfere with some of the "contrib" tools.
 
 
 _Redhat_
 
 Collect the zip for "master", or for a release version, place it in the SOURCES
-folder of a working "rpmbuild" environment, Eg:-
+folder of a working "rpmbuild" environment (Configuring an RPM build
+environment is not covered here), Eg:-
 
 cd ~/rpmbuild/SOURCES
 wget https://github.com/netlore/OpenAKC/archive/master.zip
 
-Then extract the zip so that the associated "openakc.spec" file is available,
+Then extract the zip so that the associated "openakc-rhel.spec" file is available,
 and run rpmbuild to create the packages Eg:-
 
 unzip master.zip
@@ -28,15 +34,19 @@ rpmbuild -ba OpenAKC-master/openakc.spec
 If nothing goes wrong, the RPM's will appear in the build environments "RPMS"
 folder.
 
+_SuSE_
+
+As for RedHat, except if you build as root, it will already have a
+preconfigured RPM build environment in /usr/src
 
 
-*Quickstart Guide*
+**Quickstart Guide**
 
 
 _Server Installation_
 
-If installing from packages's rather than a repo, you may first need to ensure
-that some dependencies are installed.  At the time of writing, a standard
+If installing from compiledpackages's rather than a repo, you may first need to
+ensure that some dependencies are installed.  At the time of writing, a standard
 minimal "CentOS container" requires several packages to be installed
 in addition to the default:-
 
@@ -59,6 +69,9 @@ updates.
 register their keys, and administrators to upload static keys and configure
 permissions.
 
+3) "openakc-shared" which contains functions shared between all openakc
+components.
+
 To verify that the server is working, simply type "openakc ping" after
 installing the server packages.  This should force the server to write out
 a default configuration and reply with "OK: Pong!"
@@ -77,7 +90,7 @@ yum install e2fsprogs openssh-clients openssh-server openssl which
 For a minimal Ubuntu, installing extra dependencies is currently not
 required on the client host.
 
-Once any dependencies are met, simply install package "openakc"
+Once any dependencies are met, install packages "openakc" & "openakc-shared"
 
 To set up the client, ensure that the host(s) listed in the client config
 (/etc/openakc/openakc.conf) (which can be either name or IP) are configured
@@ -85,6 +98,11 @@ to refer to the appropriate server.  The configuration is pre-populated with
 "openakc01 & openakc02", so you could simply ensure that these values are
 configured in DNS, or in the /etc/hosts on the client for testing, or alter
 them as you prefer.
+
+NOTE: Before attempting to edit this file, you are advised to read the
+assocated "readme" - /etc/openakc/openakc.conf.readme, since the OpenAKC
+client installation marks its configuration "immutable" to avoid casual
+editing of those files by users you may need to grant root access.
 
 To verify that the client is configured, and can contact the server, after
 installation, you can run "openakc-plugin ping".  The plugin only has very
@@ -137,7 +155,8 @@ guide however, we will not discuss distributed systems.
 This user will now be able to run call the role management functions in the
 api tool Eg:-
 
-"openakc editrole root@test-client"
+"openakc editrole root@DEFAULT" (Default rolefile is applied to hosts not
+yet configured explicitly, so it is a useful way to get started).
 
 Examine the comments, and example role "block" shown, and create one
 defining access for a user or group.
@@ -145,7 +164,7 @@ defining access for a user or group.
 The role data can also be uploaded or downloaded using the "getrole" or
 "setrole" commands with a filename as an extra parameter Eg:-
 
-"openakc getrole root@test-client /tmp/role.txt"
+"openakc getrole root@DEFAULT /tmp/role.txt"
 
 This will get the role and write it to the file /tmp/role.txt... you can then
 edit it and upload it.  "setrole" could be used to upload roles without first
@@ -164,13 +183,19 @@ You can examine the logs on each host to see what was logged, as well as check
 the keystroke log written to /var/lib/openakc/keylogs on the server, as well as
 the configuration audit data in /var/lib/openakc/audit on the server.
 
-For further details please see the full documentation.
+For further details please see the full documentation which can be found at
+the web site:-
 
+https://netlore.github.io/OpenAKC/
 
+Note: At the time of writing, the documentation is incomplete, feel free to
+assist with this, or make suggestions at the GitHub site.
 
 *Related software*
 
 OpenAKC makes use of hpenc, by Vsevolod Stakhov and libsodium by Frank Denis,
-these tools are included unmodified, in the source package for OpenAKC and
-specific licence terms for these tools are included in separate LICENCE-* files
-and in the documentation directory deployed by OpenAKC packages.
+these tools are included with minor modifications (in the case of hpenc) to
+ensure successful compilation on newer versions of GCC, in the source package
+for OpenAKC and specific licence terms for these tools are included in
+separate LICENCE-* files and in the documentation directory deployed by
+OpenAKC packages.

@@ -1,6 +1,6 @@
 Name:           openakc
 Version:        1.0.0~alpha14
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
 License:        GPLv2.0
@@ -183,6 +183,14 @@ passwd -u openakc 2> /dev/null 1> /dev/null
 [ -f /usr/sbin/openakc-plugin ]&&chattr -i /usr/sbin/openakc-plugin
 exit 0
 
+%pre server
+[ -d /var/lib/openakc ]&&chattr -a /var/lib/openakc
+exit 0
+
+%pre shared
+[ -d /var/lib/openakc/libexec ]&&chattr -i /var/lib/openakc/libexec
+exit 0
+
 %post
 #echo "Postroll = $*"
 setcap CAP_SETPCAP+ep /usr/bin/openakc-cap
@@ -197,8 +205,6 @@ chattr +i /usr/bin/openakc-cap
 chattr +i /usr/bin/openakc-hpenc
 chattr +i /usr/bin/openakc-session
 chattr +i /usr/sbin/openakc-plugin
-chattr +i /var/lib/openakc/libexec/functions-%{version}-%{release}
-chattr +i /var/lib/openakc/libexec
 chattr +a /var/lib/openakc
 #chattr +a /etc/ssh
 #chattr +i /etc/ssh/sshd_config
@@ -213,6 +219,11 @@ fi
 sed -i '/^openakc/ d' /etc/services
 echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /etc/services
 /sbin/service xinetd restart > /dev/null 2>&1 || :
+exit 0
+
+%post shared
+chattr +i /var/lib/openakc/libexec
+chattr +i /var/lib/openakc/libexec/functions-%{version}-%{release}
 exit 0
 
 %preun
@@ -266,6 +277,9 @@ case "$*" in
 esac
 exit 0
 
+%postun shared
+[ -d /var/lib/openakc ]&&chattr +a /var/lib/openakc
+exit 0
 
 %files
 %defattr(-,root,root,-)
