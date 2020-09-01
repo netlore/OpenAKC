@@ -69,6 +69,10 @@ Note that it is likely that the "openakc-el7.repo" will work on any Fedora versi
 
 ### OpenSuSE/SuSE Enterprise
 
+	WARNING:	Currently, SuSE Enterprise 12 will get less frequent updates, unless there is a critical update.
+    			Also, SuSE Enterprise 15 will not be supported as a server until after the 1.0.0 release due to
+                the requirement to port to SystemD. (Dependencies cannot be met from SuSE repos any longer)
+
 #### Add the repository:
 
 | OS Version                         | Add Repo      |
@@ -92,5 +96,6 @@ For a simple setup using a single security server with either no users or where 
 
 ### Support or Contact
 
-Having trouble with OpenAKC? Check out our
-[documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf) or [contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query)) and we’ll help you sort it out.
+	Note that at this time, the documentation links to an incomplete document, feel free to assist on GitHub.
+
+Check out our [documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf) or [contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query)) and we’ll help you sort it out.
