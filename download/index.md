@@ -98,4 +98,4 @@ For a simple setup using a single security server with either no users or where 
 
 ##### Note: At this time, the documentation links to an incomplete document, feel free to assist on GitHub.
 
-Check out our [documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf) or [contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query)) and we’ll help you sort it out.
+Check out our [Documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf), [Demo Videos](https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA) or [Contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query) and we’ll help you sort it out.
