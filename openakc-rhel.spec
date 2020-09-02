@@ -189,6 +189,7 @@ exit 0
 
 %pre shared
 [ -d /var/lib/openakc/libexec ]&&chattr -i /var/lib/openakc/libexec
+[ -f /var/lib/openakc/libexec/functions-%{version}-%{release} ]&&chattr -i /var/lib/openakc/libexec/functions-%{version}-%{release}
 exit 0
 
 %post
