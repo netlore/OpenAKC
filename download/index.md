@@ -93,6 +93,7 @@ Note that it is likely that the "openakc-el7.repo" will work on any Fedora versi
 ### Basic Setup
 
 For a simple setup using a single security server with either no users or where the users are using the security server itself as a jump point, the only configuration required is to ensure that the file on the **client** machine _/etc/openakc/openakc.conf_ correctly defines the server(s).   The file is pre-configured with the unqualified names "openakc01" and "openakc02" already populated, so you could simply add these names to your DNS and potentially no extra configuration would be required at the clients.
+Be aware that the client files are marked with the immutable flag, so you may need to alter the file attribues before you can edit the client configuration (even as root).  Notes on how to do this are contained in the "readme" file located in the config folder.
 
 ### Support or Contact
 
