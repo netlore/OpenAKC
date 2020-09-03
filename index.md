@@ -12,9 +12,9 @@ What this means in practice, is that users needing to log in using "application"
 
 It allows the user to interact with SSH, in a completely normal way, by creating a personal key pair and using that to access hosts (after a self service process to "register" that key).
 
-The administrator on the other hand is able to refer to users, or groups of users from their directory, while creating rules that apply to the hosts.... the plugin installed on the client will identify the user by the SSH key fingerprint, and then look up the associated rules, and directory information before seamlessly passing their public key to the SSH Daemon on the target key if they are permitted to log in.
+The administrator on the other hand is able to refer to users, or groups of users from their directory, while creating rules that apply to the hosts.... the plugin installed on the client will identify the user by the SSH key fingerprint, and then look up the associated rules, and directory information before seamlessly passing their public key to the SSH Daemon on the target host if they are permitted to log in.
 
-From a security perspective, even tho the user used a personal SSH key to log in directly to an applicattion or role user (or even root), the logs will should the privilage escalation process in a way that should satisfy security best practice. OpenAKC can even write "fake" sudo logs for the benefit of SIEM systems which are expecting users to escalate privilage after initially logging in with a personal user, (no one wants to manage personal user accounts on servers).
+From a security perspective, even tho the user used a personal SSH key to log in directly to an application or role user (or even root), the logs will show the privilage escalation process in a way that should satisfy security best practice. OpenAKC can even write "fake" sudo logs for the benefit of SIEM systems which are expecting users to escalate privilage after initially logging in with a personal account, (no one wants to manage personal user accounts on servers).
 
 #### Dynamic SSH key manager.
 
@@ -26,15 +26,15 @@ Each key is allocated an ID, so that they can be rotated without even updating t
 
 #### Privileged access manager
 
-OpenAKC not only allows you to centrally manage access from both self service users, and create static trust relationships, it also adds features to allow privilaged acces to be managed in a larger system.  Rules can simply refer to AD group membership, but also can be associated with a date/time range, as well as only permitting access on certain days, or at certain times, from certain source IP's etc.
+OpenAKC not only allows you to centrally manage access from both self service users, and create static trust relationships, it also has features to allow "privilaged acces" to be managed,by rules created within OpenAKC.  Rules can simply refer to AD group membership, but also can be associated with a date/time range, as well as only permitting access on certain days, or at certain times, from certain source IP's etc.
 
-These rules could be manipulated by another system such as an approval process, created with a tool like Remedy, or perhaps an internal web interface.
+These rules could be manipulated by another system such as an approval process created with a tool like Remedy, or perhaps an internal web interface.
 
 #### Advanced Features.
 
 OpenAKC can provide session recordings, so you can review what users did, or even keep an eye on what automated systems like Ansible, or certain vulnerability scanning tools are actually doing.
 
-It can reach in to the Linux kernel and switch off certain [capabilities](https://man7.org/linux/man-pages/man7/capabilities.7.html) in the process tree created by a login, so you can restrict what a "root" login can do... and even limit what permissions can be granted to a normal user via sudo, or setuid binaries.  The documentation shows examples of this being used to deny the root user access to "user" data, where that might be something that a sysadmin would not need to access in the normal course of their work, or perhaps would need separate approval.  Similarly it could be used to block the loading of kernel modules, which could help with malware protection.
+It can reach in to the Linux kernel and switch off certain [capabilities](https://man7.org/linux/man-pages/man7/capabilities.7.html) in the process tree created by a login, so you could restrict what a "root" login can do... and even limit what permissions can be granted to a normal user via sudo, or setuid binaries.  The documentation shows examples of this being used to deny the root user access to "user" data, where that might be something that a sysadmin would not need to access in the normal course of their work, or perhaps would need separate approval.  Similarly it could be used to block the loading of kernel modules, which could help with malware protection.
 
 It can override certain features of the users shell, perhaps not permitting them a shell, but only certain commands executed remotely.
 
@@ -46,7 +46,7 @@ And it can present the user with a brief questionaire at login, asking them why 
 
 There are already several commercial products in this space, and they do a fine job... but they are typically expensive, and are not focussed on Linux, so lack some of the features described above
 
-Additionally, the exisiing tools manage access through the control of "secret" information... they therefore contain secret keys and infomration which could threaten your security if they were to leak, since someone could use those secrets to gain access to your systems independent of the security system, potentially without your knowledge.  OpenAKC works differently, it only stores non-sensitive information and controls access by delivering this where it is needed in real time... it DOES NOT have administrative access to your systems, does not "log in" to modify passwords or keys... only calls an encrypted API on demand to query if a given user should be granted access.  In this way, OpenAKC does not have any private keys which could leak, and the agent running on each system is only called on demand, running as a non-privilaged user.
+Additionally, the exising tools manage access through the control of "secret" information... they therefore contain secret keys and information which could threaten your security if they were to leak, since someone could use those secrets to gain access to your systems independent of the security system, potentially without your knowledge.  OpenAKC works differently, it only stores non-sensitive information and controls access by delivering this where it is needed in real time... it DOES NOT have administrative access to your systems, does not "log in" to modify passwords or keys... only calls an encrypted API on demand to query if a given user should be granted access.  In this way, OpenAKC does not have any private keys which could leak, and the agent running on each system is only called on demand, running as a non-privilaged user.
 
 OpenAKC is open source, so it can easily be extended in house, and we would be happy to consider including new functionality you create via Github.  It even calls a user defined script before and after authentication is performed, so that functionality can easily be exteneded.
 
