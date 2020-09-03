@@ -366,8 +366,9 @@ apicall () {
     KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
     COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
    else
+#  NOTE / FIXME This code path can never be executed as we already checked the file was readable!
     echo "Error: Key file (${KEYFILE}) not found, exiting"
-    break
+    exit 1
    fi
    MESSAGE=$(echo "challenge user $(whoami)");sendmessage
    read CHALCODE <&5
@@ -398,8 +399,9 @@ apicall () {
     KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
     COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
    else
+#  NOTE / FIXME This code path can never be executed as we already checked the file was readable!
     echo "Error: Key file (${KEYFILE}) not found, exiting"
-    break
+    exit 1
    fi
    MESSAGE=$(echo "challenge user $(whoami)");sendmessage
    read CHALCODE <&5
@@ -517,7 +519,7 @@ if [ -r "${USERDIR}/config" ]; then
 fi
 
 if [ ! -r "${CONFFILE}" ] && [ ! -r "${USERDIR}/config" ]; then
- if [ ${EUID} -eq 0]; then
+ if [ ${EUID} -eq 0 ]; then
   logerr "Can't find/read the config file, exiting."
   echo
   echo "Can't find/read the config file, exiting."
