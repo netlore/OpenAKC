@@ -2,20 +2,29 @@
 
 * Code review, fix up input validation and graceful error handling/logging.
 
-* Fix rolefile interpreter bug
+* Fix debug logging bug
+
+* More exhaustive testing
 
 
 **Planned Post 1.0 Enhancements**
 
-* Migrate server to systemd
+* IN PROGRESS - Migrate server to systemd (/etc/systemd/system files in resources)
 
-* IN PROGRESS - Migrate functions (including data) into a libexec folder to allow alternate data stores.
+* IN PROGRESS - Migrate functions (including data) into a libexec folder
+  (eventually facilitate alternate data stores).
 
-* Merge multiple matching permissions.
-
+* Record users OpenAKC public key in their user record
 
 
 **Possible Future Enhancements (Suggestions)**
+
+* "openakc explain" - reports reason for last failure, (user validataed using
+  their OpenAKC public key in their user record)
+
+* "openakc promote/demote [username]" - allow administrators to grant
+  rights to registered users(using users OpenAKC public key in their user
+  record)
 
 * Write reason for authentication failure into the session record.
 
@@ -36,6 +45,8 @@
 * Move audit name/command list into a configuration file.
 
 * for static keys, put comment in logs to show which key it is.
+
+* Some kind of web interface for self service key registration?
 
 
 **Archive/Completed Fixes & Changes**
@@ -63,3 +74,10 @@
 
 * DONE - Default role definition added to all hosts in addition to role config.
   Hostname = DEFAULT?
+
+* DONE - Fix rolefile interpreter bug (20200911).
+
+* DONE - Merge multiple matching permissions (Note, not all permissions can
+  be merged - we fixate on the first one to change, and everything else has
+  to remain the same).
+

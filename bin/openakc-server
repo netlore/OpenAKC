@@ -25,6 +25,8 @@
 
 trap '' SIGTSTP
 trap '' SIGINT
+#declare -A returnval
+#declare -a returnarr
 RELEASE="0.0"
 
 #
@@ -89,41 +91,11 @@ export PGPASSWORD=${pgpassword}
 #
 # Includes Functions
 #
-source "/var/lib/openakc/libexec/functions-${RELEASE}"
+source "/var/lib/openakc/libexec/functions-${RELEASE}.cache"
 
 #
 # Local Functions
 #
-logstatus () {
- logger -p daemon.info -t "openakc-server[$$]" "INFO - $1"
-}
-
-logauth () {
- logger -p authpriv.notice -t "openakc-server[$$]" "AUTH - $1"
-}
-
-loginfo () {
- logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
-}
-
-logdebug () {
- if [ "x$DEBUG" == "xyes" ];then
-  logger -p auth.debug -t "openakc-server[$$]" "DEBUG - $1"
- fi
-}
-
-logwarn () {
- logger -p auth.warn -t "openakc-server[$$]" "WARNING - $1"
-}
-
-logerr () {
- logger -p auth.err -t "openakc-server[$$]" "ERROR - $1"
-}
-
-randsn() {
- < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-10};
-}
-
 greeter () {
  echo "OpenAKC-$RELEASE $(uname -o) $(uname -r)"
  echo "OK: OpenAKC Server Ready"
@@ -269,7 +241,8 @@ esac
 PROTO=$(echo $PROTO | awk -F. '{print $1}')
 
 #
-# Data Section FIXME Move to libexec and source functions in based in data configured data store.
+# Data Section FIXME Move to libexec and source functions based on configured data store.
+# Migration to function library as first step part complete.
 #
 
 ################################
@@ -330,21 +303,6 @@ data_updatekey () {
  fi
 }
 
-data_openroles () {
- reply="ERR: Cant open roles file"
- fn="${DATADIR}/data/roles/${USR}@${HNS}.${HND}.roles" 
- fnd="${DATADIR}/data/roles/${USR}@DEFAULT.roles"
- if [ -r ${fn} ]; then 
-  exec 6<>"$fn"
-  [ $? -eq 0 ]&&reply="OK: Roles file open"
- elif [ -r ${fnd} ]; then
-  exec 6<>"$fnd"
-  [ $? -eq 0 ]&&reply="OK: Default roles file open"
- else
-  reply="ERR: Error opening roles file"
- fi
-}  
- 
 data_resolve () {
  cnt=$(getent hosts "${SOURCE}" 2> /dev/null | wc -l)
  if [ $cnt -eq 1 ]; then
@@ -449,55 +407,10 @@ EOF
  fi
 }
 
-data_sessionlog () {
- mkdir -p ${DATADIR}/data/sessions
- mkdir -p ${DATADIR}/data/hosts
- fn="${DATADIR}/data/sessions/$RPPID-$HID.session"
- fnh="${DATADIR}/data/hosts/$HNS.$HND"
- if [ -r "${fn}" ];then
- fdat=$(stat --format='%Z' ${fn})
- ndat=$(date +%s)
- TDIF=$((ndat-fdat))
- else 
-  TDIF=1000
- fi
- echo "${HNS};${HND};${HID};${HIP};${USR};${KEYF};${API};${REL};${RPPID};${RUSR};${SHL};${SCP};${CAP};${FRM};${TIM};${CMD};${DAY};${REC};${EXT}" > ${fn}
- echo "${HNS};${HND};${HID};${HIP}" > ${fnh}
-}
-
-data_sessionupd () {
- mkdir -p ${DATADIR}/data/sessions
- fn="${DATADIR}/data/sessions/$PARAM.session"
- if [ -r "${fn}" ];then
-  exec 6<>$fn
-  read SESSDAT <&6
-  exec 6>&-
-  echo "${SESSDAT};${RIP};${RPRT};${RPTY}" > $fn
-  SESSDAT="${SESSDAT};${RIP};${RPRT};${RPTY}"
- else
-  SESSDAT=""
- fi
-}
-
-data_idkeyf () {
-#FIXME check filename format & check for duplicates
- fp=$(echo "${KEYF}" | tr '/' '-')
- fn=$(ls ${DATADIR}/data/keys/${fp}.* 2> /dev/null)
- if [ $? -eq 0 ]; then
-  exec 7<>${fn}
-  read RUSR <&7
-  read RUSR <&7
-  read PUBKEY <&7
-  exec 7>&-
- else
-  RUSR=""
-  PUBKEY=""
- fi
-}
-
 #
 # ^^ End of Data Section ^^
 #
+
 
 ################################
 
@@ -579,178 +492,105 @@ rbsessiondata () {
 }
 
 rbauth () {
- logdebug "Processing auth request - \"$PARAM\"" 
- HNS=$(echo $PARAM | cut -d ";" -f 1) # Short Hostname
- HND=$(echo $PARAM | cut -d ";" -f 2) # Domain Name
- HID=$(echo $PARAM | cut -d ";" -f 3) # Hostid
- HIP=$(echo $PARAM | cut -d ";" -f 4) # Host IP
- USR=$(echo $PARAM | cut -d ";" -f 5) # Username
- KEYF=$(echo $PARAM | cut -d ";" -f 6) # Key Fingerprint
- API=$(echo $PARAM | cut -d ";" -f 7) # API Hostname
- REL=$(echo $PARAM | cut -d ";" -f 8) # Client Code Release
- RPPID=$(echo $PARAM | cut -d ";" -f 9) # Remote Parent PID
- #
- data_idkeyf
- #
- SHL="none"
- SCP="none"
- CAP="-cap_linux_immutable"
- FRM="any"
- TIM="any"
- CMD="any"
- DAY="any"
- REC="yes"
- EXT="none"
- #
- grant=0
+#
+# Parameters
+# $1 = parameter string from API
+# $2 = 
+#
+#
+
+#
+# Clear Function Return Arrays.
+#
+ local -A returnval=()
+ local -a returnarr=()
  
- if [ "x${PUBKEY}" != "x" ]; then
-  ( ${PREEXEC} ${HNS}.${HND} ${HIP} ${KEYF} ${USR} ) 2> /dev/null 1> /dev/null
-  PRERES=${?}
+#
+# Define other local variables for this function
+#
+ local -a para
+ local -A authdata
+ local preres replylog replyflg replykey
+ 
+#
+# Split input parameters
+# 
+ logdebug "Processing auth request - \"$1\"" 
+ IFS=';' read -r -a param <<< "$1"
+ authdata["HNS"]="${param[0]}" # Short Hostname
+ authdata["HND"]="${param[1]}" # Domain Name
+ authdata["HID"]="${param[2]}" # Hostid
+ authdata["HIP"]="${param[3]}" # Host IP
+ authdata["USR"]="${param[4]}" # Username
+ authdata["KEYF"]="${param[5]}" # Key Fingerprint
+ authdata["API"]="${param[6]}" # API Hostname
+ authdata["REL"]="${param[7]}" # Client Code Release
+ authdata["RPPID"]="${param[8]}" # Remote Parent PID
+
+# HNS=$(echo $PARAM | cut -d ";" -f 1) # Short Hostname
+# HND=$(echo $PARAM | cut -d ";" -f 2) # Domain Name
+# HID=$(echo $PARAM | cut -d ";" -f 3) # Hostid
+# HIP=$(echo $PARAM | cut -d ";" -f 4) # Host IP
+# USR=$(echo $PARAM | cut -d ";" -f 5) # Username
+# KEYF=$(echo $PARAM | cut -d ";" -f 6) # Key Fingerprint
+# API=$(echo $PARAM | cut -d ";" -f 7) # API Hostname
+# REL=$(echo $PARAM | cut -d ";" -f 8) # Client Code Release
+# RPPID=$(echo $PARAM | cut -d ";" -f 9) # Remote Parent PID
+#
+ data_idkeyf "${authdata["KEYF"]}"
+ authdata["RUSR"]=${returnval["RUSR"]}
+ authdata["PUBKEY"]=${returnval["PUBKEY"]}
+#
+ grant=0
+#
+ if [ "x${authdata["PUBKEY"]}" != "x" ]; then
+  ( ${PREEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" ) 2> /dev/null 1> /dev/null
+  preres=${?}
  fi
- if [ "x${PUBKEY}" != "x" ]&&[ ${PRERES} -eq 0 ]; then
+ if [ "x${authdata["PUBKEY"]}" != "x" ]&&[[ $preres -eq 0 ]]; then
   #
   data_sessionlog 
-  if [ $TDIF -lt 10 ]; then
-   REPLYFLG="NOLOG"
+  if [ ${returnval["TDIF"]} -lt 10 ]; then
+   replyflg="NOLOG"
   else
-   REPLYFLG="LOG"
+   replyflg="LOG"
   fi
-  logdebug "Reply flag set to ${REPLYFLG}"
-  #
-  data_openroles
-  logdebug "Opening Roles ${reply}"
- # 
-  if [ "x${reply:0:3}" != "xERR" ]; then
-   logdebug "Trying to read role file"
-   rfn="/tmp/openakc_rolecheck.$$"
-   touch ${rfn}
-   while read rdata <&6
-   do
-    [ "x${rdata:0:6}" == "xSHELL=" ]&&SHL=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${rdata:0:4}" == "xSCP=" ]&&SCP=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${rdata:0:4}" == "xCAP=" ]&&CAP=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${rdata:0:5}" == "xFROM=" ]&&FRM=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${rdata:0:4}" == "xTIM=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
-    [ "x${rdata:0:5}" == "xTIME=" ]&&TIM=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
-    [ "x${rdata:0:4}" == "xDAY=" ]&&DAY=$(echo $rdata | awk -F= '{print $2}' | tr 'A-Z' 'a-z')
-    [ "x${rdata:0:4}" == "xCMD=" ]&&CMD=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${rdata:0:4}" == "xREC=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${rdata:0:7}" == "xRECORD=" ]&&REC=$(echo $rdata | awk -F= '{print $2}')
-    [ "x${FRM}" == "xany" ]&&FRM="0.0.0.0/0"
-     #
-    if [ "x${rdata:0:5}" == "xROLE=" ]; then
-     logdebug "Starting to process ROLE - ${rdata}"
-     if [ $grant -eq 1 ]; then
-      break
-     fi
-     rdata=$(echo $rdata | awk -F= '{print $2}')
-     srole=$(echo $rdata | awk -F, '{print $1}')
-     srole=$(date +%s --date "$srole" 2> /dev/null)
-     [ $? -ne 0 ]&&srole=0
-     erole=$(echo $rdata | awk -F, '{print $2}')
-     erole=$(date +%s --date "$erole" 2> /dev/null)
-     [ $? -ne 0 ]&&erole=0
-     [ $srole -eq 0 ]&&erole=0
-     [ $erole -eq 0 ]&&srole=0
-     mrole="group"
-     [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xuser" ]&&mrole="user"
-     [ "x$(echo $rdata | awk -F, '{print $3}' | tr 'A-Z' 'a-z')" == "xkey" ]&&mrole="key"
-     krole=$(echo $rdata | awk -F, '{print $4}' | tr 'A-Z' 'a-z')
-     if [ "${srole}" -lt "${SDAT}" ] && [ "${erole}" -gt "${SDAT}" ]; then
-      logdebug "Checking User ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
-      if [ "x${mrole}${krole}" == "xuser${RUSR}" ]; then
-       logdebug "User looks OK"
-       grant=1
-      fi
-      logdebug "Checking Group ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
-      if [ "x${mrole}" == "xgroup" ]; then
-       chown "${RUSR}:daemon" ${rfn} 2> /dev/null
-       su "${RUSR}" -c "chgrp "${krole}" /tmp/openakc_rolecheck.$$ 2> /dev/null" 2> /dev/null
-       GROUPCHECK=${?}
-       if [ ${GROUPCHECK} -eq 0 ]; then
-        logdebug "Group looks OK"
-        grant=1
-       fi
-      fi
-      logdebug "Checking Key ${mrole}($(echo $rdata | awk -F, '{print $4}')) against ${krole} vs ${RUSR}"
-      if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${KEYF}" ]; then
-       logdebug "Key looks OK by fingerprint"
-       grant=1
-      fi
-      if [ "x${mrole}$(echo $rdata | awk -F, '{print $4}')" == "xkey${RUSR}" ]; then
-       logdebug "Key looks OK by serial"
-       grant=1
-      fi
-     fi
-    fi
-    logdebug "Repeating auth loop"
-   done
-   logdebug "Auth loop done, checking negatives"
-#   
-   if [ $grant -eq 1 ]; then
-    logdebug "Inside final grant"
-    TOK=0
-    DOK=0
-    DNOW=$(date +%a | tr 'A-Z' 'a-z')
-    TNOW=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
-    logdebug "Starting time check"
-    if [ "x${TIM}" != "xany" ]; then
-     echo $TIM|egrep "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
-     if [ $? -eq 0 ]; then
-      TBEF=$(((10#${TIM:0:2}*10#60)+10#${TIM:3:2}))
-      TAFT=$(((10#${TIM:6:2}*10#60)+10#${TIM:9:2}))
-     else
-      TBEF=0
-      TAFT=0
-#      logerr "Time format invalid in role for ${USR}@${HNS}" #FIXME check at upload
-     fi   
-     [ ${TBEF} -lt ${TNOW} ]&&[ ${TAFT} -gt ${TNOW} ]&&TOK=1
-    else
-     TOK=1
-    fi
-    logdebug "Time check done"
-    echo $DAY | grep $DNOW 1> /dev/null 2> /dev/null
-    [ $? -eq 0 ]&&DOK=1
-    [ "x${DAY}" == "xany" ]&&DOK=1
-    #
-    logdebug "Role Day = ${DAY}, Role Time = ${TIM}, Current Day = ${DNOW}, Current Mins = ${TNOW}, Before Mins = ${TBEF}, After Mins = ${TAFT}"
-    logdebug "Day OK = ${DOK}, Time OK = ${TOK}"
-    if [ "x${TOK}" != "x1" ]; then
-     logdebug "Denied Based on time of day"
-     grant=0
-    fi
-    if [ "x${DOK}" != "x1" ]; then
-     logdebug "Denied Based on day of week"
-     grant=0
-    fi
-   fi
+  logdebug "Reply flag set to $replyflg"
 #
-   logdebug "Auth done"
-   rm ${rfn} 2> /dev/null
-   logdebug "Updating Session Log"
-   data_sessionlog
-  fi
+  data_validateroles "${authdata["USR"]}" "${authdata["HNS"]}" "${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["RUSR"]}" "${authdata["KEYF"]}" && grant=1
+  reply=${returnval["reply"]}  
+  authdata["SHL"]=${returnval["SHL"]}
+  authdata["SCP"]=${returnval["SCP"]}
+  authdata["CAP"]=${returnval["CAP"]}
+  authdata["FRM"]=${returnval["FRM"]}
+  authdata["CMD"]=${returnval["CMD"]}
+  authdata["REC"]=${returnval["REC"]}
+  logdebug "Reply from validateroles - $reply"
+  logdebug "Updating Session Log CAP=${authdata["CAP"]} SHL=${authdata["SHL"]} SCP=${authdata["SCP"]} FRM=${authdata["FRM"]} CMD=${authdata["CMD"]} REC=${authdata["REC"]}"
+# FIXME Perhaps we can put the $reply into sessionlog, for an "explain" function later
+  data_sessionlog
+
+#
  fi
  if [ ${grant} -eq 1 ]; then
-  ( ${POSTEXEC} ${HNS}.${HND} ${HIP} ${KEYF} ${USR} ACCEPT ${RPPID}-${HID} ) 2> /dev/null 1> /dev/null
-  REPLYLOG="User $USR authenticated on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
-  REPLYKEY="no-port-forwarding,no-X11-forwarding,from=\"$FRM\",command=\"/usr/bin/openakc-session $API $RPPID $HID $HNS\" $PUBKEY"
-  if [ "x${CMD}" == "xinternal-sftp" ]; then
-   REPLYKEY="no-port-forwarding,no-X11-forwarding,from=\"$FRM\",command=\"internal-sftp -f LOCAL6 -l INFO\" $PUBKEY"
+  ( ${POSTEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" ACCEPT "${authdata["RPPID"]}-${authdata["HID"]}" ) 2> /dev/null 1> /dev/null
+  replylog="User ${authdata["USR"]} authenticated on ${authdata["HNS"]}(${authdata["HIP"]}) with session id ${authdata["RPPID"]}-${authdata["HID"]} using key ${authdata["KEYF"]}(${returnval["RUSR"]})"
+  replykey="no-port-forwarding,no-X11-forwarding,from=\"${authdata["FRM"]}\",command=\"/usr/bin/openakc-session ${authdata["API"]} ${authdata["RPPID"]} ${authdata["HID"]} ${authdata["HNS"]}\" ${authdata["PUBKEY"]}"
+  if [ "x${authdata["CMD"]}" == "xinternal-sftp" ]; then
+   replykey="no-port-forwarding,no-X11-forwarding,from=\"${authdata["FRM"]}\",command=\"internal-sftp -f LOCAL6 -l INFO\" ${authdata["PUBKEY"]}"
   fi
  else
-  ( ${POSTEXEC} ${HNS}.${HND} ${HIP} ${KEYF} ${USR} DENY ${RPPID}-${HID} ) 2> /dev/null 1> /dev/null
-  REPLYLOG="User $USR denied on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR)"
-  REPLYKEY="command=\"/usr/bin/openakc-session $API $RPPID $HID $HNS\" ssh-rsa DENIED"
+  ( ${POSTEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" DENY "${authdata["RPPID"]}-${authdata["HID"]}" ) 2> /dev/null 1> /dev/null
+  replylog="User ${authdata["USR"]} denied on ${authdata["HNS"]}(${authdata["HIP"]}) with session id ${authdata["RPPID"]}-${authdata["HID"]} using key ${authdata["KEYF"]}(${returnval["RUSR"]})"
+  replykey="command=\"/usr/bin/openakc-session ${authdata["API"]} ${authdata["RPPID"]} ${authdata["HID"]} ${authdata["HNS"]}\" ssh-rsa DENIED"
  fi
  
  #
- logdebug "Sending key $REPLYKEY"
- echo $(echo "$REPLYLOG" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
- echo $(echo "$REPLYFLG" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
- echo $(echo "$REPLYKEY" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
- echo "OK: Auth request processed"
+ logdebug "Sending key $replykey"
+ echo $(echo "$replylog" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo $(echo "$replyflg" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo $(echo "$replykey" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo ${reply}
 } 
 
 rbchallenge () {
@@ -978,7 +818,7 @@ if [ "x$PROTO" == "xakcrsa1" ]; then
     rbaudit
     ;; 
    auth)
-    rbauth 
+    rbauth "$PARAM" 
     ;;
    ping)
     echo "OK: Pong!"

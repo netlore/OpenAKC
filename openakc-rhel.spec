@@ -1,6 +1,6 @@
 Name:           openakc
-Version:        1.0.0~alpha14
-Release:        4%{?dist}
+Version:        1.0.0~alpha15
+Release:        1%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
 License:        GPLv2.0
@@ -223,8 +223,10 @@ echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /e
 exit 0
 
 %post shared
+[ ! -f /var/lib/openakc/libexec/functions-%{version}-%{release}.cache ]&&cp /var/lib/openakc/libexec/functions-%{version}-%{release} /var/lib/openakc/libexec/functions-%{version}-%{release}.cache
 chattr +i /var/lib/openakc/libexec
 chattr +i /var/lib/openakc/libexec/functions-%{version}-%{release}
+chattr +i /var/lib/openakc/libexec/functions-%{version}-%{release}.cache
 exit 0
 
 %preun

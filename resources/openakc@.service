@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenAKC Per-Connection Server
+
+[Service]
+ExecStart=/usr/sbin/openakc-server     # the binary to start
+User=root
+Group=root
+StandardInput=socket

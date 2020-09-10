@@ -51,37 +51,11 @@ FAKESUDO="no"
 #
 # Includes Functions
 #
-source "/var/lib/openakc/libexec/functions-${RELEASE}"
+source "/var/lib/openakc/libexec/functions-${RELEASE}.cache"
 
 #
 # Local Functions
 #
-logstatus () {
- logger -p daemon.info -t "openakc-session[$$]" "INFO - $1"
-}
-
-logauth () {
- logger -p authpriv.notice -t "openakc-session[$$]" "AUTH - $1"
-}
-
-loginfo () {
- logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
-}
-
-logdebug () {
- if [ "x$DEBUG" == "xyes" ];then
-  logger -p auth.debug -t "openakc-session[$$]" "DEBUG - $1"
- fi
-}
-
-logwarn () {
- logger -p auth.warn -t "openakc-session[$$]" "WARNING - $1"
-}
-
-logerr () {
- logger -p auth.err -t "openakc-session[$$]" "ERROR - $1"
-}
-
 isok () {
  ISOK=$(echo $OK | cut -d ":" -f 1)
  if [ "x$ISOK" != "xOK" ]; then

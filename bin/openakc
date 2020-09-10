@@ -53,7 +53,7 @@ SESSKEY=""
 DAT=$(date "+%c")
 SDAT=$(date "+%s")
 MODE=${1}
-ARGS=${@}
+ARGS=${*}
 
 #
 # REGEX Checks
@@ -65,43 +65,16 @@ NAMEHOST_REGEX="${NAME_REGEX}@${HOST_REGEX}$"
 #
 # Includes Functions
 #
-source "/var/lib/openakc/libexec/functions-${RELEASE}"
+source "/var/lib/openakc/libexec/functions-${RELEASE}.cache"
 
 #
 # Local Functions
 #
-logstatus () {
- logger -p daemon.info -t "openakc-tool[$$]" "INFO - $1"
-}
-
-logauth () {
- logger -p authpriv.notice -t "openakc-tool[$$]" "AUTH - $1"
-}
-
-loginfo () {
- logger -p authpriv.info -t "openakc-server[$$]" "INFO - $1"
-}
-
-logdebug () {
- if [ "x$DEBUG" == "xyes" ];then
-  logger -p auth.debug -t "openakc-tool[$$]" "DEBUG - $1"
- fi
-}
-
-logwarn () {
- logger -p auth.warn -t "openakc-tool[$$]" "WARNING - $1"
-}
-
-logerr () {
- logger -p auth.err -t "openakc-tool[$$]" "ERROR - $1"
-}
-
-
 isok () {
- ISOK=$(echo $OK | cut -d ":" -f 1)
+ ISOK=$(echo "${OK}" | cut -d ":" -f 1)
  if [ "x$ISOK" != "xOK" ]; then
   echo "Protocol Error:-"
-  echo $OK
+  echo "${OK}"
   echo
   logerr "Quitting due to unexpected command response - $OK"
   echo "quit" >&5
@@ -161,9 +134,9 @@ apicall () {
  
  # Connect to API
  logdebug "Trying TCP Session with API \"${1}:${PORT}\" ID is \"$(whoami)\""
- exec 5<>/dev/tcp/${1}/${PORT}
+ exec 5<>/dev/tcp/"${1}"/"${PORT}"
  success=${?}
- if [ $success -ne 0 ]; then
+ if [[ $success -ne 0 ]]; then
   exit $success
   logdebug "TCP Session exit Code ${success} with API \"${1}:${PORT}\""
  fi
@@ -171,12 +144,12 @@ apicall () {
  
  # If we're still going, then we're it!
  
- read TAGLINE <&5
- read OK <&5
+ read -r TAGLINE <&5
+ read -r OK <&5
  isok
  echo "getproto" >&5
- read PROTOS <&5
- read OK <&5
+ read -r PROTOS <&5
+ read -r OK <&5
  isok
  
  #
@@ -220,7 +193,7 @@ apicall () {
  # Initialise session protocol
  #
  echo "setproto $PROTO" >&5
- read OK <&5
+ read -r OK <&5
  isok
 #
  if [ ! -f "${USERDIR}/openakc-server-pubkey-${1}.pem" ]; then
@@ -229,26 +202,26 @@ apicall () {
   rm /tmp/.pubkey.$$
   for loop in {1..30}
   do
-   read PUB <&5
-   if [ $(echo $PUB | cut -c 1-3) == "OK:" ]; then
+   read -r PUB <&5
+   if [ "$(echo "${PUB}" | cut -c 1-3)" == "OK:" ]; then
     break
    fi
-   echo $PUB >> /tmp/.pubkey.$$
+   echo "${PUB}" >> /tmp/.pubkey.$$
   done
   mv /tmp/.pubkey.$$ "${USERDIR}/openakc-server-pubkey-${1}.pem"  
   logstatus "Collecting servers RSA Public Key"
-  OK=$PUB
+  OK=${PUB}
   isok
-  [ $loop -eq 15 ]&&logwarn "Error with collecting servers RSA Public Key"
+  [[ $loop -eq 15 ]]&&logwarn "Error with collecting servers RSA Public Key"
  fi
  #
  # Generate Session Key and register it.
  #
  SESSKEY=$(openssl rand -hex 26 2> /dev/null)
- SESSCODE=$(echo $SESSKEY | openssl rsautl -encrypt -inkey "${USERDIR}/openakc-server-pubkey-${1}.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
+ SESSCODE=$(echo "${SESSKEY}" | openssl rsautl -encrypt -inkey "${USERDIR}/openakc-server-pubkey-${1}.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
  #
- echo "sessioncode $SESSCODE" >&5
- read OK <&5
+ echo "sessioncode ${SESSCODE}" >&5
+ read -r OK <&5
  isok
  #
  
@@ -258,22 +231,22 @@ apicall () {
   register)
    if [ "x${SDO}${MODE}" == "xyesregister" ]; then
     echo "Sending key registration request"
-    MESSAGE=$(echo "challenge system $(hostid)");sendmessage
-    read CHALCODE <&5
-    read OK <&5
+    MESSAGE="challenge system $(hostid)";sendmessage
+    read -r CHALCODE <&5
+    read -r OK <&5
     isok
-    CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
-    CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${DATADIR}/keys/openakc-system-client-$(hostid)-prvkey.pem" -in /dev/stdin 2> /dev/null)
+    CHALCODE=$(echo "${CHALCODE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+    CHAL=$(echo "${CHALCODE}" | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${DATADIR}/keys/openakc-system-client-$(hostid)-prvkey.pem" -in /dev/stdin 2> /dev/null)
 #    echo ""
-    logdebug "Key Register - $OK"
-    MESSAGE=$(echo "handshake ${CHAL}");sendmessage
-    read OK <&5
+    logdebug "Key Register - ${OK}"
+    MESSAGE="handshake ${CHAL}";sendmessage
+    read -r OK <&5
     isok
-    logdebug "Key Register - $OK"
-    MESSAGE=$(echo "registerkey user ${usr} ${fp} ${pkey}");sendmessage
-    read OK <&5
+    logdebug "Key Register - ${OK}"
+    MESSAGE="registerkey user ${usr} ${fp} ${pkey}";sendmessage
+    read -r OK <&5
     isok
-    logdebug "Key Register - $OK"
+    logdebug "Key Register - ${OK}"
 #    echo ""
     echo "${OK}"
    fi
@@ -282,13 +255,13 @@ apicall () {
   setrole)
    ABRT=0
    echo "Sending role update request"
-   TARGET=$(echo "${ARGS}" | awk '{print $2}' | tr 'A-Z' 'a-z')
-   if ( ! echo $TARGET | egrep  -q $NAMEHOST_REGEX ); then
+   TARGET=$(echo "${ARGS}" | awk '{print $2}' | tr '[:upper:]' '[:lower:]')
+   if ( ! echo "${TARGET}" | grep -E -q "${NAMEHOST_REGEX}" ); then
     echo "Error: User or Host name invalid, exiting"
     ABRT=1
    fi
-   if [ -r ${ROLEFN} ]; then
-    ROLEFILE=$(cat ${ROLEFN} | gzip | base64 -w 0)
+   if [ -r "${ROLEFN}" ]; then
+    ROLEFILE=$(gzip < "${ROLEFN}" | base64 -w 0)
    else
     echo "Error: Role file (${ROLEFN}) not readable, exiting"
     ABRT=1
@@ -296,37 +269,37 @@ apicall () {
    USRNAME=$(echo "${TARGET}" | awk -F\@ '{print $1}')
    HSTNAME=$(echo "${TARGET}" | awk -F\@ '{print $2}')
    #
-   if [ ${ABRT} -eq 0 ]; then
-    MESSAGE=$(echo "challenge user $(whoami)");sendmessage
-    read CHALCODE <&5
-    read OK <&5
+   if [[ ${ABRT} -eq 0 ]]; then
+    MESSAGE="challenge user $(whoami)";sendmessage
+    read -r CHALCODE <&5
+    read -r OK <&5
     isok
-    CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
-    CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+    CHALCODE=$(echo "${CHALCODE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+    CHAL=$(echo "${CHALCODE}" | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
 #    echo ""
-    logdebug "Add Permission - $OK"
-    MESSAGE=$(echo "handshake ${CHAL}");sendmessage
-    read OK <&5
+    logdebug "Add Permission - ${OK}"
+    MESSAGE="handshake ${CHAL}";sendmessage
+    read -r OK <&5
     isok
-    logdebug "Add Permission - $OK"
-    MESSAGE=$(echo "setrole ${USRNAME}@${HSTNAME} ${ROLEFILE}");sendmessage
-    read OK <&5
+    logdebug "Add Permission - ${OK}"
+    MESSAGE="setrole ${USRNAME}@${HSTNAME} ${ROLEFILE}";sendmessage
+    read -r OK <&5
     isok
-    logdebug "Add Permission - $OK"
+    logdebug "Add Permission - ${OK}"
     echo "${OK}"
    fi
    ;;
 #
   getrole)
    ABRT=0
-   echo "Sending role read request"
-   TARGET=$(echo "${ARGS}" | awk '{print $2}' | tr 'A-Z' 'a-z')
-   if ( ! echo $TARGET | egrep  -q $NAMEHOST_REGEX ); then 
+   echo "Sending role read -r request"
+   TARGET=$(echo "${ARGS}" | awk '{print $2}' | tr '[:upper:]' '[:lower:]')
+   if ( ! echo "${TARGET}" | grep -E -q "${NAMEHOST_REGEX}" ); then 
     echo "Error: User or Host name invalid, exiting"
     ABRT=1
    fi
    touch "${ROLEFN}" 2> /dev/null
-   if [ $? -ne 0 ]; then
+   if [[ $? -ne 0 ]]; then
     echo "Error: Role file (${ROLEFN}) not writeable, exiting"
     ABRT=1
    fi
@@ -334,27 +307,27 @@ apicall () {
    USRNAME=$(echo "${TARGET}" | awk -F\@ '{print $1}')
    HSTNAME=$(echo "${TARGET}" | awk -F\@ '{print $2}')
    #
-   if [ ${ABRT} -eq 0 ]; then
-    MESSAGE=$(echo "challenge user $(whoami)");sendmessage
-    read CHALCODE <&5
-    read OK <&5
+   if [[ ${ABRT} -eq 0 ]]; then
+    MESSAGE="challenge user $(whoami)";sendmessage
+    read -r CHALCODE <&5
+    read -r OK <&5
     isok
-    CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
-    CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+    CHALCODE=$(echo "${CHALCODE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+    CHAL=$(echo "${CHALCODE}" | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
 #    echo ""
-    logdebug "Get Permission - $OK"
-    MESSAGE=$(echo "handshake ${CHAL}");sendmessage
-    read OK <&5
+    logdebug "Get Permission - ${OK}"
+    MESSAGE="handshake ${CHAL}";sendmessage
+    read -r OK <&5
     isok
-    logdebug "Get Permission - $OK"
-    MESSAGE=$(echo "getrole ${USRNAME}@${HSTNAME} ${ROLEFILE}");sendmessage
-    read ROLEFILE <&5
-    ROLEFILE=$(echo "$ROLEFILE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | gzip -d | base64 -d)
-    read OK <&5
+    logdebug "Get Permission - ${OK}"
+    MESSAGE="getrole ${USRNAME}@${HSTNAME} ${ROLEFILE}";sendmessage
+    read -r ROLEFILE <&5
+    ROLEFILE=$(echo "${ROLEFILE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | gzip -d | base64 -d)
+    read -r OK <&5
     isok
-    logdebug "Get Permission - $OK"
+    logdebug "Get Permission - ${OK}"
     if [ "x${OK:0:3}" != "xERR" ]; then
-     echo "$ROLEFILE" > "${ROLEFN}"
+     echo "${ROLEFILE}" > "${ROLEFN}"
     fi
     echo "${OK}"
    fi
@@ -362,30 +335,30 @@ apicall () {
   submit)
 #  FIXME Do more input validation
    echo "Sending key submission request"
-   if [ -r ${KEYFILE} ]; then
-    KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
-    COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
+   if [ -r "${KEYFILE}" ]; then
+    KEYDATA=$(gzip < "${KEYFILE}" | base64 -w 0)
+    COMMENT=$(echo "${COMMENT}" | gzip | base64 -w 0)
    else
 #  NOTE / FIXME This code path can never be executed as we already checked the file was readable!
     echo "Error: Key file (${KEYFILE}) not found, exiting"
     exit 1
    fi
-   MESSAGE=$(echo "challenge user $(whoami)");sendmessage
-   read CHALCODE <&5
-   read OK <&5
+   MESSAGE="challenge user $(whoami)";sendmessage
+   read -r CHALCODE <&5
+   read -r OK <&5
    isok
-   CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
-   CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+   CHALCODE=$(echo "${CHALCODE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+   CHAL=$(echo "${CHALCODE}" | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
 #   echo ""
-   logdebug "Submit Key - $OK"
-   MESSAGE=$(echo "handshake ${CHAL}");sendmessage
-   read OK <&5
+   logdebug "Submit Key - ${OK}"
+   MESSAGE="handshake ${CHAL}";sendmessage
+   read -r OK <&5
    isok
-   logdebug "Submit Key - $OK"
-   MESSAGE=$(echo "submit ${fp} ${KEYDATA} ${COMMENT}");sendmessage
-   read OK <&5
+   logdebug "Submit Key - ${OK}"
+   MESSAGE="submit ${fp} ${KEYDATA} ${COMMENT}";sendmessage
+   read -r OK <&5
    isok
-   logdebug "Submit Key - $OK"
+   logdebug "Submit Key - ${OK}"
    echo "${OK}"
    ;;
 #
@@ -394,39 +367,39 @@ apicall () {
    echo "Sending key update request"
    if [ "x${KEYFILE}" == "xDELETE" ]; then
     KEYDATA=$(echo -n "DELETE" | gzip | base64 -w 0)
-    COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
-   elif [ -r ${KEYFILE} ]; then
-    KEYDATA=$(cat ${KEYFILE} | gzip | base64 -w 0)
-    COMMENT=$(echo ${COMMENT} | gzip | base64 -w 0)
+    COMMENT=$(echo "${COMMENT}" | gzip | base64 -w 0)
+   elif [ -r "${KEYFILE}" ]; then
+    KEYDATA=$(gzip < "${KEYFILE}" | base64 -w 0)
+    COMMENT=$(echo "${COMMENT}" | gzip | base64 -w 0)
    else
 #  NOTE / FIXME This code path can never be executed as we already checked the file was readable!
     echo "Error: Key file (${KEYFILE}) not found, exiting"
     exit 1
    fi
-   MESSAGE=$(echo "challenge user $(whoami)");sendmessage
-   read CHALCODE <&5
-   read OK <&5
+   MESSAGE="challenge user $(whoami)";sendmessage
+   read -r CHALCODE <&5
+   read -r OK <&5
    isok
-   CHALCODE=$(echo "$CHALCODE" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
-   CHAL=$(echo $CHALCODE | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
+   CHALCODE=$(echo "${CHALCODE}" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+   CHAL=$(echo "${CHALCODE}" | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${USERDIR}/${USERPRVKEY}" -in /dev/stdin 2> /dev/null)
 #   echo ""
-   logdebug "Update Key - $OK"
-   MESSAGE=$(echo "handshake ${CHAL}");sendmessage
-   read OK <&5
+   logdebug "Update Key - ${OK}"
+   MESSAGE="handshake ${CHAL}";sendmessage
+   read -r OK <&5
    isok
-   logdebug "Update Key - $OK"
-   MESSAGE=$(echo "update ${KEYSN} ${fp} ${KEYDATA} ${COMMENT}");sendmessage
-   read OK <&5
+   logdebug "Update Key - ${OK}"
+   MESSAGE="update ${KEYSN} ${fp} ${KEYDATA} ${COMMENT}";sendmessage
+   read -r OK <&5
    isok
-   logdebug "Update Key - $OK"
+   logdebug "Update Key - ${OK}"
    echo "${OK}"
    ;;
 #
   ping)
    echo "Sending Test Run Ping Message"
-   MESSAGE=$(echo "ping");sendmessage
-   read OK <&5
-   echo "Test Run Response - $OK - from server - $1"
+   MESSAGE="ping";sendmessage
+   read -r OK <&5
+   echo "Test Run Response - ${OK} - from server - ${1}"
    ;;
 #
   *)
@@ -452,7 +425,7 @@ netcall () {
   wait $apipid 2> /dev/null
   success=${?}
   pkill --signal INT -P $sleepid
-  if [ ${success} -ne 0 ]; then
+  if [[ ${success} -ne 0 ]]; then
    sleep 5
    reset
    echo "Timeout / Error with OpenAKC backend at ${API}, check port ${PORT}. Code: $success"
@@ -464,7 +437,7 @@ netcall () {
 #
 # Initial Banner
 #
-if [[  ${@} != *"nobanner" ]]; then
+if [[ ${*} != *"nobanner" ]]; then
  echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
 fi
 
@@ -479,13 +452,13 @@ else
  logerr "Unrecognised OpenSSL version, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 908 ];then
+if [[ $OSSLV -ge 908 ]];then
  CPROTOS="akcrsa1" # Space Separated List
 else
  logerr "OpenSSL too old, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 10101 ];then
+if [[ $OSSLV -ge 10101 ]];then
  CPROTOS="akcrsa1 akcrsa1.1" # Space Separated List
 fi
 
@@ -499,7 +472,7 @@ if [ ! -f "${CONFFILE}" ] && [ ! -f "${USERDIR}/config" ]; then
  echo
  echo "No config found, checking for a server on \"localhost\" at port 889"
  echo "init" > /dev/tcp/127.0.0.1/889
- if [ $? -eq 0 ]; then
+ if [[ $? -eq 0 ]]; then
   echo "Success! Hopefully the server has a config now!"
  else
   echo
@@ -519,7 +492,7 @@ if [ -r "${USERDIR}/config" ]; then
 fi
 
 if [ ! -r "${CONFFILE}" ] && [ ! -r "${USERDIR}/config" ]; then
- if [ ${EUID} -eq 0 ]; then
+ if [[ ${EUID} -eq 0 ]]; then
   logerr "Can't find/read the config file, exiting."
   echo
   echo "Can't find/read the config file, exiting."
@@ -536,7 +509,7 @@ APIS=$(echo $APIS | tr ',' ' ')
 # Validate Config FIXME Needs more checks. (ESP API hosts's)
 #
 if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
- if [ $PORT -gt 65535 ]; then
+ if [[ $PORT -gt 65535 ]]; then
   logerr "Warning - TCP port $PORT is out of range, exiting"
   exit 0
  fi
@@ -589,9 +562,9 @@ case "$MODE" in
    logdebug "Starting key registration in sudo mode"
    fp=${3}
    usr=${2}
-   fps=$(echo ${3} | md5sum | awk '{print $1}')
-   pkey=$(cat /tmp/openakc.${fps})
-   chkusr=$(ls -l /tmp/openakc.${fps} | awk '{print $3}')
+   fps=$(echo "${3}" | md5sum | awk '{print $1}')
+   pkey=$(cat /tmp/openakc."${fps}")
+   chkusr=$(ls -l /tmp/openakc."${fps}" | awk '{print $3}')
    if [ "x${usr}" != "x${chkusr}" ]; then
     echo ""
     echo "Error: Key ownership not confirmed, aborting!"
@@ -604,7 +577,7 @@ case "$MODE" in
    netcall
   else
    logdebug "Starting key registration in normal mode"
-   if [ ${EUID} -eq 0 ];then
+   if [[ ${EUID} -eq 0 ]];then
     echo  "Error: User \"root\" cannot register a user key"
     usage
     exit 1
@@ -623,7 +596,7 @@ case "$MODE" in
     usage
     exit 1
    else
-    prvkey=$(echo $key | sed -e "s,.pub$,,g")
+    prvkey=$(echo "${key}" | sed -e "s,.pub$,,g")
     if [ ! -r "${prvkey}" ]; then
      echo "Error: unable to read private key file"
      usage
@@ -631,8 +604,8 @@ case "$MODE" in
     fi
 #
     ssh-keygen -P "dummy" -yf "${prvkey}" 1> /dev/null 2> /dev/null
-    if [ $? -eq 0 ]; then
-     if [ ${EUID} -ne 0 ]; then
+    if [[ $? -eq 0 ]]; then
+     if [[ ${EUID} -ne 0 ]]; then
       echo "Error: user key (${prvkey}) must include passphrase"
       usage
       exit 1
@@ -640,9 +613,9 @@ case "$MODE" in
     fi
     echo "Passphrase is requested to ensure you own this key."
     echo ""
-    ssh-keygen -yf $prvkey > /tmp/openakc.pubkey.$$
+    ssh-keygen -yf "${prvkey}" > /tmp/openakc.pubkey.$$
 #
-    if [ "$(cat /tmp/openakc.pubkey.$$ | awk '{print $2}')" != "$(cat ${key} | awk '{print $2}')" ];then
+    if [ "$(awk '{print $2}' < /tmp/openakc.pubkey.$$)" != "$(awk '{print $2}' < "${key}")" ];then
      echo ""
      echo "Error: Public / Private key mismatch"
      usage
@@ -653,19 +626,19 @@ case "$MODE" in
     fp=$(ssh-keygen -lf /tmp/openakc.pubkey.$$ | awk '{print $2}')
     rm /tmp/openakc.pubkey.$$
 #
-    echo ${fp} | grep -q "^SHA" 2>/dev/null
-    if [ ${?} -ne 0 ]; then
+    echo "${fp}" | grep -q "^SHA" 2>/dev/null
+    if [[ ${?} -ne 0 ]]; then
      echo "Key Fingerprint format unknown (old ssh version?). aborting!"
      exit 1
     fi
 #
-    fps=$(echo ${fp} | md5sum | awk '{print $1}')
-    echo $pkey > /tmp/openakc.${fps}
+    fps=$(echo "${fp}" | md5sum | awk '{print $1}')
+    echo "${pkey}" > /tmp/openakc."${fps}"
     echo ""
     echo "Escalating to perform API call"
     echo ""
-    sudo /usr/bin/openakc register $(whoami) $fp $USERDIR nobanner
-    rm /tmp/openakc.${fps}
+    sudo /usr/bin/openakc register "$(whoami)" "${fp}" "${USERDIR}" nobanner
+    rm /tmp/openakc."${fps}"
     exit 0
    fi
   fi
@@ -690,12 +663,12 @@ case "$MODE" in
   ROLEFN="/tmp/.openakc_edit.$$"
   MODE="getrole"
   netcall
-  if [ -f ${ROLEFN} ]; then 
-   echo "Role configuration below:- $PAGER"
-   [ ! -x "$(which ${PAGER})" ]&&PAGER="more"
+  if [ -f "${ROLEFN}" ]; then 
+   echo "Role configuration below:- ${PAGER}"
+   [ ! -x "$(which "${PAGER}")" ]&&PAGER="more"
    if [ ! -x "$(which ${PAGER})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
-   $PAGER "$ROLEFN"
-   rm "$ROLEFN"
+   "${PAGER}" "${ROLEFN}"
+   rm "${ROLEFN}"
    exit 0
   else
    exit 1
@@ -707,37 +680,37 @@ case "$MODE" in
   ROLEFN="/tmp/.openakc_edit.$$"
   MODE="getrole"
   netcall
-  [ ! -f ${ROLEFN} ]&&exit 0
-  [ ! ${EDITOR} ]&&EDITOR="vi"
-  echo "Running editor:- $EDITOR"
+  [ ! -f "${ROLEFN}" ]&&exit 0
+  [ ! "${EDITOR}" ]&&EDITOR="vi"
+  echo "Running editor:- ${EDITOR}"
   [ ! -x "$(which ${EDITOR})" ]&&EDITOR="vi"
   if [ ! -x "$(which ${EDITOR})" ]; then echo "Error: No valid editor found, exiting.";exit 1;fi
-  $EDITOR "$ROLEFN"
+  "${EDITOR}" "${ROLEFN}"
   MODE="setrole"
   netcall
-  rm "$ROLEFN"
+  rm "${ROLEFN}"
   exit 0
   ;;
  submit)
   # FIXME Do some input validation
   echo -n ""
   KEYFILE=$(echo "${ARGS}" | awk '{print $2}')
-  COMMENT=$(echo "${3}")
+  COMMENT="${3}"
   echo "Storing public key ${KEYFILE} with comment \"${3}\""
-  if [ ! -r "$KEYFILE" ]; then
+  if [ ! -r "${KEYFILE}" ]; then
    echo "Can't read key file (${KEYFILE}). aborting!"
    exit 1
   fi
   #
   fp=$(ssh-keygen -lf "$KEYFILE")
-  if [ ${?} -ne 0 ]; then
+  if [[ ${?} -ne 0 ]]; then
    echo "Cannot generate key fingerprint. aborting!"
    exit 1
   fi
-  fp=$(echo ${fp} | awk '{print $2}')
+  fp=$(echo "${fp}" | awk '{print $2}')
   #
-  echo ${fp} | grep -q "^SHA" 2>/dev/null
-  if [ ${?} -ne 0 ]; then
+  echo "${fp}" | grep -q "^SHA" 2>/dev/null
+  if [[ ${?} -ne 0 ]]; then
    echo "Key Fingerprint format unknown (old ssh version?). aborting!"
    exit 1
   fi
@@ -749,26 +722,26 @@ case "$MODE" in
   echo -n ""
   KEYSN=$(echo "${ARGS}" | awk '{print $2}')
   KEYFILE=$(echo "${ARGS}" | awk '{print $3}')
-  COMMENT=$(echo "${4}")
+  COMMENT="${4}"
   if [ "x${KEYFILE}" == "xDELETE" ]; then
    echo "Deleting public key ${KEYSN}"
    fp="None"
   else
    echo "Updating public key ${KEYSN} with comment \"${4}\""
-   if [ ! -r "$KEYFILE" ]; then
+   if [ ! -r "${KEYFILE}" ]; then
     echo "Can't read key file (${KEYFILE}). aborting!"
     exit 1
    fi
    #
-   fp=$(ssh-keygen -lf "$KEYFILE")
-   if [ ${?} -ne 0 ]; then
+   fp=$(ssh-keygen -lf "${KEYFILE}")
+   if [[ ${?} -ne 0 ]]; then
     echo "Cannot generate key fingerprint. aborting!"
     exit 1
    fi
-   fp=$(echo ${fp} | awk '{print $2}')
+   fp=$(echo "${fp}" | awk '{print $2}')
    #
-   echo ${fp} | grep -q "^SHA" 2>/dev/null
-   if [ ${?} -ne 0 ]; then
+   echo "${fp}" | grep -q "^SHA" 2>/dev/null
+   if [[ ${?} -ne 0 ]]; then
     echo "Key Fingerprint format unknown (old ssh version?). aborting!"
     exit 1
    fi

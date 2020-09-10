@@ -1,3 +1,4 @@
+#!/bin/bash # (For my editors benefit, does nothing here)
 
 # Filename      : /var/lib/openakc/libexec/openakc-functions
 # Function      : OpenAKC Shared Functions
@@ -18,25 +19,462 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-function cidr_clean() {
- local ALL1="11111111111111111111111111111111"
- local ALL0="00000000000000000000000000000000"
- local IP=$(echo $1 | awk -F/ '{print $1}')
- local MASK=$(echo $1 | awk -F/ '{print $2}')
- local BINMASK="${ALL1:1:$MASK}${ALL0:1:32-$MASK}"
- local IFS="."
- local DECIP=0
+#
+# Note that many undeclared global variables are still used, there is a goal to clean
+# this up over time, but it will take a while.
+#
+
+#
+# Starting with Data Functions, which will ultimately be moved to separate include.
+#
+
+#
+# Read and Validate roles for the current session. 
+#
+
+data_validateroles () {
+#
+# Parameters
+# $1 = Target User
+# $2 = Short Hostname
+# $3 = Host Domain Name
+# $4 = Host IP
+# $5 = Requesting User
+# $6 = Key Fingerprint
+#
+# Returns Values - CAP SHL SCP FRM CMD REC
+#
+
+ local fn fnd rfn count=0 eof="" rdata srole erole mrole krole grant=0
+ local rvalid dvalid tok dok tnow dnow tbef taft net role now
+ local usr hns hnd hip rusr keyf
+ local shl scp cap frm tim cmd day rec ext
+ local frms="" scps="" caps="" cmds="" recs="" shls="" chg=""
+ local bfrm bscp bcap bcmd brec bshl
+#
+ usr=$1
+ hns=$2
+ hnd=$3
+ hip=$4
+ rusr=$5
+ keyf=$6
+ now="$(date +%s)"
+#
+ fn="$DATADIR/data/roles/$usr@$hns.$hnd.roles"
+ fnd="$DATADIR/data/roles/$usr@DEFAULT.roles"
+ if [ -r "${fn}" ]; then
+  exec 6<>"$fn"
+  [[ $? -eq 0 ]]&&logdebug "Roles file \"$fn\" opened OK"
+ elif [ -r "${fnd}" ]; then
+  exec 6<>"$fnd"
+  [[ $? -eq 0 ]]&&logdebug "Default roles file \"$fnd\" opened OK"
+ else
+  returnval["reply"]="ERR: Backend Failure Reading Roles Data"
+  return 1
+ fi
+#
+ logdebug "Processing roles file"
+ if ! rfn=$(mktemp openakc_rolecheck.XXXXXXXX); then
+  returnval["reply"]="ERR: Backend Failure Writing Temp File"
+  return 1
+ fi
+#
+ shl="none"
+ scp="none"
+ cap="null"
+ frm="any"
+ tim="any"
+ cmd="any"
+ day="any"
+ rec="yes"
+ ext="none"
+#
+ while true
+ do
+  read -r rdata <&6 || eof=1
+  logdebug "Role data - $rdata"
+  [ "x${rdata:0:5}" == "xROLE=" ]&&role="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:6}" == "xSHELL=" ]&&[ "x$shl" != "xnone" ]&&cmd+=";$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:6}" == "xSHELL=" ]&&[ "x$shl" == "xnone" ]&&shl="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xSCP=" ]&&[ "x$scp" != "xnone" ]&&scp+=";$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xSCP=" ]&&[ "x$scp" == "xnone" ]&&scp="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xCAP=" ]&&[ "x$cap" != "xnull" ]&&cap+=",$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xCAP=" ]&&[ "x$cap" == "xnull" ]&&cap="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:5}" == "xFROM=" ]&&[ "x$frm" != "xany" ]&&frm=",$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:5}" == "xFROM=" ]&&[ "x$frm" == "xany" ]&&frm="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xTIM=" ]&&tim="$(echo "$rdata" | awk -F= '{print $2}' | tr '[:upper:]' '[:lower:]')"
+  [ "x${rdata:0:5}" == "xTIME=" ]&&tim="$(echo "$rdata" | awk -F= '{print $2}' | tr '[:upper:]' '[:lower:]')"
+  [ "x${rdata:0:4}" == "xDAY=" ]&&day="$(echo "$rdata" | awk -F= '{print $2}' | tr '[:upper:]' '[:lower:]')"
+  [ "x${rdata:0:4}" == "xCMD=" ]&&[ "x$cmd" != "xany" ]&&cmd+=";$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xCMD=" ]&&[ "x$cmd" == "xany" ]&&cmd="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:4}" == "xREC=" ]&&rec="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:7}" == "xRECORD=" ]&&rec="$(echo "$rdata" | awk -F= '{print $2}')"
+  
+#
+  if [ "x${rdata:0:5}" == "xROLE=" ]||[ $eof ]; then
+   if [[ count -gt 0 ]]; then
+    logdebug "Processing Role Header - $role, eof=$eof"
+    rvalid=0
+    dvalid=0
+    fvalid=0
+#
+    #role=$(echo "${role}" | awk -F= '{print $2}')
+    srole=$(echo "${role}" | awk -F, '{print $1}')
+    srole=$(date +%s --date "${srole}" 2> /dev/null)||srole=0
+    erole=$(echo "$role" | awk -F, '{print $2}')
+    erole=$(date +%s --date "$erole" 2> /dev/null)||erole=0
+    [[ $srole -eq 0 ]]&&erole=0
+    [[ $erole -eq 0 ]]&&srole=0
+    logdebug "Epoch Start and end times are - srole=$srole, now=$now, erole=$erole"
+#
+    mrole="group"
+    [ "x$(echo "$role" | awk -F, '{print $3}' | tr '[:upper:]' '[:lower:]')" == "xuser" ]&&mrole="user"
+    [ "x$(echo "$role" | awk -F, '{print $3}' | tr '[:upper:]' '[:lower:]')" == "xkey" ]&&mrole="key"
+#
+    krole=$(echo "$role" | awk -F, '{print $4}' | tr '[:upper:]' '[:lower:]')
+    logdebug "Processing permission for a \"$mrole\" rule, with value \"$krole\" matching \"$rusr\""
+    if [[ ${srole} -lt $now ]] && [[ ${erole} -gt $now ]]; then
+     logdebug "Checking User ${mrole}($(echo "$role" | awk -F, '{print $4}')) against ${krole} vs $rusr"
+     if [ "x${mrole}${krole}" == "xuser$rusr" ]; then
+      logdebug "User $rusr looks OK"
+      rvalid=1
+     fi
+#
+     logdebug "Checking Group ${mrole}($(echo "$role" | awk -F, '{print $4}')) against ${krole} vs $rusr"
+     if [ "x${mrole}" == "xgroup" ]; then
+      chown "$rusr:daemon" "$rfn" 2> /dev/null
+      su "$rusr" -c "chgrp \"${krole}\" \"${rfn}\" 2> /dev/null" 2> /dev/null
+      if [ $? -eq 0 ]; then
+       logdebug "Group looks OK"
+       rvalid=1
+      fi
+     fi
+#
+     logdebug "Checking Key ${mrole}($(echo "$role" | awk -F, '{print $4}')) against ${krole} vs $rusr"
+     if [ "x${mrole}$(echo "$role" | awk -F, '{print $4}')" == "xkey$keyf" ]; then
+      logdebug "Key looks OK by fingerprint"
+      rvalid=1
+     fi
+     if [ "x${mrole}$(echo "$role" | awk -F, '{print $4}')" == "xkey$rusr" ]; then
+      logdebug "Key looks OK by serial"
+      rvalid=1
+     fi
+    fi
+#
+    if [[ $rvalid -eq 1 ]]; then
+     logdebug "Processing Role Data"
+     tok=0
+     dok=0
+     dnow=$(date +%a | tr '[:upper:]' '[:lower:]')
+     tnow=$(((10#$(date +%H)*10#60)+10#$(date +%M)))
+     logdebug "Starting time check"
+     if [ "x${tim}" != "xany" ]; then
+      echo "${tim}" | grep -E "[0-2][0-9]:[0-5][0-9],[0-2][0-9]:[0-5][0-9]" 1> /dev/null 2> /dev/null
+      if [ $? -eq 0 ]; then
+       tbef=$(((10#${tim:0:2}*10#60)+10#${tim:3:2}))
+       taft=$(((10#${tim:6:2}*10#60)+10#${tim:9:2}))
+      else
+       tbef=0
+       taft=0
+       logerr "Time format invalid in role for $usr@$hns" #FIXME check at upload
+      fi   
+      [[ ${tbef} -lt ${tnow} ]]&&[[ ${taft} -gt ${tnow} ]]&&tok=1
+     else
+      tok=1
+     fi
+     logdebug "Time check done"
+#
+     echo "$day" | grep "$dnow" 1> /dev/null 2> /dev/null
+     [ $? -eq 0 ]&&dok=1
+     [ "x${day}" == "xany" ]&&dok=1
+#
+     logdebug "Role Day = ${day}, Role Time = ${tim}, Current Day = ${dnow}, Current Mins = ${tnow}, Before Mins = ${tbef}, After Mins = ${taft}"
+     logdebug "Day OK = ${dok}, Time OK = ${tok}"
+     if [ "x${tok}" == "x1" ]; then
+      logdebug "Time of day looks OK"
+      if [ "x${dok}" == "x1" ]; then
+       logdebug "Day of week looks OK"
+       dvalid=1
+      else
+       logdebug "Failed to match day"
+      fi
+     else
+      logdebug "Failed to match time"
+     fi
+    fi
+#
+    if [[ $dvalid -eq 1 ]]; then
+    grant=1
+#
+# Role Date Range, Time, Day and user/group/key all match, so process extra parameters here
+#
+     [ "x$shl" != "x$shls" ]&&[ "x$shls" != "x" ]&&cmd+=";$shl"  
+     frm="$(echo "$frm" |  tr ',' '\n' | sort | tr '\n' ',')"&&frm="${frm%,}"
+     scp="$(echo "$scp" |  tr ';' '\n' | sort | tr '\n' ';')"&&scp="${scp%;}"
+     cap="$(echo "$cap" |  tr ',' '\n' | sort | tr '\n' ',')"&&cap="${cap%,}"
+     cmd="$(echo "$cmd" |  tr ';' '\n' | sort | tr '\n' ';')"&&cmd="${cmd%;}"
+     if [[ $count -eq 1 ]]; then
+      bfrm="$frm"
+      frms="$frm"
+      bscp="$scp"
+      scps="$scp"
+      bcap="$cap"
+      caps="$cap"
+      bcmd="$cmd"
+      cmds="$cmd"
+      brec="$rec"
+      recs="$rec"
+      bshl="$shl"
+      shls="$shl"
+     fi
+#
+#     [ "x$chg" == "x" ]&&[ "x$shl" != "x$bshl" ]&&chg="SHL"&&logdebug "Locked on Shell"
+     [ "x$chg" == "x" ]&&[ "x$rec" != "x$brec" ]&&chg="REC"&&logdebug "Aggregating Session Recording"
+     [ "x$chg" == "x" ]&&[ "x$frm" != "x$bfrm" ]&&chg="FRM"&&logdebug "Aggregating From IP"
+     [ "x$chg" == "x" ]&&[ "x$cmd" != "x$bcmd" ]&&chg="CMD"&&logdebug "Aggregating Command List"
+     [ "x$chg" == "x" ]&&[ "x$cap" != "x$bcap" ]&&chg="CAP"&&logdebug "Aggregating Capabilities"
+     [ "x$chg" == "x" ]&&[ "x$scp" != "x$bscp" ]&&chg="SCP"&&logdebug "Aggregating SCP Sed"
+#
+     if [[ $count -gt 1 ]]; then
+      logdebug "Count = $count, Change = $chg : $rec == $recs - $cmd == $cmds - $cap == $caps - $scp == $scps - $shl == $shls - $frm == $frms"
+      if [ "x$chg" == "xFRM" ]&&[ "x$rec" == "x$recs" ]&&[ "x$cmd" == "x$cmds" ]&&[ "x$cap" == "x$caps" ]&&[ "x$scp" == "x$scps" ]&&[ "x$shl" == "x$shls" ]; then
+       logdebug "Adding froms"
+       frms="$((echo "$frms" | tr ',' '\n';echo "$frm" | tr ',' '\n') | sort | uniq | tr '\n' ',')"&&frms="${frms%,}"
+      fi
+      if [ "x$chg" == "xCMD" ]&&[ "x$frm" == "x$frms" ]&&[ "x$rec" == "x$recs" ]&&[ "x$cap" == "x$caps" ]&&[ "x$scp" == "x$scps" ]; then
+       logdebug "Adding cmds"
+       cmds="$((echo "$cmds" | tr ';' '\n';echo "$cmd" | tr ';' '\n') | sort | uniq | tr '\n' ';')"&&cmds="${cmds%;}"
+      fi
+      if [ "x$chg" == "xCAP" ]&&[ "x$frm" == "x$frms" ]&&[ "x$cmd" == "x$cmds" ]&&[ "x$rec" == "x$recs" ]&&[ "x$scp" == "x$scps" ]&&[ "x$shl" == "x$shls" ]; then
+       logdebug "Adding caps"
+       caps="$(comm -12 <(echo "$caps" | tr ',' '\n') <(echo "$cap" | tr ',' '\n') | sort | tr '\n' ',')"&&caps="${caps%,}"
+      fi
+      if [ "x$chg" == "xSCP" ]&&[ "x$frm" == "x$frms" ]&&[ "x$cmd" == "x$cmds" ]&&[ "x$cap" == "x$caps" ]&&[ "x$rec" == "x$recs" ]&&[ "x$shl" == "x$shls" ]; then
+       logdebug "Addmin scps"
+       scps="$((echo "$scps" | tr ';' '\n';echo "$scp" | tr ';' '\n') | sort | uniq | tr '\n' ';')"&&scps="${scps%;}"
+      fi
+     fi
+    fi
+   fi
+#   
+   count=$((count + 1))
+   shl="none"
+   scp="none"
+   cap="null"
+   frm="any"
+   tim="any"
+   cmd="any"
+   day="any"
+   rec="yes"
+   ext="none"
+  fi 
+  [ $eof ]&&break
+ done 
+ rm "${rfn}" 2> /dev/null
+#
+ logdebug "Caps = $caps"
+ [ "x${shl}" == "x" ]&&shls="/bin/false"
+ [[ "${frms}" == *"any"* ]]&&frms="0.0.0.0/0"
+ [ "x${caps}" == "xnull" ]&&caps=""
+ [ "x${cmds}" == "x" ]&&cmds="any"
+ [[ "${cmds}" == *"any"* ]]&&cmds="any"
+# 
+ returnval["SHL"]=$shls
+ returnval["SCP"]=$scps
+ returnval["CAP"]=$caps
+ returnval["FRM"]=$frms
+ returnval["CMD"]=$cmds
+ returnval["REC"]=$recs
+# declare -A >> /tmp/ll
+ if [[ $grant -eq 1 ]]; then 
+  returnval["reply"]="OK: Auth request processed (Success)"
+  return 0
+ else
+  returnval["reply"]="OK: Auth request processed (Failure)"
+  return 1
+ fi
+}
+
+#
+# Write sessionlog data during auth, to pass to stage 2
+#
+data_sessionlog () {
+#
+# Note: We are doing to depend on the "authdata" array being inherited here.
+# It's just too large to pass on as args.
+#
+ local fn fnh fdat ndat str
+#
+ returnval["TDIF"]=1000
+ mkdir -p "$DATADIR/data/sessions"||return 1
+ mkdir -p "$DATADIR/data/hosts"||return 1
+ fn="$DATADIR/data/sessions/${authdata["RPPID"]}-${authdata["HID"]}.session"
+ fnh="$DATADIR/data/hosts/${authdata["HNS"]}.${authdata["HND"]}"
+ if [ -r "$fn" ];then
+ fdat=$(stat --format='%Z' "$fn")
+ ndat=$(date +%s)
+ returnval["TDIF"]=$((ndat-fdat))
+ fi
+ logdebug "Sessionlog time difference fdat=$fdat ndat=$ndat returning ${returnval["TDIF"]} seconds"
+#
+ str=""
+ for i in HNS HND HID HIP USR KEYF API REL RPPID RUSR SHL SCP CAP FRM TIM CMD DAY REC EXT; do
+  str+="${authdata["$i"]}"
+ done
+ logdebug "Sessionlog writing session update to $fn"
+ echo "$str" > "$fn"||return 1
+ logdebug "Sessionlog succeeded" 
+#
+ str=""
+ for i in HNS HND HID HIP; do
+  str+="${authdata["$i"]}"
+ done
+ logdebug "Sessionlog writing host update to $fnh"
+ echo "$str" > "$fnh"||return 1
+ logdebug "Sessionlog succeeded"
+ return 0
+}
+
+#
+# Stage 2 updates the sessionlog
+#
+data_sessionupd () {
+# FIXME pass sessionid (PARAM) as parameter and validate
+ mkdir -p ${DATADIR}/data/sessions||return 1
+ fn="${DATADIR}/data/sessions/$PARAM.session"
+ if [ -r "$fn" ];then
+  exec 6<>"$fn"
+  read SESSDAT <&6
+  exec 6>&-
+  echo "${SESSDAT};${RIP};${RPRT};${RPTY}" > $fn
+  SESSDAT="${SESSDAT};${RIP};${RPRT};${RPTY}"
+  return 0
+ else
+  SESSDAT=""
+  return 1
+ fi
+}
+
+#
+# Identify user from key fingerprint.
+#
+data_idkeyf () {
+#FIXME check filename format & check for duplicates
+ local fp fn
+ returnval["RUSR"]=""
+ returnval["PUBKEY"]=""
+ fp="$(echo "${1////-}")"
+ fn="$(ls "$DATADIR/data/keys/$fp."* 2> /dev/null)"
+ if [ $? -eq 0 ]; then
+  exec 7<>"$fn"
+  read returnval["RUSR"] <&7
+  read returnval["RUSR"] <&7
+  read returnval["PUBKEY"] <&7
+  exec 7>&-
+ else
+  return 1
+ fi
+ return 0
+}
+
+
+#
+# End of Data Functions
+#
+
+#
+# Function to compare IP with CIDR subnet address. Eg. "cidr_compare 192.168.122.0/24 192.168.122.50" returns true
+#
+function cidr_compare() {
+ grep -Eq "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(([0-9])|(1[0-9])|(2[0-9])|(30)|(32))$" <<< "${1}" || return 1
+ grep -Eq "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$" <<< "${2}" || return 1
+ local ALL1="111111111111111111111111111111111"
+ local ALL0="000000000000000000000000000000000"
+ local IP="${2}"
+ local NET="${1}"
+ local MASK;MASK=$(echo "${NET}" | awk -F/ '{print $2}')
+ local BINMASK;BINMASK="${ALL1:1:$MASK}${ALL0:1:32-$MASK}"
+ local IFS;IFS="."
+ local DECIP;DECIP=0
  typeset -a IPARR=($IP)
  for i in 0 1 2 3; do
-  DECIP=$(($DECIP *  256))
-  DECIP=$((${IPARR[$i]} + $DECIP))
+  DECIP=$((DECIP *  256))
+  DECIP=$((IPARR[i] + DECIP))
  done
  local DECNET=$(( 10#${DECIP} & 2#${BINMASK} ))
  local BYTE=""
  for i in 0 1 2; do
-  BYTE=.$(($DECNET % 256))$BYTE
-  DECNET=$(($DECNET / 256))
+  BYTE=.$((DECNET % 256))$BYTE
+  DECNET=$((DECNET / 256))
+ done
+ [ "${DECNET}${BYTE}/${MASK}" == "${NET}" ]&&return 0
+ return 1
+}
+
+#
+# Function to convert combined IP/CIDR mask to CIDR subnet address.
+#
+function cidr_clean() {
+ grep -Eq "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(([0-9])|(1[0-9])|(2[0-9])|(30))$" <<< "${1}" || return 1
+ local ALL1="11111111111111111111111111111111"
+ local ALL0="00000000000000000000000000000000"
+ local IP;IP=$(echo "$1" | awk -F/ '{print $1}')
+ local MASK;MASK=$(echo "$1" | awk -F/ '{print $2}')
+ local BINMASK;BINMASK="${ALL1:1:$MASK}${ALL0:1:32-$MASK}"
+ local IFS;IFS="."
+ local DECIP;DECIP=0
+ typeset -a IPARR=($IP)
+ for i in 0 1 2 3; do
+  DECIP=$((DECIP *  256))
+  DECIP=$((IPARR[i] + DECIP))
+ done
+ local DECNET=$(( 10#${DECIP} & 2#${BINMASK} ))
+ local BYTE=""
+ for i in 0 1 2; do
+  BYTE=.$((DECNET % 256))$BYTE
+  DECNET=$((DECNET / 256))
  done
  echo "${DECNET}${BYTE}/${MASK}"
+ return 0
 }
+
+#
+# Log functions for OpenAKC tools
+#
+logstatus () {
+ logger -p daemon.info -t "$(basename "$0")[$$]" "STATUS - $1"
+}
+#
+logauth () {
+ logger -p authpriv.notice -t "$(basename "$0")[$$]" "AUTH - $1"
+}
+#
+loginfo () {
+ logger -p authpriv.info -t "$(basename "$0")[$$]" "INFO - $1"
+}
+#
+logdebug () {
+ if [ "x$DEBUG" == "xyes" ];then
+  logger -p auth.debug -t "$(basename "$0")[$$]" "DEBUG - $1"
+ fi
+}
+#
+logwarn () {
+ logger -p auth.warn -t "$(basename "$0")[$$]" "WARNING - $1"
+}
+#
+logerr () {
+ logger -p auth.err -t "$(basename "$0")[$$]" "ERROR - $1"
+}
+
+#
+# Create random string for serial number
+#
+randsn() {
+ < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-10};
+}
+
+#
+# 
+#
 

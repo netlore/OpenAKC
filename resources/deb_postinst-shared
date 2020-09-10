@@ -1,7 +1,9 @@
 #!/bin/bash
 
+[ ! -f /var/lib/openakc/libexec/functions-%RELEASE%.cache ]&&cp /var/lib/openakc/libexec/functions-%RELEASE% /var/lib/openakc/libexec/functions-%RELEASE%.cache
 chattr +i /var/lib/openakc/libexec
 chattr +i /var/lib/openakc/libexec/functions-%RELEASE%
+chattr +i /var/lib/openakc/libexec/functions-%RELEASE%.cache
 
 #DEBHELPER#
 

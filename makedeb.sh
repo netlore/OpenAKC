@@ -4,8 +4,8 @@
 # Constants
 #
 source /etc/os-release
-VERSION="1.0.0~alpha14"
-BUILD="4"
+VERSION="1.0.0~alpha15"
+BUILD="1"
 
 #
 # Package requirements for build
