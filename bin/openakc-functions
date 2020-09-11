@@ -319,17 +319,19 @@ data_sessionlog () {
 #
  str=""
  for i in HNS HND HID HIP USR KEYF API REL RPPID RUSR SHL SCP CAP FRM TIM CMD DAY REC EXT; do
-  str+="${authdata["$i"]}"
+  str+="${authdata["$i"]};"
  done
  logdebug "Sessionlog writing session update to $fn"
+ str="${str%;}"
  echo "$str" > "$fn"||return 1
  logdebug "Sessionlog succeeded" 
 #
  str=""
  for i in HNS HND HID HIP; do
-  str+="${authdata["$i"]}"
+  str+="${authdata["$i"]};"
  done
  logdebug "Sessionlog writing host update to $fnh"
+ str="${str%;}"
  echo "$str" > "$fnh"||return 1
  logdebug "Sessionlog succeeded"
  return 0
