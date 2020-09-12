@@ -1,10 +1,9 @@
 **Blocking For 1.0 Release**
 
-* Code review, fix up input validation and graceful error handling/logging.
+* Code review, fix up input validation and more graceful error handling plus
+  additional testing.
 
 * Fix debug logging bug
-
-* More exhaustive testing
 
 
 **Planned Post 1.0 Enhancements**
@@ -48,6 +47,9 @@
 
 * Some kind of web interface for self service key registration?
 
+* Add CONTRUBUTING.md and HACKING.md - As seen here:-
+  https://github.com/simdjson/simdjson
+
 
 **Archive/Completed Fixes & Changes**
 
@@ -80,4 +82,3 @@
 * DONE - Merge multiple matching permissions (Note, not all permissions can
   be merged - we fixate on the first one to change, and everything else has
   to remain the same).
-

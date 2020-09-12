@@ -1,6 +1,6 @@
 Name:           openakc
 Version:        1.0.0~alpha15
-Release:        1{?dist}
+Release:        1%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
 License:        GPLv2.0
