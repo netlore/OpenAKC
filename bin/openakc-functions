@@ -1,6 +1,6 @@
 #!/bin/bash # (For my editors benefit, does nothing here)
 
-# Filename      : /var/lib/openakc/libexec/openakc-functions
+# Filename      : /var/lib/openakc/libexec/openakc-functions-%RELEASE%
 # Function      : OpenAKC Shared Functions
 #
 # Copyright (C) 2019-2020  A. James Lewis
@@ -93,7 +93,8 @@ data_validateroles () {
  do
   read -r rdata <&6 || eof=1
   logdebug "Role data - $rdata"
-  [ "x${rdata:0:5}" == "xROLE=" ]&&role="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:5}" == "xROLE=" ]&&rdata=${rdata//ROLE/RULE}
+  [ "x${rdata:0:5}" == "xRULE=" ]&&role="$(echo "$rdata" | awk -F= '{print $2}')"
   [ "x${rdata:0:6}" == "xSHELL=" ]&&[ "x$shl" != "xnone" ]&&cmd+=";$(echo "$rdata" | awk -F= '{print $2}')"
   [ "x${rdata:0:6}" == "xSHELL=" ]&&[ "x$shl" == "xnone" ]&&shl="$(echo "$rdata" | awk -F= '{print $2}')"
   [ "x${rdata:0:4}" == "xSCP=" ]&&[ "x$scp" != "xnone" ]&&scp+=";$(echo "$rdata" | awk -F= '{print $2}')"
@@ -111,7 +112,7 @@ data_validateroles () {
   [ "x${rdata:0:7}" == "xRECORD=" ]&&rec="$(echo "$rdata" | awk -F= '{print $2}')"
   
 #
-  if [ "x${rdata:0:5}" == "xROLE=" ]||[ $eof ]; then
+  if [ "x${rdata:0:5}" == "xRULE=" ]||[ $eof ]; then
    if [[ count -gt 0 ]]; then
     logdebug "Processing Role Header - $role, eof=$eof"
     rvalid=0
@@ -318,7 +319,9 @@ data_sessionlog () {
  logdebug "Sessionlog time difference fdat=$fdat ndat=$ndat returning ${returnval["TDIF"]} seconds"
 #
  str=""
- for i in HNS HND HID HIP USR KEYF API REL RPPID RUSR SHL SCP CAP FRM TIM CMD DAY REC EXT; do
+ authdata["BCMD"]="$(base64 -w 0 <<< ${authdata["CMD"]})"
+ authdata["BSCP"]="$(base64 -w 0 <<< ${authdata["SCP"]})"
+ for i in HNS HND HID HIP USR KEYF API REL RPPID RUSR SHL BSCP CAP FRM TIM BCMD DAY REC EXT; do
   str+="${authdata["$i"]};"
  done
  logdebug "Sessionlog writing session update to $fn"

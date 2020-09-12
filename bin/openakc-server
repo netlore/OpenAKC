@@ -361,30 +361,35 @@ data_getrole () {
 # Rules for ${usr}@${hn}
 #
 # First matched rule will apply.
-# {TYPE} can be user, group or key(ssh key fingerprint)
-# FROM= can be either "any" or a comma separated list of IPs or CIDR subnets
+# Each rule begins with a RULE line "RULE=date,date,type,tag"
+# "type" can be user, group or key(ssh key fingerprint)
+# "tag" will depend on the type, either username, groupname, or key serial no.
 # DAY= can be either "any" or a comma separated list of 3 letter day codes.
 # TIM= is daily {Start Time},{End Time} 24 hour format, local server time.
-# SHELL= users shell (could make shell "rjoe/rvim filename", or /bin/false).
-# CMD= is a list of permitted commands, "any" or "comma separated list"
+# SHELL= users shell (you could make shell "rjoe/rvim file", or /bin/false).
+# CMD= is a list of permitted commands, "any" or " ; separated list"
 #   NB: 1) if CMD is not "any", it must include scp to allow SCP.
 #       2) if CMD is not "any", sftp-server requires full path.
-#       3) if CMD is exactly "internal-sftp", OpenAKC session will be
+#       3) if CMD is exactly/only "internal-sftp", OpenAKC session will be
 #          bypassed and "internal-sftp" will be forced.  Care! No capability
 #          restrictions can be applied in this mode, and no session
 #          recording will take place other than sftp's own logging.
-#       4) Internal SFTP can be chrooted in sshd_config, while capabilities
+#       4) Internal SFTP can only be chrooted in sshd_config, but capabilities
 #          can be applied to external sftp Eg (/usr/lib/openssh/sftp-server).
 #       5) if a users calls an absolute path to a binary then CMD must
-#          match the absolute path, otherwise short names are OK.
-#   EG: CMD=scp,ls,uname,dmidecode,/usr/lib/openssh/sftp-server
-# SCP= "sed" expression implementing chroot for scp connections.
-# CAP= list of linux capabilities denied to role (man capabilities).
+#          match the absolute path, otherwise short names match path (Care!).
+#   NB: Multiple CMD= lines are permitted and will be aggrigated.
+#   EG: CMD=scp;ls;uname;dmidecode;/usr/lib/openssh/sftp-server
+# SCP= "sed" expression applied to scp, to allow chroot or redirecting files.
+# CAP= comma separated list of capabilities denied to role (man capabilities).
 # REC= record session log, yes/no
+# FROM= can be either "any" or a comma separated list of IPs or CIDR subnets
 #
-# Eg: (Warning, TAGs must be CAPITAL, do not use quotes)
+# Warning, TAGs must be CAPITAL, do not use quotes.
+# Rules nearer the top take priority, but some attampt is made to merge fully
+# compatible rules (See User Guide for details.)
 #
-#ROLE=2020/01/13 19:17,2020/01/13 20:17,{TYPE},jlewis
+#RULE=2020/01/13 19:17,2020/01/13 20:17,user,jlewis
 #DAY=any
 #TIM=any
 #SHELL=/bin/bash

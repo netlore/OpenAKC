@@ -241,28 +241,31 @@ apicall () {
  read OK <&5
  isok
  
- SESSDAT=$(echo "$SESSDAT" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+ SESSDAT="$(echo "$SESSDAT" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')"
  logdebug "Session Data - ${SESSDAT}"
- HNS=$(echo $SESSDAT | cut -d ";" -f 1) # Short Hostname
- HND=$(echo $SESSDAT | cut -d ";" -f 2) # Domain Name
- HID=$(echo $SESSDAT | cut -d ";" -f 3) # Hostid
- HIP=$(echo $SESSDAT | cut -d ";" -f 4) # Host IP
- USR=$(echo $SESSDAT | cut -d ";" -f 5) # Username
- KEYF=$(echo $SESSDAT | cut -d ";" -f 6) # Key Fingerprint
- API=$(echo $SESSDAT | cut -d ";" -f 7) # API Hostname
- REL=$(echo $SESSDAT | cut -d ";" -f 8) # Client Code Release
- RPPID=$(echo $SESSDAT | cut -d ";" -f 9) # Remote Parent PID
- RUSR=$(echo $SESSDAT | cut -d ";" -f 10) # Remote Username
- SHL=$(echo $SESSDAT | cut -d ";" -f 11) # Shell
- SCP=$(echo $SESSDAT | cut -d ";" -f 12) # SCP replace
- CAP=$(echo $SESSDAT | cut -d ";" -f 13) # Capabilities
- FRM=$(echo $SESSDAT | cut -d ";" -f 14) # Permitted Source IP
- TIM=$(echo $SESSDAT | cut -d ";" -f 15) # Daily Time Window
- CMD=$(echo $SESSDAT | cut -d ";" -f 16) # Permitted Remote Commands
- DAY=$(echo $SESSDAT | cut -d ";" -f 17) # Permitted Days
- REC=$(echo $SESSDAT | cut -d ";" -f 18 | tr 'A-Z' 'a-z') # Record Session
- EXT=$(echo $SESSDAT | cut -d ";" -f 19) # Extensions
- RIP=$(echo $SESSDAT | cut -d ";" -f 20) # Remote IP
+ HNS="$(echo $SESSDAT | cut -d ";" -f 1)" # Short Hostname
+ HND="$(echo $SESSDAT | cut -d ";" -f 2)" # Domain Name
+ HID="$(echo $SESSDAT | cut -d ";" -f 3)" # Hostid
+ HIP="$(echo $SESSDAT | cut -d ";" -f 4)" # Host IP
+ USR="$(echo $SESSDAT | cut -d ";" -f 5)" # Username
+ KEYF="$(echo $SESSDAT | cut -d ";" -f 6)" # Key Fingerprint
+ API="$(echo $SESSDAT | cut -d ";" -f 7)" # API Hostname
+ REL="$(echo $SESSDAT | cut -d ";" -f 8)" # Client Code Release
+ RPPID="$(echo $SESSDAT | cut -d ";" -f 9)" # Remote Parent PID
+ RUSR="$(echo $SESSDAT | cut -d ";" -f 10)" # Remote Username
+ SHL="$(echo $SESSDAT | cut -d ";" -f 11)" # Shell
+ BSCP="$(echo $SESSDAT | cut -d ";" -f 12)" # SCP replace
+ CAP="$(echo $SESSDAT | cut -d ";" -f 13)" # Capabilities
+ FRM="$(echo $SESSDAT | cut -d ";" -f 14)" # Permitted Source IP
+ TIM="$(echo $SESSDAT | cut -d ";" -f 15)" # Daily Time Window
+ BCMD="$(echo $SESSDAT | cut -d ";" -f 16)" # Permitted Remote Commands
+ DAY="$(echo $SESSDAT | cut -d ";" -f 17)" # Permitted Days
+ REC="$(echo $SESSDAT | cut -d ";" -f 18 | tr 'A-Z' 'a-z')" # Record Session
+ EXT="$(echo $SESSDAT | cut -d ";" -f 19)" # Extensions
+ RIP="$(echo $SESSDAT | cut -d ";" -f 20)" # Remote IP
+ #
+ CMD="$(base64 -d <<< $BCMD)"
+ SCP="$(base64 -d <<< $BSCP)"
  
  RESTRICT=${CAP}
  KLOG=0
@@ -275,8 +278,8 @@ apicall () {
    exec 5>&-
    exit 1
   fi
-  export OCOMMAND=$(which $(echo $(echo $SSH_ORIGINAL_COMMAND | cut --delimiter=" " -f 1)))  
-  export BCOMMAND=$(basename "${OCOMMAND}")
+  export OCOMMAND="$(which $(echo $(echo $SSH_ORIGINAL_COMMAND | cut --delimiter=" " -f 1)))"
+  export BCOMMAND="$(basename "${OCOMMAND}")"
   PERMITC=0
  else
   export OCOMMAND=""
@@ -284,9 +287,9 @@ apicall () {
  fi 
  
  logdebug "Checking Permitted Commands"
- 
- for i in `echo $CMD | tr ',' ' '`
- do
+ saveifs="$IFS"
+ IFS=";"
+ for i in $CMD; do
   logdebug "BCOMMAND = ${BCOMMAND} vs ${i}"
   if [ "x${BCOMMAND}" == "x${i}" ]||[ "x${i}" == "xany" ]||[ "x${OCOMMAND}" == "x${i}" ]; then
    if [ "x${SSH_ORIGINAL_COMMAND:0:1}" != "x/" ]||[ "x${i}" == "xany" ]; then
@@ -300,6 +303,7 @@ apicall () {
    fi
   fi
  done
+ IFS="$saveifs"
  #
  if [ $PERMITC -eq 0 ]; then
   if [ "x${FAKESUDO}" == "xyes" ]; then
@@ -423,7 +427,14 @@ apicall () {
    logauth "Remote user ${RUSR} : granted access ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
    if [ "x${BCOMMAND}" == "xscp" ]; then
     SCPCMD=$(echo "$SSH_ORIGINAL_COMMAND" | awk '{print $1" "$2}')
-    SCPVAL=$(echo "$SSH_ORIGINAL_COMMAND" | awk '{print $3}' | sed -e "$SCP")
+    SCPVAL=$(echo "$SSH_ORIGINAL_COMMAND" | awk '{print $3}')
+    saveifs="$IFS"
+    IFS=";"
+    for iscp in $SCP; do
+     logdebug "Running "sed" command \"${iscp}\""
+     SCPVAL=$(echo "$SCPVAL" | sed -e "$iscp")
+    done
+    IFS="$saveifs"
     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "$SCPCMD $SCPVAL"
     KEXIT=$?
     [ "x${SCPCMD}" == "xscp -f" ]&&SCPCMD="GET"
