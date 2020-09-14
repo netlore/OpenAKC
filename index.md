@@ -8,11 +8,11 @@ OpenAKC consists of 3 parts, listed below.
 
 #### Self Service Authentication Gateway for SSH
 
-What this means in practice, is that users needing to log in using "application" or "role" accounts on various machines in an estate, can be supported in a way that is familiar, and standard from their perspective, while the systems administrators can utilise a central directory such as AD or LDAP to control that access.
+What this means in practice is that users needing to log in using "application" or "role" accounts on various machines in an estate, can be supported in a way that is familiar and standard from their perspective while the systems administrators can utilise a central directory such as AD or LDAP to control that access.
 
-It allows the user to interact with SSH, in a completely normal way, by creating a personal key pair and using that to access hosts (after a self service process to "register" that key).
+It allows the user to interact with SSH in a completely normal way, by creating a personal key pair and using that to access hosts (after a self service process to "register" that key).
 
-The administrator on the other hand is able to refer to users, or groups of users from their directory, while creating rules that apply to the hosts.... the plug-in installed on the client will contact the API on the security server to identify the user by their SSH key fingerprint, and then look up the associated rules, and directory information before seamlessly passing their public key to the SSH Daemon if they are permitted to log in.  This means that only the OpenAKC security server needs to have access to the directory.
+The administrator on the other hand, is able to refer to users (or groups of users) from the directory, while creating rules that apply to the hosts.  The plug-in installed on the client will contact the API on the security server to identify the user, and look up the associated rules and directory information using their SSH key fingerprint.  The server is queried, and seamlessly passes the user's public key back to the SSH Daemon if they are permitted to log in.  This means that only the OpenAKC security server needs to have access to the directory.
 
 From a security perspective, even thou a personal SSH key was used to log in directly to an application or role user (or even root), the logs will show the privilege escalation process in a way that should satisfy security best practice. OpenAKC can even write "fake" sudo logs for the benefit of SIEM systems which are expecting users to escalate privilege after initially logging in with a personal account, (no one wants to manage personal user accounts on servers).
 
@@ -56,13 +56,13 @@ Documentation is always evolving, and OpenAKC is no exception.  At the time of w
 
 The current document can be found here - [Documentation](https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf)
 
-There are also a number of examples and demo's on our YouTube page here - [Demo Videos](https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA)
+There are also a number of examples and demos on our YouTube page here - [Demo Videos](https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA)
 
 ### Where to get OpenAKC?
 
 The "Quickstart Guide" on GitHub does describe how to build your own packages, but by far the easiest way to start working with OpenAKC would be to add one of the OS repo's provided.  Again, if you have a platform we do not currently support, please let us know... a balance between packaging and implementing new features has to be maintained, so some less common platforms may ultimately be supported with an install script, rather than a package as this will be necessary to support any non-Linux platforms also (thou these will not have access to some of the Linux specific features such as "capabilities")
 
-Please see the download page here to see the available OS repo's - [DOWNLOAD](https://netlore.github.io/OpenAKC/download/)
+Please see the download page here to see the available OS repos - [DOWNLOAD](https://netlore.github.io/OpenAKC/download/)
 
 ### Support or Contact
 
