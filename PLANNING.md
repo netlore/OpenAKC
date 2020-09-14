@@ -13,6 +13,8 @@
 * IN PROGRESS - Migrate functions (including data) into a libexec folder
   (eventually facilitate alternate data stores).
 
+* Refactor code to match coding standards as they are define
+
 * Record users OpenAKC public key in their user record
 
 
