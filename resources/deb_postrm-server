@@ -1,7 +1,7 @@
 #!/bin/sh
 
 sed -i '/^openakc/ d' /etc/services
-service xinetd restart > /dev/null 2>&1 || :
+#service xinetd restart > /dev/null 2>&1 || :
 
 #DEBHELPER#
 

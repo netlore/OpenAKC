@@ -1,4 +1,3 @@
-if $syslogtag contains "openakc" then {
-  *.debug /var/log/openakc.debug
-  & stop
+if $syslogtag contains "openakc" and $syslogseverity-text == 'debug' then {
+  /var/log/openakc.debug
 }

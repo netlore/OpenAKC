@@ -5,7 +5,7 @@
 #
 source /etc/os-release
 VERSION="1.0.0~alpha15"
-BUILD="1"
+BUILD="3"
 
 #
 # Package requirements for build
@@ -197,6 +197,7 @@ mkdir -p "${PDIR}/usr/sbin"
 mkdir -p "${PDIR}/usr/bin"
 mkdir -p "${PDIR}/etc/sudoers.d"
 mkdir -p "${PDIR}/etc/xinetd.d"
+mkdir -p "${PDIR}/lib/systemd/system"
 mkdir -p "${PDIR}/usr/share/doc/openakc-server"
 
 #
@@ -207,6 +208,8 @@ cp resources/deb_postrm-server "${PDIR}/DEBIAN/postrm"
 cp resources/deb_preinst-server "${PDIR}/DEBIAN/preinst"
 cp resources/openakc-sudoers "${PDIR}/etc/sudoers.d/openakc"
 cp resources/openakc-xinetd "${PDIR}/etc/xinetd.d/openakc"
+cp resources/openakc@.service "${PDIR}/lib/systemd/system/"
+cp resources/openakc.socket "${PDIR}/lib/systemd/system/"
 cp docs/OpenAKC_Admin_Guide.pdf "${PDIR}/usr/share/doc/openakc-server/"
 cp LICENSE "${PDIR}/usr/share/doc/openakc-server/"
 cp LICENSE-hpenc "${PDIR}/usr/share/doc/openakc-server/"
@@ -216,12 +219,14 @@ cp QUICKSTART.txt "${PDIR}/usr/share/doc/openakc-server/"
 #
 chmod 640 "${PDIR}/etc/sudoers.d/openakc"
 chmod 640 "${PDIR}/etc/xinetd.d/openakc"
+chmod 644 "${PDIR}/lib/systemd/system/openakc@.service"
+chmod 644 "${PDIR}/lib/systemd/system/openakc.socket"
 
 #
 echo "Package: openakc-server" > "${PDIR}/DEBIAN/control"
 echo "Version: ${VERSION}-${BUILD}" >> "${PDIR}/DEBIAN/control"
 echo "Maintainer: A. James Lewis <james@fsck.co.uk>" >> "${PDIR}/DEBIAN/control"
-echo "Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), openakc-shared, coreutils, xinetd, openakc-tools" >> "${PDIR}/DEBIAN/control"
+echo "Depends: openssh-client (>= 7.0), bash (>= 3.2), openssl (>= 0.9.8), openakc-shared, coreutils, openakc-tools" >> "${PDIR}/DEBIAN/control"
 echo "Conflicts: openakc" >> "${PDIR}/DEBIAN/control"
 echo "Homepage: http://www.fsck.co/uk/openakc/" >> "${PDIR}/DEBIAN/control"
 echo "Architecture: amd64" >> "${PDIR}/DEBIAN/control"

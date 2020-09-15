@@ -7,7 +7,11 @@ case "$1" in
         fi
         sed -i '/^openakc/ d' /etc/services
         echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /etc/services
-        service xinetd restart > /dev/null 2>&1 || :
+#        service xinetd restart > /dev/null 2>&1 || :
+	echo "OpenAKC Server can be started or stopped using:-"
+	echo "\"systemctl [start|stop] openakc.socket\"."
+	systemctl enable openakc.socket > /dev/null 2>&1 || :
+	systemctl start openakc.socket > /dev/null 2>&1 || :
         exit 0
         ;;
     upgrade|abort-upgrade)

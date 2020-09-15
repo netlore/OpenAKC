@@ -9,5 +9,5 @@ service openakc
         log_on_failure  += USERID
 	instances	= 500
 	cps		= 250 10
-        disable         = no
+        disable         = yes
 }

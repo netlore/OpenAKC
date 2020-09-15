@@ -1,19 +1,17 @@
 **Blocking For 1.0 Release**
 
 * Code review, fix up input validation and more graceful error handling plus
-  additional testing.
-
-* Fix debug logging bug
+  additional testing (initially for server & session).
 
 
 **Planned Post 1.0 Enhancements**
 
-* IN PROGRESS - Migrate server to systemd (/etc/systemd/system files in resources)
+* Post 1.0 code review/refactor of client code.
 
 * IN PROGRESS - Migrate functions (including data) into a libexec folder
   (eventually facilitate alternate data stores).
 
-* Refactor code to match coding standards as they are define
+* Refactor code to match coding standards as they are defined
 
 * Record users OpenAKC public key in their user record
 
@@ -84,3 +82,7 @@
 * DONE - Merge multiple matching permissions (Note, not all permissions can
   be merged - we fixate on the first one to change, and everything else has
   to remain the same).
+
+* DONE - Fix debug logging bug
+
+* DONE - Migrate server to systemd (/lib/systemd/system files in resources)

@@ -1,6 +1,6 @@
 Name:           openakc
 Version:        1.0.0~alpha15
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:	This OpenAKC "client" package contains the client ssh plugin which queries the API for authentication information.
 Group:          Applications/System
 License:        GPLv2.0
@@ -19,7 +19,7 @@ Requires:      openssl >= 0.9.8, openakc-shared, bash, coreutils, hostname, sudo
 
 %package server
 Summary:	This OpenAKC "server" package contains the API server which answers client authentication requests.
-Requires:       xinetd, openssh-clients >= 7.0, openssl >= 0.9.8, openakc-tools, openakc-shared, bash, coreutils
+Requires:       openssh-clients >= 7.0, openssl >= 0.9.8, openakc-tools, openakc-shared, bash, coreutils
 Conflicts:	openakc
 
 %package shared
@@ -77,6 +77,7 @@ mkdir -p %{buildroot}/var/lib/openakc
 mkdir -p %{buildroot}/var/lib/openakc/libexec
 mkdir -p %{buildroot}/etc/sudoers.d
 mkdir -p %{buildroot}/etc/xinetd.d
+mkdir -p %{buildroot}/lib/systemd/system
 mkdir -p %{buildroot}/etc/rsyslog.d
 #mkdir -p %{buildroot}/etc/cron.daily
 #mkdir -p %{buildroot}/tmp
@@ -145,6 +146,8 @@ cp bin/openakc-server.x %{buildroot}/usr/sbin/openakc-server
 cp bin/openakc-functions %{buildroot}/var/lib/openakc/libexec/functions-%{version}-%{release}
 cp resources/openakc-sudoers %{buildroot}/etc/sudoers.d/openakc
 cp resources/openakc-xinetd %{buildroot}/etc/xinetd.d/openakc
+cp resources/openakc@.service %{buildroot}/lib/systemd/system/openakc@.service
+cp resources/openakc.socket %{buildroot}/lib/systemd/system/openakc.socket
 cp resources/openakc-rsyslog %{buildroot}/etc/rsyslog.d/99-openakc.conf
 cp resources/openakc.conf %{buildroot}/etc/openakc/openakc.conf
 cp resources/openakc.conf.readme %{buildroot}/etc/openakc/openakc.conf.readme
@@ -219,7 +222,13 @@ if [ ! -n "`grep \"^#includedir /etc/sudoers.d\" /etc/sudoers`" ]; then
 fi
 sed -i '/^openakc/ d' /etc/services
 echo "openakc              889/tcp      # OpenAKC Authentication Protocol" >> /etc/services
-/sbin/service xinetd restart > /dev/null 2>&1 || :
+#/sbin/service xinetd restart > /dev/null 2>&1 || :
+if [ "x$*" == "x1" ]; then
+ echo "OpenAKC Server can be started or stopped using:-"
+ echo "\"systemctl [start|stop] openakc.socket\"."
+ systemctl enable openakc.socket > /dev/null 2>&1 || :
+ systemctl start openakc.socket > /dev/null 2>&1 || :
+fi
 exit 0
 
 %post shared
@@ -269,7 +278,7 @@ case "$*" in
  0) # This is a yum remove.
   #echo "OpenAKC Server Remove!"
   sed -i '/^openakc/ d' /etc/services
-  /sbin/service xinetd restart > /dev/null 2>&1 || :
+#  /sbin/service xinetd restart > /dev/null 2>&1 || :
   ;;
  1) # This is a yum update.
   #echo "OpenAKC Server Update!"
@@ -310,6 +319,8 @@ exit 0
 %attr(755, root, root) /usr/sbin/openakc-server
 %attr(640, root, root) %config(missingok) /etc/sudoers.d/openakc
 %attr(640, root, root) %config(missingok) /etc/xinetd.d/openakc
+%attr(644, root, root) %config(missingok) /lib/systemd/system/openakc@.service
+%attr(644, root, root) %config(missingok) /lib/systemd/system/openakc.socket
 %doc OpenAKC*/LICENSE
 %doc OpenAKC*/LICENSE-hpenc
 %doc OpenAKC*/LICENSE-libsodium
@@ -326,6 +337,10 @@ exit 0
 
 
 %changelog
+* Tue Sep 15 2020 James Lewis <james@fsck.co.uk>
+- Migrated to systemd sockets, instead of xinetd.
+- xinetd config remains, but is disabled.
+
 * Mon Aug 31 2020 James Lewis <james@fsck.co.uk>
 - Added shared package to contain stuff that everything depends on
 - Added handling for immutable components
