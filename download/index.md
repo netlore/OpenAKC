@@ -71,8 +71,6 @@ Note that it is likely that the "openakc-el7.repo" will work on any Fedora versi
 
 ##### WARNING: Currently, SUSE Enterprise 12 will get less frequent updates, unless there is a critical update.
 
-##### NOTE: SUSE Enterprise 15 will not be supported as a server until after the 1.0.0 release due to the requirement to port to Systemd. (Dependencies cannot be met from SUSE repos any longer)
-
 #### Add the repository:
 
 | OS Version                         | Add Repo      |
