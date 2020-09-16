@@ -9,6 +9,21 @@ versions, and will only be posted to "testing" repos.
 
 ## [Unreleased]
 
+## [1.0.0a16] - 2020-09-16
+
+### Added
+
+- Rule Merging
+
+### Changed
+
+- Migrated to Systemd sockets
+
+- Fixed "off by one" bug in RULE header processing
+
+### Removed
+
+
 ## [1.0.0a15] - 2020-09-12
 
 ### Added

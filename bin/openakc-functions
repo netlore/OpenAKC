@@ -45,7 +45,7 @@ data_validateroles () {
 # Returns Values - CAP SHL SCP FRM CMD REC
 #
 
- local fn fnd rfn count=0 eof="" rdata srole erole mrole krole grant=0
+ local fn fnd rfn count=0 eof="" nrole rdata srole erole mrole krole grant=0 flag=0
  local rvalid dvalid tok dok tnow dnow tbef taft net role now
  local usr hns hnd hip rusr keyf
  local shl scp cap frm tim cmd day rec ext
@@ -94,7 +94,7 @@ data_validateroles () {
   read -r rdata <&6 || eof=1
   logdebug "Role data - $rdata"
   [ "x${rdata:0:5}" == "xROLE=" ]&&rdata=${rdata//ROLE/RULE}
-  [ "x${rdata:0:5}" == "xRULE=" ]&&role="$(echo "$rdata" | awk -F= '{print $2}')"
+  [ "x${rdata:0:5}" == "xRULE=" ]&&nrole="$(echo "$rdata" | awk -F= '{print $2}')"
   [ "x${rdata:0:6}" == "xSHELL=" ]&&[ "x$shl" != "xnone" ]&&cmd+=";$(echo "$rdata" | awk -F= '{print $2}')"
   [ "x${rdata:0:6}" == "xSHELL=" ]&&[ "x$shl" == "xnone" ]&&shl="$(echo "$rdata" | awk -F= '{print $2}')"
   [ "x${rdata:0:4}" == "xSCP=" ]&&[ "x$scp" != "xnone" ]&&scp+=";$(echo "$rdata" | awk -F= '{print $2}')"
@@ -206,6 +206,7 @@ data_validateroles () {
 #
     if [[ $dvalid -eq 1 ]]; then
     grant=1
+    flag=$((flag + 1))
 #
 # Role Date Range, Time, Day and user/group/key all match, so process extra parameters here
 #
@@ -214,7 +215,7 @@ data_validateroles () {
      scp="$(echo "$scp" |  tr ';' '\n' | sort | tr '\n' ';')"&&scp="${scp%;}"
      cap="$(echo "$cap" |  tr ',' '\n' | sort | tr '\n' ',')"&&cap="${cap%,}"
      cmd="$(echo "$cmd" |  tr ';' '\n' | sort | tr '\n' ';')"&&cmd="${cmd%;}"
-     if [[ $count -eq 1 ]]; then
+     if [[ $flag -eq 1 ]]; then
       bfrm="$frm"
       frms="$frm"
       bscp="$scp"
@@ -268,6 +269,7 @@ data_validateroles () {
    day="any"
    rec="yes"
    ext="none"
+   role="$nrole"
   fi 
   [ $eof ]&&break
  done 
