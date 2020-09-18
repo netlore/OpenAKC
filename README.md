@@ -4,17 +4,17 @@
 
 #### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
 
-* Centrally and control all of your SSH trust.
+* Centrally control all of your SSH trust.
 
 * Stop users from altering or adding trust relationships.
 
 * Control when, and how keys can be used.
 
-* Meet your security requirements related to logging privilage escalation without needing to roll out a directory such as AD or LDAP across your entire estate.
+* Meet security best practice requirements related to logging privilage escalation without needing to roll out a directory such as AD or LDAP across your entire estate.
 
-* Allow users to manage their own private keys and use those keys to access role accounts with based on rules you define.
+* Allow users to manage their own SSH key pairs and use those keys to access role accounts based on rules you define.
 
-* Never manage an "authorized_keys" file again.
+* Centrally manage static trust without having to deal with "authorized_keys" files spread across your estate.
 
 * Instantly update or remove a key across an entire estate, without even having to log in to the servers in question.
 
