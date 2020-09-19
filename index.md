@@ -26,7 +26,7 @@ Each key is allocated an ID, so that they can be rotated without even updating t
 
 #### Privileged access manager
 
-OpenAKC not only allows you to centrally manage access from either self service users or create static trust relationships, it also has features to allow "privileged access" to be managed,by rules created within OpenAKC.  Rules can simply refer to AD group membership, but also can be associated with a date/time range, as well as only permitting access on certain days, or at certain times, from certain source IPs etc.
+OpenAKC not only allows you to centrally manage access from either self service users or create static trust relationships, it also has features to allow "privileged access" to be managed by rules created within OpenAKC.  Rules can simply refer to AD group membership, but also can be associated with a date/time range, as well as only permitting access on certain days, or at certain times, from certain source IPs etc.
 
 These rules can be manually configured, but equally could be manipulated by another system such as an approval process created with a tool like Remedy, or perhaps an internal web interface.
 
@@ -36,7 +36,7 @@ OpenAKC can provide session recordings, so you can review what users did, or eve
 
 It can reach in to the Linux kernel and switch off certain [capabilities](https://man7.org/linux/man-pages/man7/capabilities.7.html) in the process tree created by a login, so you could restrict what the "root" account can do, depending on who is using it... and even limit what permissions can be granted to a normal user via sudo, or setuid binaries.  The documentation shows examples of this being used to deny the root account access to "user" data, where that might be something that a sysadmin would not need to access in the normal course of their work, or perhaps would need separate approval to access.  Similarly it could be used to block the loading of kernel modules, which could help with malware protection. More on this in the documentation!
 
-It can override the users shell, perhaps not permitting them a shell at all, but only allow certain commands to be executed remotely.
+It can override the user's shell, perhaps not permitting them a shell at all, but only allow certain commands to be executed remotely.
 
 It can perform search/replace functions on files delivered by SCP, perhaps limiting a user to SCP files only into a specific folder.
 
@@ -60,7 +60,7 @@ There are also a number of examples and demos on our YouTube page here - [Demo V
 
 ### Where to get OpenAKC?
 
-The "Quickstart Guide" on GitHub does describe how to build your own packages, but by far the easiest way to start working with OpenAKC would be to add one of the OS repo's provided.  Again, if you have a platform we do not currently support, please let us know... a balance between packaging and implementing new features has to be maintained, so some less common platforms may ultimately be supported with an install script, rather than a package as this will be necessary to support any non-Linux platforms also (thou these will not have access to some of the Linux specific features such as "capabilities")
+The "Quickstart Guide" on GitHub does describe how to build your own packages, but by far the easiest way to start working with OpenAKC would be to add one of the OS repos provided.  Again, if you have a platform we do not currently support, please let us know... a balance between packaging and implementing new features has to be maintained, so some less common platforms may ultimately be supported with an install script, rather than a package as this will be necessary to support any non-Linux platforms also (thou these will not have access to some of the Linux specific features such as "capabilities")
 
 Please see the download page here to see the available OS repos - [DOWNLOAD](https://netlore.github.io/OpenAKC/download/)
 
