@@ -478,7 +478,7 @@ logerr () {
 # Create random string for serial number
 #
 randsn() {
- < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-10};
+ head -c 15 /dev/urandom | base64 | tr -dc '_A-Z-a-z-0-9' | head -c 10
 }
 
 #

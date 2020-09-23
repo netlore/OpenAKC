@@ -4,7 +4,7 @@
 # Constants
 #
 source /etc/os-release
-VERSION="1.0.0~alpha16"
+VERSION="1.0.0~alpha17"
 BUILD="1"
 
 #

@@ -9,6 +9,17 @@ versions, and will only be posted to "testing" repos.
 
 ## [Unreleased]
 
+## [1.0.0a17] - 2020-09-23
+
+### Added
+
+### Changed
+
+- Fixed bug affecting key submission
+
+### Removed
+
+
 ## [1.0.0a16] - 2020-09-16
 
 ### Added
