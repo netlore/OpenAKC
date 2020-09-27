@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>OpenAKC | Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux.</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="OpenAKC" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux." />
+<meta property="og:description" content="Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux." />
+<link rel="canonical" href="https://netlore.github.io/OpenAKC/" />
+<meta property="og:url" content="https://netlore.github.io/OpenAKC/" />
+<meta property="og:site_name" content="OpenAKC" />
+<script type="application/ld+json">
+{"@type":"WebSite","headline":"OpenAKC","url":"https://netlore.github.io/OpenAKC/","description":"Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux.","name":"OpenAKC","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.3.0.min.js" integrity="sha256-RTQy8VOmNlT6b2PIRur37p6JEBZUE7o8wPgMvu18MC4=" crossorigin="anonymous"></script>
+    <script src="/OpenAKC/assets/js/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" integrity="sha256-3Jy/GbSLrg0o9y5Z5n1uw0qxZECH7C6OQpVBgNFYa0g=" crossorigin="anonymous"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>OpenAKC</h1>
+        <p>Authentication gateway, Dynamic SSH key manager & Privileged access management tool for Linux.</p>
+      </header>
+
+      <div id="banner">
+    <div class="banner-inner">
+      <span id="logo"></span>
+
+      <a href="https://netlore.github.io/OpenAKC/" class="button fork"><strong>Home</strong></a>
+      <div class="downloads">
+        <ul>
+          <li><a href="https://netlore.github.io/OpenAKC/download/" class="button">Download</a></li>
+          <li><a href="https://github.com/netlore/OpenAKC" class="button">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+  </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+
+<p><img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys-short.jpg" /></p>
+
+<h3 id="what-is-openakc">What is OpenAKC?</h3>
+
+<p>OpenAKC consists of 3 parts, listed below.</p>
+
+<h4 id="self-service-authentication-gateway-for-ssh">Self Service Authentication Gateway for SSH</h4>
+
+<p>What this means in practice is that users needing to log in using “application” or “role” accounts on various machines in an estate, can be supported in a way that is familiar and standard from their perspective while the systems administrators can utilise a central directory such as AD or LDAP to control that access.</p>
+
+<p>It allows the user to interact with SSH in a completely normal way, by creating a personal key pair and using that to access hosts (after a self service process to “register” that key).</p>
+
+<p>The administrator on the other hand, is able to refer to users (or groups of users) from the directory, while creating rules that apply to the hosts.  The plug-in installed on the client will contact the API on the security server to identify the user, and look up the associated rules and directory information using their SSH key fingerprint.  The server is queried, and seamlessly passes the user’s public key back to the SSH Daemon if they are permitted to log in.  This means that only the OpenAKC security server needs to have access to the directory.</p>
+
+<p>From a security perspective, even thou a personal SSH key was used to log in directly to an application or role user (or even root), the logs will show the privilege escalation process in a way that should satisfy security best practice. OpenAKC can even write “fake” sudo logs for the benefit of SIEM systems which are expecting users to escalate privilege after initially logging in with a personal account, (no one wants to manage personal user accounts on servers).</p>
+
+<h4 id="dynamic-ssh-key-manager">Dynamic SSH key manager.</h4>
+
+<p>Using the same rule system as the self service key manager, OpenAKC allows the administrator to centrally manage “static trust”, which would normally be controlled locally to each account, on each host using an “authorized_keys” file, which is easily modified by the user once they log in.</p>
+
+<p>OpenAKC effectively allows the administrator to control all the public keys in use across the entire estate from a single location.  If someone wants to set up a trust relationship, they pass the public key to the OpenAKC administrator, who submits it to the system, and then creates rules referring to that key, in the same way as they would refer to a user or group to grant access.</p>
+
+<p>Each key is allocated an ID, so that they can be rotated without even updating the rules.  A key could be changed in 1 command via the API, and be effective instantly across hundreds of systems.</p>
+
+<h4 id="privileged-access-manager">Privileged access manager</h4>
+
+<p>OpenAKC not only allows you to centrally manage access from either self service users or create static trust relationships, it also has features to allow “privileged access” to be managed by rules created within OpenAKC.  Rules can simply refer to AD group membership, but also can be associated with a date/time range, as well as only permitting access on certain days, or at certain times, from certain source IPs etc.</p>
+
+<p>These rules can be manually configured, but equally could be manipulated by another system such as an approval process created with a tool like Remedy, or perhaps an internal web interface.</p>
+
+<h4 id="advanced-features">Advanced Features.</h4>
+
+<p>OpenAKC can provide session recordings, so you can review what users did, or even keep an eye on what automated systems like Ansible, or certain vulnerability scanning tools are actually doing.</p>
+
+<p>It can reach in to the Linux kernel and switch off certain <a href="https://man7.org/linux/man-pages/man7/capabilities.7.html">capabilities</a> in the process tree created by a login, so you could restrict what the “root” account can do, depending on who is using it… and even limit what permissions can be granted to a normal user via sudo, or setuid binaries.  The documentation shows examples of this being used to deny the root account access to “user” data, where that might be something that a sysadmin would not need to access in the normal course of their work, or perhaps would need separate approval to access.  Similarly it could be used to block the loading of kernel modules, which could help with malware protection. More on this in the documentation!</p>
+
+<p><img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/OpenAKC_Demo.gif" /></p>
+
+<p>It can override the user’s shell, perhaps not permitting them a shell at all, but only allow certain commands to be executed remotely.</p>
+
+<p>It can perform search/replace functions on files delivered by SCP, perhaps limiting a user to SCP files only into a specific folder.</p>
+
+<p>And it can present the user with a brief questionnaire at login, asking them why they are logging on, perhaps so that the session recording can more easily be tied to a change request.</p>
+
+<h3 id="why-openakc">Why OpenAKC?</h3>
+
+<p>There are already several commercial products in this space, and they do a fine job… but they are typically expensive, and are not focussed on Linux, so lack some of the features described above.</p>
+
+<p>Additionally, the existing tools manage access through the control of “secret” information… they therefore contain secret keys and information which could threaten your security if they were to leak, since someone could use those secrets to gain access to your systems independent of the security system, potentially without your knowledge.  OpenAKC works differently, it only stores non-sensitive information and controls access by delivering this where it is needed in real time… it DOES NOT have administrative access to your systems, does not “log in” to modify passwords or keys… only calls an encrypted API on demand to query if a given user should be granted access.  In this way, OpenAKC does not have any private keys which could leak, and the agent running on each system is only called on demand, running as a non-privileged user.</p>
+
+<p>OpenAKC is open source, so it can easily be extended in house, and we would be happy to consider including new functionality you create via GitHub.  It even calls a user defined script before and after authentication is performed, so that functionality can easily be extended.</p>
+
+<h3 id="documentation">Documentation</h3>
+
+<p>Documentation is always evolving, and OpenAKC is no exception.  At the time of writing, the focus has been on getting the code ready for release, so be aware that some of the documentation is still incomplete, but we are working on it, and would welcome contributions via GitHub.</p>
+
+<p>The current document can be found here - <a href="https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf">Documentation</a></p>
+
+<p>There are also a number of examples and demos on our YouTube page here - <a href="https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA">Demo Videos</a></p>
+
+<h3 id="where-to-get-openakc">Where to get OpenAKC?</h3>
+
+<p>The “Quickstart Guide” on GitHub does describe how to build your own packages, but by far the easiest way to start working with OpenAKC would be to add one of the OS repos provided.  Again, if you have a platform we do not currently support, please let us know… a balance between packaging and implementing new features has to be maintained, so some less common platforms may ultimately be supported with an install script, rather than a package as this will be necessary to support any non-Linux platforms also (thou these will not have access to some of the Linux specific features such as “capabilities”)</p>
+
+<p>Please see the download page here to see the available OS repos - <a href="https://netlore.github.io/OpenAKC/download/">DOWNLOAD</a></p>
+
+<h3 id="support-or-contact">Support or Contact</h3>
+
+<p>Again, we would love any feedback or contributions, so feel free to contact via GitHub, YouTube, or via email - <a href="mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query">Contact</a> and we’ll help you sort it out.</p>
+
+<p>We’re always keen for new ideas for examples, as more demo videos need to be made!</p>
+
+
+      </section>
+      <footer>
+        
+          <p>Project maintained by <a href="https://github.com/netlore">netlore</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+
+    
+  </body>
+</html>
