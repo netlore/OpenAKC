@@ -117,7 +117,6 @@ data_validateroles () {
     logdebug "Processing Role Header - $role, eof=$eof"
     rvalid=0
     dvalid=0
-    fvalid=0
 #
     #role=$(echo "${role}" | awk -F= '{print $2}')
     srole=$(echo "${role}" | awk -F, '{print $1}')
@@ -241,11 +240,11 @@ data_validateroles () {
       logdebug "Count = $count, Change = $chg : $rec == $recs - $cmd == $cmds - $cap == $caps - $scp == $scps - $shl == $shls - $frm == $frms"
       if [ "x$chg" == "xFRM" ]&&[ "x$rec" == "x$recs" ]&&[ "x$cmd" == "x$cmds" ]&&[ "x$cap" == "x$caps" ]&&[ "x$scp" == "x$scps" ]&&[ "x$shl" == "x$shls" ]; then
        logdebug "Adding froms"
-       frms="$((echo "$frms" | tr ',' '\n';echo "$frm" | tr ',' '\n') | sort | uniq | tr '\n' ',')"&&frms="${frms%,}"
+       frms="$( (echo "$frms" | tr ',' '\n';echo "$frm" | tr ',' '\n') | sort | uniq | tr '\n' ',')"&&frms="${frms%,}"
       fi
       if [ "x$chg" == "xCMD" ]&&[ "x$frm" == "x$frms" ]&&[ "x$rec" == "x$recs" ]&&[ "x$cap" == "x$caps" ]&&[ "x$scp" == "x$scps" ]; then
        logdebug "Adding cmds"
-       cmds="$((echo "$cmds" | tr ';' '\n';echo "$cmd" | tr ';' '\n') | sort | uniq | tr '\n' ';')"&&cmds="${cmds%;}"
+       cmds="$( (echo "$cmds" | tr ';' '\n';echo "$cmd" | tr ';' '\n') | sort | uniq | tr '\n' ';')"&&cmds="${cmds%;}"
       fi
       if [ "x$chg" == "xCAP" ]&&[ "x$frm" == "x$frms" ]&&[ "x$cmd" == "x$cmds" ]&&[ "x$rec" == "x$recs" ]&&[ "x$scp" == "x$scps" ]&&[ "x$shl" == "x$shls" ]; then
        logdebug "Adding caps"
@@ -253,7 +252,7 @@ data_validateroles () {
       fi
       if [ "x$chg" == "xSCP" ]&&[ "x$frm" == "x$frms" ]&&[ "x$cmd" == "x$cmds" ]&&[ "x$cap" == "x$caps" ]&&[ "x$rec" == "x$recs" ]&&[ "x$shl" == "x$shls" ]; then
        logdebug "Addmin scps"
-       scps="$((echo "$scps" | tr ';' '\n';echo "$scp" | tr ';' '\n') | sort | uniq | tr '\n' ';')"&&scps="${scps%;}"
+       scps="$( (echo "$scps" | tr ';' '\n';echo "$scp" | tr ';' '\n') | sort | uniq | tr '\n' ';')"&&scps="${scps%;}"
       fi
      fi
     fi
@@ -321,8 +320,8 @@ data_sessionlog () {
  logdebug "Sessionlog time difference fdat=$fdat ndat=$ndat returning ${returnval["TDIF"]} seconds"
 #
  str=""
- authdata["BCMD"]="$(base64 -w 0 <<< ${authdata["CMD"]})"
- authdata["BSCP"]="$(base64 -w 0 <<< ${authdata["SCP"]})"
+ authdata["BCMD"]="$(base64 -w 0 <<< "${authdata["CMD"]}")"
+ authdata["BSCP"]="$(base64 -w 0 <<< "${authdata["SCP"]}")"
  for i in HNS HND HID HIP USR KEYF API REL RPPID RUSR SHL BSCP CAP FRM TIM BCMD DAY REC EXT; do
   str+="${authdata["$i"]};"
  done
@@ -347,13 +346,13 @@ data_sessionlog () {
 #
 data_sessionupd () {
 # FIXME pass sessionid (PARAM) as parameter and validate
- mkdir -p ${DATADIR}/data/sessions||return 1
+ mkdir -p "${DATADIR}/data/sessions"||return 1
  fn="${DATADIR}/data/sessions/$PARAM.session"
  if [ -r "$fn" ];then
   exec 6<>"$fn"
-  read SESSDAT <&6
+  read -r SESSDAT <&6
   exec 6>&-
-  echo "${SESSDAT};${RIP};${RPRT};${RPTY}" > $fn
+  echo "${SESSDAT};${RIP};${RPRT};${RPTY}" > "$fn"
   SESSDAT="${SESSDAT};${RIP};${RPRT};${RPTY}"
   return 0
  else
@@ -370,13 +369,13 @@ data_idkeyf () {
  local fp fn
  returnval["RUSR"]=""
  returnval["PUBKEY"]=""
- fp="$(echo "${1////-}")"
+ fp="${1////-}"
  fn="$(ls "$DATADIR/data/keys/$fp."* 2> /dev/null)"
  if [ $? -eq 0 ]; then
   exec 7<>"$fn"
-  read returnval["RUSR"] <&7
-  read returnval["RUSR"] <&7
-  read returnval["PUBKEY"] <&7
+  read -r returnval["RUSR"] <&7
+  read -r returnval["RUSR"] <&7
+  read -r returnval["PUBKEY"] <&7
   exec 7>&-
  else
   return 1

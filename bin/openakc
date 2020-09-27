@@ -34,7 +34,7 @@ APIS="localhost"
 CONFFILE="/etc/openakc/openakc.conf"
 DATADIR="/var/lib/openakc"
 USERDIR="${HOME}/.openakc"
-TMOUT=5
+tmout=5
 DEBUG="no"
 PORT=889
 
@@ -564,7 +564,7 @@ case "$MODE" in
    usr=${2}
    fps=$(echo "${3}" | md5sum | awk '{print $1}')
    pkey=$(cat /tmp/openakc."${fps}")
-   chkusr=$(ls -l /tmp/openakc."${fps}" | awk '{print $3}')
+   chkusr=$(stat -c%U "/tmp/openakc.$fps")
    if [ "x${usr}" != "x${chkusr}" ]; then
     echo ""
     echo "Error: Key ownership not confirmed, aborting!"
@@ -596,14 +596,14 @@ case "$MODE" in
     usage
     exit 1
    else
-    prvkey=$(echo "${key}" | sed -e "s,.pub$,,g")
-    if [ ! -r "${prvkey}" ]; then
+    prvkey="${key%.pub}"
+    if [ ! -r "$prvkey" ]; then
      echo "Error: unable to read private key file"
      usage
      exit 1
     fi
 #
-    ssh-keygen -P "dummy" -yf "${prvkey}" 1> /dev/null 2> /dev/null
+    ssh-keygen -P "dummy" -yf "$prvkey" 1> /dev/null 2> /dev/null
     if [[ $? -eq 0 ]]; then
      if [[ ${EUID} -ne 0 ]]; then
       echo "Error: user key (${prvkey}) must include passphrase"

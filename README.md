@@ -74,7 +74,7 @@ You no-longer have to require users to log in to servers with personal accounts 
 
 **WARNING: This is pre-release software and although it is functional, we would definitely ask for feedback and suggest that caution be taken with any large deployments prior to the final release of 1.0.0**
 
-Documentation is still being created, but you may like to see our YouTube channel [OpenAKC Videos][demo], I won't be offended if you want to play this at double speed.
+Documentation is available [Here][docs], or you may like to see our YouTube channel [OpenAKC Videos][demo], I won't be offended if you want to play some of these at double speed.
 
 Any contributions of in regard to documentation, code or suggestions would be greatly appreciated.
 
@@ -85,3 +85,4 @@ Please note that most of this tool is created using shell code, I hope this make
 [demo]: https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA
 [caps]: https://man7.org/linux/man-pages/man7/capabilities.7.html
 [homepage]: https://netlore.github.io/OpenAKC/
+[docs]: https://github.com/netlore/OpenAKC/blob/master/docs/OpenAKC_Admin_Guide.pdf

@@ -36,7 +36,7 @@ DATADIR="/var/lib/openakc"
 PREEXEC="/bin/true"
 POSTEXEC="/bin/true"
 CONFFILE="/etc/openakc/openakc.conf"
-TMOUT=90 # Entire transaction must be completed in this number of seconds (Warning, includes QUIZ).
+tmout=90 # Entire transaction must be completed in this number of seconds (Warning, includes QUIZ).
 APIS="localhost"
 PORT="889"
 DEBUG="no"
@@ -45,23 +45,25 @@ DEBUG="no"
 # Get Configuration File (or make one).
 #
 
-CONFDIR=$(dirname "${CONFFILE}")
-if [ -f $CONFFILE ]; then
- source ${CONFFILE}
+CONFDIR=$(dirname "$CONFFILE")
+if [ -f "$CONFFILE" ]; then
+ source "$CONFFILE"
 else
- mkdir -p ${CONFDIR}
- echo "APIS=\"${APIS}\"" >> ${CONFFILE}
- echo "PORT=\"${PORT}\"" >> ${CONFFILE}
- echo "CACHETIME=\"60\"" >> ${CONFFILE}
- echo "DEBUG=\"${DEBUG}\"" >> ${CONFFILE}
- echo "DATADIR=\"${DATADIR}\"" >> ${CONFFILE}
- echo "PREEXEC=\"${PREEXEC}\"" >> ${CONFFILE}
- echo "POSTEXEC=\"${POSTEXEC}\"" >> ${CONFFILE}
-# echo "PERMITROOT=\"yes\"" >> ${CONFFILE}
-# echo "QUIZ=\"yes\"" >> ${CONFFILE}
-# echo "FAKESUDO=\"yes\"" >> ${CONFFILE}
- chmod 644 ${CONFFILE}
- source ${CONFFILE}
+ mkdir -p "$CONFDIR"
+ {
+  echo "APIS=\"$APIS\""
+  echo "PORT=\"$PORT\""
+  echo "CACHETIME=\"60\""
+  echo "DEBUG=\"$DEBUG\""
+#  echo "DATADIR=\"$DATADIR\""
+  echo "PREEXEC=\"$PREEXEC\""
+  echo "POSTEXEC=\"$POSTEXEC\""
+#  echo "PERMITROOT=\"yes\""
+#  echo "QUIZ=\"yes\""
+#  echo "FAKESUDO=\"yes\""
+  } >> "$CONFFILE"
+ chmod 644 "$CONFFILE"
+ source "$CONFFILE"
 fi
 
 #
@@ -74,24 +76,24 @@ PUBKEY="openakc-system-server-$(hostid)-pubkey.pem"
 SESSKEY=""
 PROTO="0"
 # REMOTE_HOST defined by xinetd.
-REMOTE_HOST=$(echo $REMOTE_HOST | sed -e "s,::ffff:,,g")
+REMOTE_HOST="${REMOTE_HOST//::ffff:/}"
 
 #
 # Transient Values
 #
-DAT=$(date "+%c")
+DAT="$(date +%c)"
 SDAT=$(date +%s)
-let TDAT=SDAT+$TMOUT
+TDAT=$((SDAT+tmout))
 
 #
 # Database hack
 #
-export PGPASSWORD=${pgpassword}
+export PGPASSWORD="${pgpassword}"
 
 #
 # Includes Functions
 #
-source "/var/lib/openakc/libexec/functions-${RELEASE}.cache"
+source "$DATADIR/libexec/functions-$RELEASE.cache"
 
 #
 # Local Functions
@@ -103,8 +105,8 @@ greeter () {
 
 cleanapi () {
 #FIXME Variable Reuse of "API="
- API=$(echo $APIIN | tr -d '\r' | tr 'A-Z' 'a-z' | awk '{print $1}')
- PARAM=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
+ API=$(echo "${APIIN,,}" | tr -d '\r' | awk '{print $1}')
+ PARAM=$(echo "$APIIN" | tr -d '\r' | awk '{print $2}')
 }
 
 setproto () {
@@ -123,7 +125,7 @@ setproto () {
 }
 
 showhelp () {
- echo "Welcome to OpenAKC, you are in the select protocol phase"
+ echo "Welcome to OpenAKC, you are in the protocol selection phase"
  echo ""
  echo "Commands Available:-"
  echo "help                  - This help text"
@@ -149,13 +151,13 @@ else
  logerr "Unrecognised OpenSSL version, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 908 ];then
+if [ "$OSSLV" -ge 908 ];then
  PROTOS="akcrsa1" # Space Separated List
 else
  logerr "OpenSSL too old, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 10101 ];then
+if [ "$OSSLV" -ge 10101 ];then
  PROTOS="akcrsa1 akcrsa1.1" # Space Separated List
 fi
 
@@ -177,11 +179,11 @@ if [ ! -d "$DATADIR/data" ];then
 fi
 [ ! -d "$DATADIR/keys" ]&&mkdir "$DATADIR/keys"
 chmod 700 "$DATADIR/keys"
-[ ! -f "${DATADIR}/keys/${PUBKEY}" ] && rm "${DATADIR}/keys/${PRVKEY}" 2> /dev/null
-if [ ! -f "${DATADIR}/keys/${PRVKEY}" ]; then
+[ ! -f "$DATADIR/keys/$PUBKEY" ] && rm "$DATADIR/keys/$PRVKEY" 2> /dev/null
+if [ ! -f "$DATADIR/keys/$PRVKEY" ]; then
  logstatus "Forcing refresh of openssl keys"
- openssl genrsa -out "${DATADIR}/keys/${PRVKEY}" 2048 2> /dev/null
- openssl rsa -in "${DATADIR}/keys/${PRVKEY}" -outform PEM -pubout -out "${DATADIR}/keys/${PUBKEY}" 2> /dev/null
+ openssl genrsa -out "$DATADIR/keys/$PRVKEY" 2048 2> /dev/null
+ openssl rsa -in "$DATADIR/keys/$PRVKEY" -outform PEM -pubout -out "$DATADIR/keys/$PUBKEY" 2> /dev/null
 fi 
 
 #
@@ -193,9 +195,9 @@ logstatus "Session with $REMOTE_HOST established"
 #
 # Welcome Loop
 #
-while [ $(date +%s) -lt $TDAT ]
+while [ "$(date +%s)" -lt $TDAT ]
 do
- read APIIN
+ read -r APIIN
  cleanapi
  case "$API" in
   help)
@@ -205,7 +207,7 @@ do
    echo "OK: Pong!"
    ;;
   getproto)
-   echo $PROTOS
+   echo "$PROTOS"
    echo "OK: Protocols Listed" 
    ;;
   setproto)
@@ -214,7 +216,7 @@ do
    ;;
   quit)
    PROTO="0"
-   echo "OK: Goodbye (Welcome Phase)"
+   echo "OK: Goodbye (protocol selection)"
    logstatus "Session with $REMOTE_HOST quit during welcome phase"
    break
    ;;
@@ -249,54 +251,60 @@ PROTO=$(echo $PROTO | awk -F. '{print $1}')
 
 data_registerkey () {
 #FIXME Error checks & input validation
- mkdir -p ${DATADIR}/data/keys
- fp=$(echo "${fp}" | tr '/' '-')
- fn="${DATADIR}/data/keys/${fp}.${usr}"
- rm ${DATADIR}/data/keys/*.${usr} 2> /dev/null
- echo "${fp}" > "${fn}"
- echo "${usr}" >> "${fn}"
- echo "${pkey}" >> "${fn}"
- echo "${PARAM}" >> "${fn}"
- echo "${DAT}" >> "${fn}"
- echo "Personal Key for user ${usr}" >> "${fn}"
+ mkdir -p "$DATADIR/data/keys"
+ fp="${fp////-}"
+ fn="$DATADIR/data/keys/$fp.$usr"
+ rm "$DATADIR/data/keys/"*".$usr" 2> /dev/null
+ {
+  echo "$fp"
+  echo "$usr"
+  echo "$pkey"
+  echo "$PARAM"
+  echo "$DAT"
+  echo "Personal Key for user $usr"
+ } > "$fn"
 } 
 
 data_statickey () {
 #FIXME Error checks
- mkdir -p ${DATADIR}/data/keys
+ mkdir -p "$DATADIR/data/keys"
  KEYSN="key-$(randsn)"
- fp=$(echo "${fp}" | tr '/' '-')
- fn="${DATADIR}/data/keys/${fp}.${KEYSN}"
- kd=$(echo $kd | base64 -d | gzip -d)
- cmt=$(echo $cmt | base64 -d | gzip -d)
- echo "${fp}" > "${fn}"
- echo ${KEYSN} >> "${fn}"
- echo "${kd}" >> "${fn}"
- echo "static" >> "${fn}"
- echo "${DAT}" >> "${fn}"
- echo "${cmt}" >> "${fn}"
+ fp="${fp////-}"
+ fn="$DATADIR/data/keys/$fp.$KEYSN"
+ kd=$(echo "$kd" | base64 -d | gzip -d)
+ cmt=$(echo "$cmt" | base64 -d | gzip -d)
+ {
+  echo "$fp"
+  echo "$KEYSN"
+  echo "$kd"
+  echo "static"
+  echo "$DAT"
+  echo "$cmt"
+ } > "$fn"
 }  
 
 data_updatekey () {
 #FIXME Error checks & input validation
 #FIXME Preserve comment if new comment not supplied
- mkdir -p ${DATADIR}/data/keys
- fp=$(echo "${fp}" | tr '/' '-')
- fn="${DATADIR}/data/keys/${fp}.${sn}"
- if [ $(ls ${DATADIR}/data/keys/*.${sn} 2> /dev/null | wc -l) -ne 0 ]; then
-  reply="OK: Updated public key - S/N = ${sn}"
-  rm ${DATADIR}/data/keys/*.${sn} 2> /dev/null
-  kd=$(echo $kd | base64 -d | gzip -d)
-  cmt=$(echo $cmt | base64 -d | gzip -d)
-  if [ "x${kd}" == "xDELETE" ]; then
-   reply="OK: Deleted public key - S/N = ${sn}"
+ mkdir -p "$DATADIR/data/keys"
+ fp="${fp////-}"
+ fn="$DATADIR/data/keys/$fp.$sn"
+ if [ "$(find "$DATADIR/data/keys/"*".$sn" 2> /dev/null | wc -l)" -ne 0 ]; then
+  reply="OK: Updated public key - S/N = $sn"
+  rm "$DATADIR/data/keys/"*".$sn" 2> /dev/null
+  kd="$(echo "$kd" | base64 -d | gzip -d)"
+  cmt="$(echo "$cmt" | base64 -d | gzip -d)"
+  if [ "x$kd" == "xDELETE" ]; then
+   reply="OK: Deleted public key - S/N = $sn"
   else 
-   echo "${fp}" > "${fn}"
-   echo ${sn} >> "${fn}"
-   echo "${kd}" >> "${fn}"
-   echo "static" >> "${fn}"
-   echo "${DAT}" >> "${fn}"
-   echo "${cmt}" >> "${fn}"
+   {
+    echo "$fp"
+    echo "$sn"
+    echo "$kd"
+    echo "static"
+    echo "$DAT"
+    echo "$cmt"
+   } > "$fn"
   fi
  else
   reply="ERR: Error no key with serial number exists"
@@ -304,59 +312,61 @@ data_updatekey () {
 }
 
 data_resolve () {
- cnt=$(getent hosts "${SOURCE}" 2> /dev/null | wc -l)
- if [ $cnt -eq 1 ]; then
-  SOURCE_HOST=$(getent hosts "${SOURCE}" 2> /dev/null | awk '{print $2}')
+ cnt="$(getent hosts "$SOURCE" 2> /dev/null | wc -l)"
+ if [ "$cnt" -eq 1 ]; then
+  SOURCE_HOST=$(getent hosts "$SOURCE" 2> /dev/null | awk '{print $2}')
  else
-  SOURCE_HOST=${SOURCE}
+  SOURCE_HOST="$SOURCE"
  fi
 }
  
 data_setrole () {
 #FIXME Error Checks
- cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
- if [ $cnt -eq 1 ]||[ "x${hn}" == "xdefault" ]; then
-  if [ "x${hn}" != "xdefault" ]; then
-   hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
-   hn=$(basename "$hnl")
+ cnt="$(find "$DATADIR/data/hosts/$hn"* 2> /dev/null | wc -l)"
+ if [ "$cnt" -eq 1 ]||[ "x$hn" == "xdefault" ]; then
+  if [ "x$hn" != "xdefault" ]; then
+   hnl="$(find "$DATADIR/data/hosts/$hn"* 2> /dev/null)"
+   hn="$(basename "$hnl")"
   else
    hn="DEFAULT"
   fi
-  mkdir -p ${DATADIR}/data/roles
-  mkdir -p ${DATADIR}/data/history
-  fn="${DATADIR}/data/roles/${usr}@${hn}.roles"
-  echo $rolefile | base64 -d | gzip -d > "${fn}.tmp"
-  touch "${fn}"
-  diff "${fn}" "${fn}.tmp" 1> /dev/null 2> /dev/null
-  if [ ${?} -ne 0 ]; then
-   echo "User ${PERMUSER} altered role ${usr}@${hn} as follows" >> "${DATADIR}/data/history/${usr}@${hn}.roles"
-   diff --unified=8 "${fn}" "${fn}.tmp" >> "${DATADIR}/data/history/${usr}@${hn}.roles"
-   echo "-------------------------------------------------------------------------------" >> "${DATADIR}/data/history/${usr}@${hn}.roles"
-   echo >> "${DATADIR}/data/history/${usr}@${hn}.roles"
+  mkdir -p "$DATADIR/data/roles"
+  mkdir -p "$DATADIR/data/history"
+  fn="$DATADIR/data/roles/$usr@$hn.roles"
+  echo "$rolefile" | base64 -d | gzip -d > "$fn.tmp"
+  touch "$fn"
+  diff "$fn" "$fn.tmp" 1> /dev/null 2> /dev/null
+  if [ "$?" -ne 0 ]; then
+   {
+    echo "User $PERMUSER altered role $usr@$hn as follows"
+    diff --unified=8 "$fn" "$fn.tmp"
+    echo "-------------------------------------------------------------------------------"
+    echo
+   } >> "$DATADIR/data/history/$usr@$hn.roles"
   fi
-  mv "${fn}.tmp" "${fn}"
+  mv "$fn.tmp" "$fn"
   reply="OK: Request processed, role data updated"
  else
   reply="ERR: Unknown Error, cannot save role data"
-  [ $cnt -eq 0 ]&&reply="ERR: Server not aware of this host"
-  [ $cnt -gt 1 ]&&reply="ERR: Hostname not unique, use fully qualified"
+  [ "$cnt" -eq 0 ]&&reply="ERR: Server not aware of this host"
+  [ "$cnt" -gt 1 ]&&reply="ERR: Hostname not unique, use fully qualified"
  fi 
 }
 
 data_getrole () {
 # FIXME Input validation on $usr & $hn
- mkdir -p ${DATADIR}/data/roles
- cnt=$(ls "${DATADIR}/data/hosts/${hn}"* 2> /dev/null | wc -l)
- if [ $cnt -eq 1 ]||[ "x${hn}" == "xdefault" ]; then
-  if [ "x${hn}" != "xdefault" ]; then
-   hnl=$(ls "${DATADIR}/data/hosts/${hn}"*)
-   hn=$(basename "$hnl")
+ mkdir -p "$DATADIR/data/roles"
+ cnt=$(find "$DATADIR/data/hosts/$hn"* 2> /dev/null | wc -l)
+ if [ "$cnt" -eq 1 ]||[ "x$hn" == "xdefault" ]; then
+  if [ "x$hn" != "xdefault" ]; then
+   hnl="$(find "${DATADIR}/data/hosts/$hn"* 2> /dev/null)"
+   hn="$(basename "$hnl")"
   else
    hn="DEFAULT"
   fi
-  fn="${DATADIR}/data/roles/${usr}@${hn}.roles"
-  if [ ! -r "${fn}" ];then
-   cat <<EOF > "${fn}.tmp"
+  fn="$DATADIR/data/roles/$usr@$hn.roles"
+  if [ ! -r "$fn" ];then
+   cat <<EOF > "$fn.tmp"
 # Edit this file to control permissions managed by OpenAKC.
 # Rules for ${usr}@${hn}
 #
@@ -381,6 +391,7 @@ data_getrole () {
 #   NB: Multiple CMD= lines are permitted and will be aggrigated.
 #   EG: CMD=scp;ls;uname;dmidecode;/usr/lib/openssh/sftp-server
 # SCP= "sed" expression applied to scp, to allow chroot or redirecting files.
+#   NB: Multiple SCP= lines are permitted and will be aggrigated.
 # CAP= comma separated list of capabilities denied to role (man capabilities).
 # REC= record session log, yes/no
 # FROM= can be either "any" or a comma separated list of IPs or CIDR subnets
@@ -399,16 +410,16 @@ data_getrole () {
 #REC=yes
 #FROM=any
 EOF
-   rolefile=$(cat "${fn}.tmp" | base64 -w 0)
-   rm "${fn}.tmp"
+   rolefile=$(base64 -w 0 < "$fn.tmp")
+   rm "$fn.tmp"
   else
-   rolefile=$(cat $fn | base64 -w 0) 
+   rolefile=$(base64 -w 0 < "$fn") 
   fi
   reply="OK: Request processed, role data read"
  else
   reply="ERR: Unknown Error, cannot check host data"
-  [ $cnt -eq 0 ]&&reply="ERR: Server not aware of this host"
-  [ $cnt -gt 1 ]&&reply="ERR: Hostname not unique, use fully qualified"
+  [ "$cnt" -eq 0 ]&&reply="ERR: Server not aware of this host"
+  [ "$cnt" -gt 1 ]&&reply="ERR: Hostname not unique, use fully qualified"
  fi
 }
 
@@ -437,8 +448,8 @@ showhelp_akcrsa1 () {
 }
 
 sendpubkey () {
- if [ -f "${DATADIR}/keys/${PUBKEY}" ]; then
-  cat "${DATADIR}/keys/${PUBKEY}"
+ if [ -f "$DATADIR/keys/$PUBKEY" ]; then
+  cat "$DATADIR/keys/$PUBKEY"
   echo "OK: Sent Pubkey"
  else
   echo "ERR: Error Sending Pubkey"
@@ -447,10 +458,10 @@ sendpubkey () {
 }
 
 readsesscode () {
- SESSKEY=$(echo $PARAM | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "${DATADIR}/keys/${PRVKEY}" -in /dev/stdin 2> /dev/null)
- if [ $? -eq 0 ]; then 
+ SESSKEY="$(echo "$PARAM" | tr -d '\r' | base64 -d | openssl rsautl -decrypt -inkey "$DATADIR/keys/$PRVKEY" -in /dev/stdin 2> /dev/null)"
+ if [ "$?" -eq 0 ]; then 
   echo "OK: Session key decoded"
-  logdebug "Session key substr is:- $(echo $SESSKEY | cut -c 1-10)"
+  logdebug "Session key substr is:- $(echo "$SESSKEY" | cut -c 1-10)"
   logstatus "Session with $REMOTE_HOST negotiated AKCRSA1 protocol successfully"
  else
   echo "ERR: Could not decode session key"
@@ -461,38 +472,38 @@ readsesscode () {
 rbmessage () {
 #FIXME Check exit code of openssl
  ENC=1
- APIIN=$(echo $PARAM | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')
+ APIIN="$(echo "$PARAM" | base64 -d | openssl enc -d $SSLOPTS$SESSKEY 2> /dev/null | tr -d '\r')"
  logdebug "Message decoded - \"$APIIN\""
 }
 
 rbsessiondata () {
 #FIXME Security, validate session before sending.
  logdebug "Processing session data request - \"$PARAM\""
- RIP=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
- RPRT=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
- RPTY=$(echo $APIIN | tr -d '\r' | awk '{print $6}')
+ RIP="$(echo "$APIIN" | tr -d '\r' | awk '{print $3}')"
+ RPRT="$(echo "$APIIN" | tr -d '\r' | awk '{print $4}')"
+ RPTY="$(echo "$APIIN" | tr -d '\r' | awk '{print $6}')"
  data_sessionupd
- echo $(echo $SESSDAT | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ echo "$SESSDAT" | openssl enc $SSLOPTS$SESSKEY 2> /dev/null | base64 -w 0; echo
  echo "OK: Session data sent"
- HNS=$(echo $SESSDAT | cut -d ";" -f 1) # Short Hostname
- HND=$(echo $SESSDAT | cut -d ";" -f 2) # Domain Name
- HID=$(echo $SESSDAT | cut -d ";" -f 3) # Hostid
- HIP=$(echo $SESSDAT | cut -d ";" -f 4) # Host IP
- USR=$(echo $SESSDAT | cut -d ";" -f 5) # Username
- KEYF=$(echo $SESSDAT | cut -d ";" -f 6) # Key Fingerprint
- API=$(echo $SESSDAT | cut -d ";" -f 7) # API Hostname
- REL=$(echo $SESSDAT | cut -d ";" -f 8) # Client Code Release
- RPPID=$(echo $SESSDAT | cut -d ";" -f 9) # Remote Parent PID
- RUSR=$(echo $SESSDAT | cut -d ";" -f 10) # Remote Username
- SHL=$(echo $SESSDAT | cut -d ";" -f 11) # Role Shell
- SCP=$(echo $SESSDAT | cut -d ";" -f 12) # SCP Rules
- CAP=$(echo $SESSDAT | cut -d ";" -f 13) # Capabilities
- FRM=$(echo $SESSDAT | cut -d ";" -f 14) # Permitted Source IP
- TIM=$(echo $SESSDAT | cut -d ";" -f 15) # Timebox
- CMD=$(echo $SESSDAT | cut -d ";" -f 16) # Permitted Remote Commands
- DAY=$(echo $SESSDAT | cut -d ";" -f 17) # Permitted Days
- REC=$(echo $SESSDAT | cut -d ";" -f 18) # Record Session Log
- EXT=$(echo $SESSDAT | cut -d ";" -f 19) # Extended data
+ HNS="$(echo "$SESSDAT" | cut -d ";" -f 1)" # Short Hostname
+ HND="$(echo "$SESSDAT" | cut -d ";" -f 2)" # Domain Name
+ HID="$(echo "$SESSDAT" | cut -d ";" -f 3)" # Hostid
+ HIP="$(echo "$SESSDAT" | cut -d ";" -f 4)" # Host IP
+ USR="$(echo "$SESSDAT" | cut -d ";" -f 5)" # Username
+ KEYF="$(echo "$SESSDAT" | cut -d ";" -f 6)" # Key Fingerprint
+ API="$(echo "$SESSDAT" | cut -d ";" -f 7)" # API Hostname
+ REL="$(echo "$SESSDAT" | cut -d ";" -f 8)" # Client Code Release
+ RPPID="$(echo "$SESSDAT" | cut -d ";" -f 9)" # Remote Parent PID
+ RUSR="$(echo "$SESSDAT" | cut -d ";" -f 10)" # Remote Username
+ SHL="$(echo "$SESSDAT" | cut -d ";" -f 11)" # Role Shell
+ SCP="$(echo "$SESSDAT" | cut -d ";" -f 12)" # SCP Rules
+ CAP="$(echo "$SESSDAT" | cut -d ";" -f 13)" # Capabilities
+ FRM="$(echo "$SESSDAT" | cut -d ";" -f 14)" # Permitted Source IP
+ TIM="$(echo "$SESSDAT" | cut -d ";" -f 15)" # Timebox
+ CMD="$(echo "$SESSDAT" | cut -d ";" -f 16)" # Permitted Remote Commands
+ DAY="$(echo "$SESSDAT" | cut -d ";" -f 17)" # Permitted Days
+ REC="$(echo "$SESSDAT" | cut -d ";" -f 18)" # Record Session Log
+ EXT="$(echo "$SESSDAT" | cut -d ";" -f 19)" # Extended data
  logauth "User $USR authenticated on $HNS($HIP) with session id $RPPID-$HID using key $KEYF($RUSR) to $RPTY from $RIP port $RPRT"
 }
 
@@ -551,11 +562,14 @@ rbauth () {
  if [ "x${authdata["PUBKEY"]}" != "x" ]; then
   ( ${PREEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" ) 2> /dev/null 1> /dev/null
   preres=${?}
+ else
+  reply="OK: Auth request processed (Unknown Key)"
  fi
+ [[ $preres -ne 0 ]]&&reply="OK: Auth request processed (PREEXEC Deny)"
  if [ "x${authdata["PUBKEY"]}" != "x" ]&&[[ $preres -eq 0 ]]; then
   #
   data_sessionlog 
-  if [ ${returnval["TDIF"]} -lt 10 ]; then
+  if [ "${returnval["TDIF"]}" -lt 10 ]; then
    replyflg="NOLOG"
   else
    replyflg="LOG"
@@ -592,38 +606,38 @@ rbauth () {
  
  #
  logdebug "Sending key $replykey"
- echo $(echo "$replylog" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
- echo $(echo "$replyflg" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
- echo $(echo "$replykey" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
- echo ${reply}
+ echo "$replylog" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
+ echo "$replyflg" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
+ echo "$replykey" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
+ echo "$reply"
 } 
 
 rbchallenge () {
 # FIXME do input validation
- KEYID=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
+ KEYID=$(echo "$APIIN" | tr -d '\r' | awk '{print $3}')
  case "$PARAM" in
   system)
    KEYTYPE="system"
    ;;
   user)
    KEYTYPE="user"
-   PERMUSER=${KEYID}
+   PERMUSER=$KEYID
    ;;
   *)
    KEYTYPE="error"
    ;;
  esac
- KEYFILE="${DATADIR}/keys/openakc-${KEYTYPE}-client-${KEYID}-pubkey.pem"
+ KEYFILE="$DATADIR/keys/openakc-$KEYTYPE-client-$KEYID-pubkey.pem"
  #
  CHAL=$(openssl rand -hex 26 2> /dev/null)
- if [ -r "${KEYFILE}" ]; then
-  CHALCODE=$(echo $CHAL | openssl rsautl -encrypt -inkey "${KEYFILE}" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
-  echo $(echo "$CHALCODE" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ if [ -r "$KEYFILE" ]; then
+  CHALCODE=$(echo "$CHAL" | openssl rsautl -encrypt -inkey "$KEYFILE" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
+  echo "$CHALCODE" | openssl enc $SSLOPTS$SESSKEY 2> /dev/null | base64 -w 0; echo
   logdebug "Challenge sent - \"$CHAL\""
   echo "OK: Challenge issued"
  else
   echo "FAIL"
-  if [ "x${KEYTYPE}" != "xerror" ];then
+  if [ "x$KEYTYPE" != "xerror" ];then
    echo "ERR: Cannot Find necessary public key on server - $KEYFILE"
   else
    echo "ERR: Protocol error, invalid keytype specified"
@@ -633,12 +647,12 @@ rbchallenge () {
 
 rbhandshake () {
  logdebug "Challenge response received - \"$PARAM\""
- if [ "x${CHAL}" == "x${PARAM}" ];then
-  PERMS="$(echo ${KEYTYPE} | tr 'a-z' 'A-Z') ${PERMS}"
-  PERMS=$(echo -e "${PERMS}" | sed -e 's/[[:space:]]*$//')
-  echo "OK: Handshake accepted. Permission list now \"${PERMS}\""
+ if [ "x$CHAL" == "x$PARAM" ];then
+  PERMS="${KEYTYPE^^} $PERMS"
+  PERMS=$(echo -e "$PERMS" | sed -e 's/[[:space:]]*$//')
+  echo "OK: Handshake accepted. Permission list now \"$PERMS\""
   logdebug "PERMS set to \"${PERMS}\""
-  logstatus "Authenticated session established with ${REMOTE_HOST}"
+  logstatus "Authenticated session established with $REMOTE_HOST"
  else
   echo "ERR: Handshake failed"
   logerr "API Handshake Failed"  
@@ -649,17 +663,17 @@ rbgetrole () {
 #FIXME Input Validation (look up/validate hostid?)
  logdebug "Adding role data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
-  target=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
-  usr=$(echo "${target}" | awk -F\@ '{print $1}')
-  hn=$(echo "${target}" | awk -F\@ '{print $2}')
-  logstatus "Validated role read request from \"${PERMUSER}@${REMOTE_HOST}\" for \"${usr}@${hn}\""
-  DAT=$(date +%s)
+  target=$(echo "$APIIN" | tr -d '\r' | awk '{print $2}')
+  usr=$(echo "$target" | awk -F\@ '{print $1}')
+  hn=$(echo "$target" | awk -F\@ '{print $2}')
+  logstatus "Validated role read request from \"$PERMUSER@$REMOTE_HOST\" for \"$usr@$hn\""
+  DAT="$(date +%s)"
   data_getrole
-  echo $(echo "${rolefile}" | gzip | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0)
-  echo $reply
+  echo "$rolefile" | gzip | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
+  echo "$reply"
   logdebug "sent request processed"
  else
-  logstatus "Invalid role read request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  logstatus "Invalid role read request from \"$KEYID@$REMOTE_HOST\" for \"$usr@$hn\""
   echo "ERR: Permission denied"
  fi
 }
@@ -668,16 +682,16 @@ rbsetrole () {
 #FIXME Input Validation
  logdebug "Adding role data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
-  target=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
-  usr=$(echo "${target}" | awk -F\@ '{print $1}')
-  hn=$(echo "${target}" | awk -F\@ '{print $2}')
-  rolefile=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
-  logstatus "Validated role update request from \"${PERMUSER}@${REMOTE_HOST}\" for \"${usr}@${hn}\""
-  DAT=$(date +%s)
+  target=$(echo "$APIIN" | tr -d '\r' | awk '{print $2}')
+  usr=$(echo "$target" | awk -F\@ '{print $1}')
+  hn=$(echo "$target" | awk -F\@ '{print $2}')
+  rolefile=$(echo "$APIIN" | tr -d '\r' | awk '{print $3}')
+  logstatus "Validated role update request from \"$PERMUSER@$REMOTE_HOST\" for \"$usr@$hn\""
+  DAT="$(date +%s)"
   data_setrole
   echo "$reply"
  else
-  logstatus "Invalid role update request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  logstatus "Invalid role update request from \"$KEYID@$REMOTE_HOST\" for \"$usr@$hn\""
   echo "ERR: Permission denied"
  fi
 }
@@ -686,14 +700,14 @@ rbsubmit () {
 #FIXME Input Validation
  logdebug "Adding public key data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
-  fp=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
-  kd=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
-  cmt=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
-  DAT=$(date +%s)
+  fp=$(echo "$APIIN" | tr -d '\r' | awk '{print $2}')
+  kd=$(echo "$APIIN" | tr -d '\r' | awk '{print $3}')
+  cmt=$(echo "$APIIN" | tr -d '\r' | awk '{print $4}')
+  DAT="$(date +%s)"
   data_statickey
-  echo "OK: Stored public key - S/N = ${KEYSN}"
+  echo "OK: Stored public key - S/N = $KEYSN"
  else
-  logstatus "Invalid submit key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  logstatus "Invalid submit key request from \"$KEYID@$REMOTE_HOST\" for \"$usr@$hn\""
   echo "ERR: Permission denied"
  fi
 }
@@ -702,15 +716,15 @@ rbupdate () {
 #FIXME Input Validation
  logdebug "Updating public key data - \"$APIIN\""
  if [ "x$PERMS" == "xUSER" ]; then
-  sn=$(echo $APIIN | tr -d '\r' | awk '{print $2}')
-  fp=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
-  kd=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
-  cmt=$(echo $APIIN | tr -d '\r' | awk '{print $5}')
-  DAT=$(date +%s)
+  sn=$(echo "$APIIN" | tr -d '\r' | awk '{print $2}')
+  fp=$(echo "$APIIN" | tr -d '\r' | awk '{print $3}')
+  kd=$(echo "$APIIN" | tr -d '\r' | awk '{print $4}')
+  cmt=$(echo "$APIIN" | tr -d '\r' | awk '{print $5}')
+  DAT="$(date +%s)"
   data_updatekey
-  echo ${reply}
+  echo "$reply"
  else
-  logstatus "Invalid update key request from \"${KEYID}@${REMOTE_HOST}\" for \"${usr}@${nh}\""
+  logstatus "Invalid update key request from \"$KEYID@$REMOTE_HOST\" for \"$usr@$hn\""
   echo "ERR: Permission denied"
  fi
 }
@@ -719,15 +733,15 @@ rbregisterkey () {
 #FIXME Input validation
  logdebug "Adding registered user key - \"$APIIN\""
  if [ "x$PERMS" == "xSYSTEM" ]; then
-  usr=$(echo $APIIN | tr -d '\r' | awk '{print $3}')
-  fp=$(echo $APIIN | tr -d '\r' | awk '{print $4}')
-  pkey=$(echo $APIIN | tr -d '\r' | awk '{print $5" "$6}')
-  logstatus "Validated register-key request from \"${usr}@${REMOTE_HOST}\" for fingerprint \"${fp}\" type \"${PARAM}\""
-  DAT=$(date +%s)
-  data_registerkey "${fp}" "${usr}" "${pkey}" "${PARAM}" "$DAT"
+  usr=$(echo "$APIIN" | tr -d '\r' | awk '{print $3}')
+  fp=$(echo "$APIIN" | tr -d '\r' | awk '{print $4}')
+  pkey=$(echo "$APIIN" | tr -d '\r' | awk '{print $5" "$6}')
+  logstatus "Validated register-key request from \"$usr@$REMOTE_HOST\" for fingerprint \"$fp\" type \"$PARAM\""
+  DAT="$(date +%s)"
+  data_registerkey "$fp" "$usr" "$pkey" "$PARAM" "$DAT"
   echo "OK: Request processed"
  else
-  logstatus "Invalid register-key request from \"${usr}@${REMOTE_HOST}\" for fingerprint \"${fp}\" type \"${PARAM}\""
+  logstatus "Invalid register-key request from \"$usr@$REMOTE_HOST\" for fingerprint \"$fp\" type \"$PARAM\""
   echo "ERR: Permission denied"
  fi
 }
@@ -736,46 +750,46 @@ rbaudit () {
 #FIXME Input Validation
 SOURCE="$REMOTE_HOST"
 REPLY="OK: Audit data accepted"
-AUDFN=$(echo $PARAM | awk -F\: '{print $1}')
-AUDAT=$(echo $PARAM | awk -F\: '{print $2}')
+AUDFN=$(echo "$PARAM" | awk -F: '{print $1}')
+AUDAT=$(echo "$PARAM" | awk -F: '{print $2}')
 data_resolve
-if echo "${AUDFN}" | egrep -q "^[-.a-zA-Z0-9]{0,33}$" 1> /dev/null 2> /dev/null; then
- mkdir -p "${DATADIR}/audit/$SOURCE_HOST"
- echo -n "$AUDAT" | tr -d '\r' | base64 -d > "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp"
- if [ $? -eq 0 ]; then
+if echo "$AUDFN" | grep -Eq "^[-.a-zA-Z0-9]{0,33}$" 1> /dev/null 2> /dev/null; then
+ mkdir -p "$DATADIR/audit/$SOURCE_HOST"
+ echo -n "$AUDAT" | tr -d '\r' | base64 -d > "$DATADIR/audit/$SOURCE_HOST/$AUDFN.tmp"
+ if [ "$?" -eq 0 ]; then
   echo "OK: Audit data accepted"
-  mv "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp" "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}"
+  mv "$DATADIR/audit/$SOURCE_HOST/$AUDFN.tmp" "$DATADIR/audit/$SOURCE_HOST/$AUDFN"
  else
   echo "ERR: Audit data corrupted"
   logwarn "Corrupt audit data detected"
-  touch "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp"
- rm "${DATADIR}/audit/$SOURCE_HOST/${AUDFN}.tmp"
+  touch "$DATADIR/audit/$SOURCE_HOST/$AUDFN.tmp"
+ rm "$DATADIR/audit/$SOURCE_HOST/$AUDFN.tmp"
  fi
- logstatus "Received audit packet from ${SOURCE_HOST}(${SOURCE})"
+ logstatus "Received audit packet from $SOURCE_HOST($SOURCE)"
 else
- logerr "Received audit packet from ${SOURCE_HOST}(${SOURCE}) with invalid filename"
+ logerr "Received audit packet from $SOURCE_HOST($SOURCE) with invalid filename"
 fi
 }
 
 rblog () {
 # FIXME Validate session with data from authentication phase using backend.
- LOGFN="$(date "+%Y/%m/%d")/$(date "+%H:%M:%S")-${PARAM}.log"
+ LOGFN="$(date "+%Y/%m/%d")/$(date "+%H:%M:%S")-$PARAM.log"
  loginfo "Session with $REMOTE_HOST transitioned to keystroke log receiver, see log:- $LOGFN"
- mkdir -p "${DATADIR}/keylogs/$(date "+%Y/%m/%d")"
- touch "${DATADIR}/keylogs/$LOGFN"
+ mkdir -p "$DATADIR/keylogs/$(date "+%Y/%m/%d")"
+ touch "$DATADIR/keylogs/$LOGFN"
  if which chattr; then
-  chattr +a "${DATADIR}/keylogs/$LOGFN"
+  chattr +a "$DATADIR/keylogs/$LOGFN"
  fi
- export PSK=${SESSKEY}
- cat | /usr/bin/openakc-hpenc -d -K PSK >> "${DATADIR}/keylogs/$LOGFN"
+ export PSK="$SESSKEY"
+ cat | /usr/bin/openakc-hpenc -d -K PSK >> "$DATADIR/keylogs/$LOGFN"
  unset PSK
 }
 
 ENC=0
 if [ "x$PROTO" == "xakcrsa1" ]; then
- while [ $(date +%s) -lt $TDAT ]
+ while [ "$(date +%s)" -lt $TDAT ]
  do
-  [ "x$ENC" == "x0" ] && read APIIN
+  [ "x$ENC" == "x0" ] && read -r APIIN
   cleanapi
   ENC=0
   logdebug "Proceessing AKCRSA1 message - \"$API\" - \"$PARAM\""
@@ -835,7 +849,7 @@ if [ "x$PROTO" == "xakcrsa1" ]; then
     ;;
    quit)
     PROTO="0"
-    echo "OK: Goodbye (AKCRSA1 Protocol)"
+    echo "OK: Goodbye (encrypted phase)"
     logstatus "Session with $REMOTE_HOST quit during AKCRSA1 phase"
     break
     ;;
