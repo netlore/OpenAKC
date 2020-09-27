@@ -291,7 +291,7 @@ nav {
   position: fixed;
   top: 220px;
   left:50%;
-  margin-left:-580px;
+  margin-left:-680px;
   text-align: right;
 
   ul {
@@ -449,15 +449,6 @@ footer {
 
   header ul, header p.view {
     position:static;
-  }
-  
-  footer{
-    text-align: center;
-    margin: 20px auto;
-    position: relative;
-    left:auto;
-    bottom:auto;
-    width:auto;
   }
 }
 
