@@ -1,4 +1,4 @@
-theme: jekyll-theme-leap-day
+theme: minima
 title: OpenAKC
 description: Authentication gateway, Dynamic SSH key manager & Privileged access management tool for Linux.
 header_pages:
