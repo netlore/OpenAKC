@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>OpenAKC | Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux.</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="OpenAKC" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux." />
+<meta property="og:description" content="Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux." />
+<link rel="canonical" href="https://netlore.github.io/OpenAKC/download/" />
+<meta property="og:url" content="https://netlore.github.io/OpenAKC/download/" />
+<meta property="og:site_name" content="OpenAKC" />
+<script type="application/ld+json">
+{"@type":"WebPage","headline":"OpenAKC","url":"https://netlore.github.io/OpenAKC/download/","description":"Authentication gateway, Dynamic SSH key manager &amp; Privileged access management tool for Linux.","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/OpenAKC/assets/css/style.css?v=0898fb959480480a072ed45b18da2de6c8cadd50">
+    <script src="https://code.jquery.com/jquery-3.3.0.min.js" integrity="sha256-RTQy8VOmNlT6b2PIRur37p6JEBZUE7o8wPgMvu18MC4=" crossorigin="anonymous"></script>
+    <script src="/OpenAKC/assets/js/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" integrity="sha256-3Jy/GbSLrg0o9y5Z5n1uw0qxZECH7C6OQpVBgNFYa0g=" crossorigin="anonymous"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>OpenAKC</h1>
+        <p>Authentication gateway, Dynamic SSH key manager & Privileged access management tool for Linux.</p>
+      </header>
+
+  <div id="banner">
+    <div class="banner-inner">
+      <span id="logo"></span>
+
+      <a href="https://netlore.github.io/OpenAKC/" class="button fork"><strong>Home</strong></a>
+      <div class="downloads">
+        <ul>
+          <li><a href="https://netlore.github.io/OpenAKC/download/" class="button">Download</a></li>
+          <li><a href="https://github.com/netlore/OpenAKC" class="button">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+  </div><!-- end banner -->
+
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <center> <h1> OpenAKC downloads. </h1> </center>
+
+<p><img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys-short.jpg" /></p>
+
+<p>You can find the <a href="https://github.com/netlore/OpenAKC/">source code for the project on GitHub</a> if you are interested in contributing to the code, reporting issues, or helping with documentation etc, but to simply make use of the project to support your users, please use the repos below.</p>
+
+<p>If you don’t see a package for the distribution you are using, please feel free to open an issue in the GitHub page above, if at all possible I will assist.  It may simply be that I need someone with access to that platform to test packages, and in cases where a specific OS package cannot be created, I will endeavour to create an install script. If you can assist with testing, or packaging for a particular platform, please make yourself known!.</p>
+
+<h3 id="debian--ubuntu">Debian / Ubuntu</h3>
+
+<h4 id="download-and-add-the-repository-key">Download and add the repository key:</h4>
+
+<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget -nc https://raw.githubusercontent.com/netlore/OpenAKC/master/resources/openakc.key
+sudo apt-key add openakc.key
+</code></pre></div></div>
+
+<h4 id="add-the-repository">Add the repository:</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>OS Version</th>
+      <th>Add Repo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Ubuntu/PopOS 18.04+<br />Mint 19.x</td>
+      <td>echo "deb https://netlore.github.io/OpenAKC/repos/ubuntu/18.04 ./" | sudo tee /etc/apt/sources.list.d/openakc.list</td>
+    </tr>
+    <tr>
+      <td>Ubuntu/PopOS 20.04+<br />Mint 20.x</td>
+      <td>echo "deb https://netlore.github.io/OpenAKC/repos/ubuntu/20.04 ./" | sudo tee /etc/apt/sources.list.d/openakc.list</td>
+    </tr>
+    <tr>
+      <td>Debian 10(buster)</td>
+      <td>echo "deb https://netlore.github.io/OpenAKC/repos/debian/10 ./" | sudo tee /etc/apt/sources.list.d/openakc.list</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="update-packages">Update packages:</h4>
+
+<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo apt update
+</code></pre></div></div>
+
+<h4 id="install-one-of-the-following">Install one of the following:</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>Host Type</th>
+      <th>Install Package</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OpenAKC Security Server</td>
+      <td>sudo apt install openakc-server</td>
+    </tr>
+    <tr>
+      <td>OpenAKC Client</td>
+      <td>sudo apt install openakc</td>
+    </tr>
+    <tr>
+      <td>OpenAKC Remote Management Host</td>
+      <td>sudo apt install openakc-tools</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="redhat--fedora">RedHat / Fedora</h3>
+
+<h4 id="dnf-based-distros-may-need-to-install-the-dnf-config-manager-module">DNF based distros may need to install the DNF config manager module:</h4>
+
+<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo dnf install 'dnf-command(config-manager)'
+</code></pre></div></div>
+
+<h4 id="add-the-repository-1">Add the repository:</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>OS Version</th>
+      <th>Add Repo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RedHat Enterprise 7<br />Centos 7<br />Oracle Linux 7</td>
+      <td>curl https://netlore.github.io/OpenAKC/repos/openakc-el7.repo | sudo tee /etc/yum.repos.d/openakc.repo</td>
+    </tr>
+    <tr>
+      <td>RedHat Enterprise 8<br />Centos 8<br />Oracle Linux 8</td>
+      <td>dnf config-manager --add-repo https://netlore.github.io/OpenAKC/repos/openakc-el8.repo</td>
+    </tr>
+    <tr>
+      <td>Fedora 31</td>
+      <td>dnf config-manager --add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora31.repo</td>
+    </tr>
+    <tr>
+      <td>Fedora 32</td>
+      <td>dnf config-manager --add-repo https://netlore.github.io/OpenAKC/repos/openakc-fedora32.repo</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Note that it is likely that the “openakc-el7.repo” will work on any Fedora version from 19 onwards, and the “openakc-el8.repo” will work on any Fedora 28 onwards, but this has not been explicitly tested.  Your feedback is welcomed.</p>
+
+<h4 id="install-one-of-the-following-use-yum-or-dnf-as-appropriate">Install one of the following (use yum or dnf as appropriate:</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>Host Type</th>
+      <th>Install Package</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OpenAKC Security Server</td>
+      <td>sudo yum/dnf install openakc-server</td>
+    </tr>
+    <tr>
+      <td>OpenAKC Client</td>
+      <td>sudo yum/dnf install openakc</td>
+    </tr>
+    <tr>
+      <td>OpenAKC Remote Management Host</td>
+      <td>sudo yum/dnf install openakc-tools</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="opensusesuse-enterprise">OpenSUSE/SUSE Enterprise</h3>
+
+<h5 id="warning-currently-suse-enterprise-12-will-get-less-frequent-updates-unless-there-is-a-critical-update">WARNING: Currently, SUSE Enterprise 12 will get less frequent updates, unless there is a critical update.</h5>
+
+<h4 id="add-the-repository-2">Add the repository:</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>OS Version</th>
+      <th>Add Repo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OpenSUSE 15</td>
+      <td>curl https://netlore.github.io/OpenAKC/repos/openakc-opensuse15.repo | sudo tee /etc/zypp/repos.d/openakc.repo</td>
+    </tr>
+    <tr>
+      <td>SUSE Enterprise 15</td>
+      <td>curl https://netlore.github.io/OpenAKC/repos/openakc-sles15.repo | sudo tee /etc/zypp/repos.d/openakc.repo</td>
+    </tr>
+    <tr>
+      <td>SUSE Enterprise 12</td>
+      <td>curl https://netlore.github.io/OpenAKC/repos/openakc-sles12.repo | sudo tee /etc/zypp/repos.d/openakc.repo</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="install-one-of-the-following-1">Install one of the following:</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th>Host Type</th>
+      <th>Install Package</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OpenAKC Security Server</td>
+      <td>sudo zypper install openakc-server</td>
+    </tr>
+    <tr>
+      <td>OpenAKC Client</td>
+      <td>sudo zypper install openakc</td>
+    </tr>
+    <tr>
+      <td>OpenAKC Remote Management Host</td>
+      <td>sudo zypper install openakc-tools</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="basic-setup">Basic Setup</h3>
+
+<p>For a simple setup using a single security server with either no users or where the users are using the security server itself as a jump point, the only configuration required is to ensure that the file on the <strong>client</strong> machine <em>/etc/openakc/openakc.conf</em> correctly defines the server(s).   The file is pre-configured with the unqualified names “openakc01” and “openakc02” already populated, so you could simply add these names to your DNS and potentially no extra configuration would be required at the clients.
+Be aware that the client files are marked with the immutable flag, so you may need to alter the file attributes before you can edit the client configuration (even as root).  Notes on how to do this are contained in the “readme” file located in the config folder.</p>
+
+<h3 id="support-or-contact">Support or Contact</h3>
+
+<h5 id="note-at-this-time-the-documentation-links-to-an-incomplete-document-feel-free-to-assist-on-github">Note: At this time, the documentation links to an incomplete document, feel free to assist on GitHub.</h5>
+
+<p>Check out our <a href="https://github.com/netlore/OpenAKC/raw/master/docs/OpenAKC_Admin_Guide.pdf">Documentation</a>, <a href="https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA">Demo Videos</a> or <a href="mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query">Contact</a> and we’ll help you sort it out.</p>
+
+
+      </section>
+      <footer>
+        
+          <p>Project maintained by <a href="https://github.com/netlore">netlore</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+
+    
+  </body>
+</html>
