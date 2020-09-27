@@ -1,6 +1,6 @@
-# OpenAKC (Download site [Available HERE][download])
+# OpenAKC (Homepage & Downloads [HERE][homepage])
 
-<img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys.jpg">
+<img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/OpenAKCKeys-short.jpg">
 
 #### OpenAKC provides SSH "Self Service SSH key management for users", "Centralised SSH Key Management for static trust" and can offer advanced features for tracking, auditing and controlling what users (and sysadmins) do.
 
@@ -84,4 +84,4 @@ Please note that most of this tool is created using shell code, I hope this make
 
 [demo]: https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA
 [caps]: https://man7.org/linux/man-pages/man7/capabilities.7.html
-[download]: https://netlore.github.io/OpenAKC/download/
+[homepage]: https://netlore.github.io/OpenAKC/download/
