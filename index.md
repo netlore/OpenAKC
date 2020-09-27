@@ -1,3 +1,4 @@
+<a href="https://netlore.github.io/OpenAKC/download" class="button fork"><strong>Download</strong></a>
 
 <img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/AKCKeys-short.jpg">
 
@@ -36,6 +37,8 @@ OpenAKC can provide session recordings, so you can review what users did, or eve
 
 It can reach in to the Linux kernel and switch off certain [capabilities](https://man7.org/linux/man-pages/man7/capabilities.7.html) in the process tree created by a login, so you could restrict what the "root" account can do, depending on who is using it... and even limit what permissions can be granted to a normal user via sudo, or setuid binaries.  The documentation shows examples of this being used to deny the root account access to "user" data, where that might be something that a sysadmin would not need to access in the normal course of their work, or perhaps would need separate approval to access.  Similarly it could be used to block the loading of kernel modules, which could help with malware protection. More on this in the documentation!
 
+<img src="https://raw.githubusercontent.com/netlore/OpenAKC/master/docs/resources/OpenAKC_Demo.gif">
+
 It can override the user's shell, perhaps not permitting them a shell at all, but only allow certain commands to be executed remotely.
 
 It can perform search/replace functions on files delivered by SCP, perhaps limiting a user to SCP files only into a specific folder.
@@ -66,6 +69,6 @@ Please see the download page here to see the available OS repos - [DOWNLOAD](htt
 
 ### Support or Contact
 
-Again, at the time of writing, the documentation is still not complete, but feel free to contact via GitHub, YouTube, or via email - [Contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query) and we’ll help you sort it out.
+Again, we would love any feedback or contributions, so feel free to contact via GitHub, YouTube, or via email - [Contact](mailto:james@fsck.co.uk?subject=[OpenAKC]%20Contact%20Form%20Query) and we’ll help you sort it out.
 
 We're always keen for new ideas for examples, as more demo videos need to be made!
