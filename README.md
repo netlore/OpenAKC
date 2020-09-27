@@ -84,4 +84,4 @@ Please note that most of this tool is created using shell code, I hope this make
 
 [demo]: https://www.youtube.com/channel/UCI1hoep-rTNVggG25jHkbiA
 [caps]: https://man7.org/linux/man-pages/man7/capabilities.7.html
-[homepage]: https://netlore.github.io/OpenAKC/download/
+[homepage]: https://netlore.github.io/OpenAKC/
