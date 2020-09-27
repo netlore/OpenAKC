@@ -291,7 +291,7 @@ nav {
   position: fixed;
   top: 220px;
   left:50%;
-  margin-left:-710px;
+  margin-left:-720px;
   text-align: right;
 
   ul {
@@ -413,9 +413,14 @@ footer {
 
     p { display: none;}
   }
-
+  
   #banner {
+    width: 100%;
     top: 80px;
+
+    .downloads {
+        margin-right: 60px;
+      }
 
     .fork {
       float: left;
@@ -423,9 +428,11 @@ footer {
       margin-left: 0px;
     position:fixed;
     left:20px;
-
       }
-  }
+    
+    #logo {
+      margin-right: 15px;
+    }
 
   section {
     margin-top: 130px;
