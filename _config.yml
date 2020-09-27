@@ -1,7 +1,3 @@
-theme: lanyon
+theme: jekyll-theme-leap-day
 title: OpenAKC
 description: Authentication gateway, Dynamic SSH key manager & Privileged access management tool for Linux.
-header_pages:
-  - about.md
-  - portfolio.md
-  - download/index.md
