@@ -65,7 +65,7 @@ There are also a number of examples and demos on our YouTube page here - [Demo V
 
 The "Quickstart Guide" on GitHub does describe how to build your own packages, but by far the easiest way to start working with OpenAKC would be to add one of the OS repos provided.  Again, if you have a platform we do not currently support, please let us know... a balance between packaging and implementing new features has to be maintained, so some less common platforms may ultimately be supported with an install script, rather than a package as this will be necessary to support any non-Linux platforms also (thou these will not have access to some of the Linux specific features such as "capabilities")
 
-Please see the download page here to see the available OS repos - [DOWNLOAD](https://netlore.github.io/OpenAKC/download/)
+Please see the download page here to see the available OS repos - [Download](https://netlore.github.io/OpenAKC/download/)
 
 ### Support or Contact
 
