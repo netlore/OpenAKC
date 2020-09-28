@@ -18,10 +18,13 @@ Coding Standards
 Currently much of the code was written before these standards were fully
 established, however:-
 
-1, 1 space indent
-2, lower case variables (I know this is far from what exists, but I'm working on it)
-3, don't call external programs (grep, awk, sed etc.) if an internal alternative exists
-4, follow coding standards/advice from "shellcheck" if possible, and where it will not make the code unclear
+1. 1 space indent
+
+2. lower case variables (I know this is far from what exists, but I'm working on it)
+
+3. don't call external programs (grep, awk, sed etc.) if an internal alternative exists
+
+4. follow coding standards/advice from "shellcheck" if possible, and where it will not make the code unclear
 
 
 Directory Structure and Source
