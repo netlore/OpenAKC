@@ -1,6 +1,6 @@
 **Blocking For 1.0 Release**
 
-* Code review, fix up input validation and more graceful error handling plus
+* IN PROGRESS - Code review, fix up input validation and more graceful error handling plus
   additional testing (initially for server & session).
 
 
@@ -8,7 +8,7 @@
 
 * Post 1.0 code review/refactor of client code.
 
-* IN PROGRESS - Migrate functions (including data) into a libexec folder
+* STARTED - Migrate functions (including data) into a libexec folder
   (eventually facilitate alternate data stores).
 
 * Refactor code to match coding standards as they are defined
@@ -25,7 +25,8 @@
   rights to registered users(using users OpenAKC public key in their user
   record)
 
-* Write reason for authentication failure into the session record.
+* Write reason for authentication failure into the session record (so it may
+  be recalled by the user, Eg. openakc explain).
 
 * Can we add passphrase to admin private key for making role updates?
 
