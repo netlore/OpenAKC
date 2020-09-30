@@ -75,7 +75,8 @@ PRVKEY="openakc-system-server-$(hostid)-prvkey.pem"
 PUBKEY="openakc-system-server-$(hostid)-pubkey.pem"
 SESSKEY=""
 PROTO="0"
-# REMOTE_HOST defined by xinetd.
+# REMOTE_HOST defined by xinetd, REMOTE_ADDR by systemd.
+[ "x$REMOTE_HOST" == "x" ]&&REMOTE_HOST="$REMOTE_ADDR"
 REMOTE_HOST="${REMOTE_HOST//::ffff:/}"
 
 #
