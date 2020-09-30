@@ -88,7 +88,7 @@ TDAT=$((SDAT+tmout))
 #
 # Database hack
 #
-export PGPASSWORD="${pgpassword}"
+export PGPASSWORD="$pgpassword"
 
 #
 # Includes Functions
@@ -359,7 +359,7 @@ data_getrole () {
  cnt=$(find "$DATADIR/data/hosts/$hn"* 2> /dev/null | wc -l)
  if [ "$cnt" -eq 1 ]||[ "x$hn" == "xdefault" ]; then
   if [ "x$hn" != "xdefault" ]; then
-   hnl="$(find "${DATADIR}/data/hosts/$hn"* 2> /dev/null)"
+   hnl="$(find "$DATADIR/data/hosts/$hn"* 2> /dev/null)"
    hn="$(basename "$hnl")"
   else
    hn="DEFAULT"
@@ -368,7 +368,7 @@ data_getrole () {
   if [ ! -r "$fn" ];then
    cat <<EOF > "$fn.tmp"
 # Edit this file to control permissions managed by OpenAKC.
-# Rules for ${usr}@${hn}
+# Rules for $usr@$hn
 #
 # First matched rule will apply.
 # Each rule begins with a RULE line "RULE=date,date,type,tag"
@@ -472,7 +472,7 @@ readsesscode () {
 rbmessage () {
 #FIXME Check exit code of openssl
  ENC=1
- APIIN="$(echo "$PARAM" | base64 -d | openssl enc -d $SSLOPTS$SESSKEY 2> /dev/null | tr -d '\r')"
+ APIIN="$(echo "$PARAM" | base64 -d | openssl enc -d $SSLOPTS"$SESSKEY" 2> /dev/null | tr -d '\r')"
  logdebug "Message decoded - \"$APIIN\""
 }
 
@@ -483,7 +483,7 @@ rbsessiondata () {
  RPRT="$(echo "$APIIN" | tr -d '\r' | awk '{print $4}')"
  RPTY="$(echo "$APIIN" | tr -d '\r' | awk '{print $6}')"
  data_sessionupd
- echo "$SESSDAT" | openssl enc $SSLOPTS$SESSKEY 2> /dev/null | base64 -w 0; echo
+ echo "$SESSDAT" | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0; echo
  echo "OK: Session data sent"
  HNS="$(echo "$SESSDAT" | cut -d ";" -f 1)" # Short Hostname
  HND="$(echo "$SESSDAT" | cut -d ";" -f 2)" # Domain Name
@@ -561,7 +561,7 @@ rbauth () {
 #
  if [ "x${authdata["PUBKEY"]}" != "x" ]; then
   ( ${PREEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" ) 2> /dev/null 1> /dev/null
-  preres=${?}
+  preres="$?"
  else
   reply="OK: Auth request processed (Unknown Key)"
  fi
@@ -591,24 +591,24 @@ rbauth () {
 
 #
  fi
- if [ ${grant} -eq 1 ]; then
-  ( ${POSTEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" ACCEPT "${authdata["RPPID"]}-${authdata["HID"]}" ) 2> /dev/null 1> /dev/null
-  replylog="User ${authdata["USR"]} authenticated on ${authdata["HNS"]}(${authdata["HIP"]}) with session id ${authdata["RPPID"]}-${authdata["HID"]} using key ${authdata["KEYF"]}(${returnval["RUSR"]})"
+ if [ "$grant" -eq 1 ]; then
+  ( $POSTEXEC "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" ACCEPT "${authdata["RPPID"]}-${authdata["HID"]}" ) 2> /dev/null 1> /dev/null
+  replylog="User ${authdata["USR"]} authenticated on ${authdata["HNS"]}(${authdata["HIP"]}) with session id ${authdata["RPPID"]}-${authdata["HID"]} using key ${authdata["KEYF"]}(${authdata["RUSR"]})"
   replykey="no-port-forwarding,no-X11-forwarding,from=\"${authdata["FRM"]}\",command=\"/usr/bin/openakc-session ${authdata["API"]} ${authdata["RPPID"]} ${authdata["HID"]} ${authdata["HNS"]}\" ${authdata["PUBKEY"]}"
   if [ "x${authdata["CMD"]}" == "xinternal-sftp" ]; then
    replykey="no-port-forwarding,no-X11-forwarding,from=\"${authdata["FRM"]}\",command=\"internal-sftp -f LOCAL6 -l INFO\" ${authdata["PUBKEY"]}"
   fi
  else
-  ( ${POSTEXEC} "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" DENY "${authdata["RPPID"]}-${authdata["HID"]}" ) 2> /dev/null 1> /dev/null
-  replylog="User ${authdata["USR"]} denied on ${authdata["HNS"]}(${authdata["HIP"]}) with session id ${authdata["RPPID"]}-${authdata["HID"]} using key ${authdata["KEYF"]}(${returnval["RUSR"]})"
+  ( $POSTEXEC "${authdata["USR"]}@${authdata["HNS"]}.${authdata["HND"]}" "${authdata["HIP"]}" "${authdata["KEYF"]}" "${authdata["RUSR"]}" DENY "${authdata["RPPID"]}-${authdata["HID"]}" ) 2> /dev/null 1> /dev/null
+  replylog="User ${authdata["USR"]} denied on ${authdata["HNS"]}(${authdata["HIP"]}) with session id ${authdata["RPPID"]}-${authdata["HID"]} using key ${authdata["KEYF"]}(${authdata["RUSR"]})"
   replykey="command=\"/usr/bin/openakc-session ${authdata["API"]} ${authdata["RPPID"]} ${authdata["HID"]} ${authdata["HNS"]}\" ssh-rsa DENIED"
  fi
  
  #
  logdebug "Sending key $replykey"
- echo "$replylog" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
- echo "$replyflg" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
- echo "$replykey" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
+ echo "$replylog" | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0; echo
+ echo "$replyflg" | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0; echo
+ echo "$replykey" | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0; echo
  echo "$reply"
 } 
 
@@ -632,7 +632,7 @@ rbchallenge () {
  CHAL=$(openssl rand -hex 26 2> /dev/null)
  if [ -r "$KEYFILE" ]; then
   CHALCODE=$(echo "$CHAL" | openssl rsautl -encrypt -inkey "$KEYFILE" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
-  echo "$CHALCODE" | openssl enc $SSLOPTS$SESSKEY 2> /dev/null | base64 -w 0; echo
+  echo "$CHALCODE" | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0; echo
   logdebug "Challenge sent - \"$CHAL\""
   echo "OK: Challenge issued"
  else
@@ -651,7 +651,7 @@ rbhandshake () {
   PERMS="${KEYTYPE^^} $PERMS"
   PERMS=$(echo -e "$PERMS" | sed -e 's/[[:space:]]*$//')
   echo "OK: Handshake accepted. Permission list now \"$PERMS\""
-  logdebug "PERMS set to \"${PERMS}\""
+  logdebug "PERMS set to \"$PERMS\""
   logstatus "Authenticated session established with $REMOTE_HOST"
  else
   echo "ERR: Handshake failed"
@@ -669,7 +669,7 @@ rbgetrole () {
   logstatus "Validated role read request from \"$PERMUSER@$REMOTE_HOST\" for \"$usr@$hn\""
   DAT="$(date +%s)"
   data_getrole
-  echo "$rolefile" | gzip | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0; echo
+  echo "$rolefile" | gzip | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0; echo
   echo "$reply"
   logdebug "sent request processed"
  else

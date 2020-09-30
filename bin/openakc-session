@@ -51,13 +51,13 @@ FAKESUDO="no"
 #
 # Includes Functions
 #
-source "/var/lib/openakc/libexec/functions-${RELEASE}.cache"
+source "$DATADIR/libexec/functions-$RELEASE.cache"
 
 #
 # Local Functions
 #
 isok () {
- ISOK=$(echo $OK | cut -d ":" -f 1)
+ ISOK=$(echo "$OK" | cut -d ":" -f 1)
  if [ "x$ISOK" != "xOK" ]; then
   logerr "Quitting due to unexpected command response - $OK"
   echo "quit" >&5
@@ -68,15 +68,16 @@ isok () {
 
 sendmessage () {
 #FIXME redirect stderr, and check exit code
- MESSAGE=$(echo "$MESSAGE" | openssl enc ${SSLOPTS}${SESSKEY} 2> /dev/null | base64 -w 0 | tr -d '\r')
+ MESSAGE=$(echo "$MESSAGE" | openssl enc $SSLOPTS"$SESSKEY" 2> /dev/null | base64 -w 0 | tr -d '\r')
  echo "message $MESSAGE" >&5
 }
 
 #
 # OpenAKC command line check.
 #
-if [ "x$(cat /proc/$PPID/cmdline|cut -c 1-4)" != "xsshd" ]; then
- echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is ${RELEASE}."
+tmpcmd=$(tr -d '\0' < "/proc/$PPID/cmdline") 2> /dev/null
+if [ "x${tmpcmd:0:4}" != "xsshd" ]; then
+ echo "OpenAKC Copyright (C) 2019-2020  A. James Lewis.  Version is $RELEASE."
  echo ""
  echo "This program comes with ABSOLUTELY NO WARRANTY; for details type \"license\"".
  echo "This is free software, and you are welcome to redistribute it"
@@ -97,13 +98,13 @@ else
  logerr "Unrecognised OpenSSL version, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 908 ];then
+if [ "$OSSLV" -ge 908 ];then
  CPROTOS="akcrsa1" # Space Separated List
 else
  logerr "OpenSSL too old, exiting."
  exit 1
 fi
-if [ $OSSLV -ge 10101 ];then
+if [ "$OSSLV" -ge 10101 ];then
  CPROTOS="akcrsa1 akcrsa1.1" # Space Separated List
 fi
 
@@ -111,8 +112,8 @@ fi
 #
 # Get Configuration File (or exit).
 #
-if [ -r $CONFFILE ]; then
- source ${CONFFILE}
+if [ -r "$CONFFILE" ]; then
+ source "$CONFFILE"
 else
  logerr "Can't find config file, exiting."
  exit 1
@@ -121,8 +122,8 @@ fi
 #
 # Transient Values
 #
-DAT=$(date "+%c")
-SDAT=$(date "+%s")
+DAT="$(date "+%c")"
+SDAT="$(date "+%s")"
 
 #
 # Initial Startup
@@ -144,7 +145,7 @@ if [ "x$ENABLED" != "xyes" ]; then
 fi
 #
 if [ "$PORT" -eq "$PORT" ] 2>/dev/null; then
- if [ $PORT -gt 65535 ]; then
+ if [ "$PORT" -gt 65535 ]; then
   logerr "Warning - TCP port $PORT is out of range, exiting"
   exit 1
  fi
@@ -159,20 +160,20 @@ fi
 #
 apicall () {
  # Connect to API
- exec 5<>/dev/tcp/${1}/${PORT}
- success=${?}
- if [ $success -ne 0 ]; then
-  exit $success
+ exec 5<>/dev/tcp/"$1"/"$PORT"
+ success=$?
+ if [ "$success" -ne 0 ]; then
+  exit "$success"
  fi
  
- # NB If we're still going, then we're it!
+ # If we're still going, then we're it!
  
- read TAGLINE <&5
- read OK <&5
+ read -r TAGLINE <&5
+ read -r OK <&5
  isok
  echo "getproto" >&5
- read PROTOS <&5
- read OK <&5
+ read -r PROTOS <&5
+ read -r OK <&5
  isok
  
  #
@@ -210,12 +211,12 @@ apicall () {
  # Initialise Public Key
  #
  echo "setproto $PROTO" >&5
- read OK <&5
+ read -r OK <&5
  isok
 
- if [ ! -f "${DATADIR}/keys/openakc-server-pubkey-${1}.pem" ]; then
+ if [ ! -f "$DATADIR/keys/openakc-server-pubkey-$1.pem" ]; then
   logerr "Missing public key, exiting!"
-  echo "AKC Session Failed, public key ${DATADIR}/keys/openakc-server-pubkey-${1}.pem inaccessible."
+  echo "AKC Session Failed, public key $DATADIR/keys/openakc-server-pubkey-$1.pem inaccessible."
   echo "Please contact your Sysadmin or Security Administrator"
   exit 1
  fi
@@ -224,10 +225,10 @@ apicall () {
  # Generate Session Key and register it.
  #
  SESSKEY=$(openssl rand -hex 26 2> /dev/null | tr '0' 'z'|tr '2' 'j')
- SESSCODE=$(echo $SESSKEY | openssl rsautl -encrypt -inkey "${DATADIR}/keys/openakc-server-pubkey-${1}.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
+ SESSCODE=$(echo "$SESSKEY" | openssl rsautl -encrypt -inkey "$DATADIR/keys/openakc-server-pubkey-$1.pem" -pubin -in /dev/stdin | base64 -w 0 | tr -d '\r')
 
  echo "sessioncode $SESSCODE" >&5
- read OK <&5
+ read -r OK <&5
  isok
 
  if [ "x$SESSCODE" = "x" ]; then
@@ -236,36 +237,36 @@ apicall () {
   exit 1
  fi
 
- MESSAGE=$(echo "sessiondata ${RPPID}-$(hostid)" ${SSH_CLIENT} ${SSH_TTY});sendmessage
- read SESSDAT <&5
- read OK <&5
+ MESSAGE="sessiondata $RPPID-$(hostid) $SSH_CLIENT $SSH_TTY";sendmessage
+ read -r SESSDAT <&5
+ read -r OK <&5
  isok
  
- SESSDAT="$(echo "$SESSDAT" | base64 -d | openssl enc -d ${SSLOPTS}${SESSKEY} 2> /dev/null | tr -d '\r')"
- logdebug "Session Data - ${SESSDAT}"
- HNS="$(echo $SESSDAT | cut -d ";" -f 1)" # Short Hostname
- HND="$(echo $SESSDAT | cut -d ";" -f 2)" # Domain Name
- HID="$(echo $SESSDAT | cut -d ";" -f 3)" # Hostid
- HIP="$(echo $SESSDAT | cut -d ";" -f 4)" # Host IP
- USR="$(echo $SESSDAT | cut -d ";" -f 5)" # Username
- KEYF="$(echo $SESSDAT | cut -d ";" -f 6)" # Key Fingerprint
- API="$(echo $SESSDAT | cut -d ";" -f 7)" # API Hostname
- REL="$(echo $SESSDAT | cut -d ";" -f 8)" # Client Code Release
- RPPID="$(echo $SESSDAT | cut -d ";" -f 9)" # Remote Parent PID
- RUSR="$(echo $SESSDAT | cut -d ";" -f 10)" # Remote Username
- SHL="$(echo $SESSDAT | cut -d ";" -f 11)" # Shell
- BSCP="$(echo $SESSDAT | cut -d ";" -f 12)" # SCP replace
- CAP="$(echo $SESSDAT | cut -d ";" -f 13)" # Capabilities
- FRM="$(echo $SESSDAT | cut -d ";" -f 14)" # Permitted Source IP
- TIM="$(echo $SESSDAT | cut -d ";" -f 15)" # Daily Time Window
- BCMD="$(echo $SESSDAT | cut -d ";" -f 16)" # Permitted Remote Commands
- DAY="$(echo $SESSDAT | cut -d ";" -f 17)" # Permitted Days
- REC="$(echo $SESSDAT | cut -d ";" -f 18 | tr 'A-Z' 'a-z')" # Record Session
- EXT="$(echo $SESSDAT | cut -d ";" -f 19)" # Extensions
- RIP="$(echo $SESSDAT | cut -d ";" -f 20)" # Remote IP
+ SESSDAT="$(echo "$SESSDAT" | base64 -d | openssl enc -d $SSLOPTS"$SESSKEY" 2> /dev/null | tr -d '\r')"
+ logdebug "Session Data - $SESSDAT"
+ HNS="$(echo "$SESSDAT" | cut -d ";" -f 1)" # Short Hostname
+ HND="$(echo "$SESSDAT" | cut -d ";" -f 2)" # Domain Name
+ HID="$(echo "$SESSDAT" | cut -d ";" -f 3)" # Hostid
+ HIP="$(echo "$SESSDAT" | cut -d ";" -f 4)" # Host IP
+ USR="$(echo "$SESSDAT" | cut -d ";" -f 5)" # Username
+ KEYF="$(echo "$SESSDAT" | cut -d ";" -f 6)" # Key Fingerprint
+ API="$(echo "$SESSDAT" | cut -d ";" -f 7)" # API Hostname
+ REL="$(echo "$SESSDAT" | cut -d ";" -f 8)" # Client Code Release
+ RPPID="$(echo "$SESSDAT" | cut -d ";" -f 9)" # Remote Parent PID
+ RUSR="$(echo "$SESSDAT" | cut -d ";" -f 10)" # Remote Username
+ SHL="$(echo "$SESSDAT" | cut -d ";" -f 11)" # Shell
+ BSCP="$(echo "$SESSDAT" | cut -d ";" -f 12)" # SCP replace
+ CAP="$(echo "$SESSDAT" | cut -d ";" -f 13)" # Capabilities
+ FRM="$(echo "$SESSDAT" | cut -d ";" -f 14)" # Permitted Source IP
+ TIM="$(echo "$SESSDAT" | cut -d ";" -f 15)" # Daily Time Window
+ BCMD="$(echo "$SESSDAT" | cut -d ";" -f 16)" # Permitted Remote Commands
+ DAY="$(echo "$SESSDAT" | cut -d ";" -f 17)" # Permitted Days
+ REC="$(echo "$SESSDAT" | cut -d ";" -f 18 | tr '[:upper:]' '[:lower:]')" # Record Session
+ EXT="$(echo "$SESSDAT" | cut -d ";" -f 19)" # Extensions
+ RIP="$(echo "$SESSDAT" | cut -d ";" -f 20)" # Remote IP
  #
- CMD="$(base64 -d <<< $BCMD)"
- SCP="$(base64 -d <<< $BSCP)"
+ CMD="$(base64 -d <<< "$BCMD")"
+ SCP="$(base64 -d <<< "$BSCP")"
  
  RESTRICT=${CAP}
  KLOG=0
@@ -278,8 +279,10 @@ apicall () {
    exec 5>&-
    exit 1
   fi
-  export OCOMMAND="$(which $(echo $(echo $SSH_ORIGINAL_COMMAND | cut --delimiter=" " -f 1)))"
-  export BCOMMAND="$(basename "${OCOMMAND}")"
+  OCOMMAND="$(which "$(echo "$SSH_ORIGINAL_COMMAND" | cut --delimiter=" " -f 1)")"
+  export OCOMMAND
+  BCOMMAND="$(basename "$OCOMMAND")"
+  export BCOMMAND
   PERMITC=0
  else
   export OCOMMAND=""
@@ -290,15 +293,15 @@ apicall () {
  saveifs="$IFS"
  IFS=";"
  for i in $CMD; do
-  logdebug "BCOMMAND = ${BCOMMAND} vs ${i}"
-  if [ "x${BCOMMAND}" == "x${i}" ]||[ "x${i}" == "xany" ]||[ "x${OCOMMAND}" == "x${i}" ]; then
-   if [ "x${SSH_ORIGINAL_COMMAND:0:1}" != "x/" ]||[ "x${i}" == "xany" ]; then
-    logdebug "Permitting Relative Path ${i}"
+  logdebug "BCOMMAND = $BCOMMAND vs $i"
+  if [ "x$BCOMMAND" == "x$i" ]||[ "x$i" == "xany" ]||[ "x$OCOMMAND" == "x$i" ]; then
+   if [ "x${SSH_ORIGINAL_COMMAND:0:1}" != "x/" ]||[ "x$i" == "xany" ]; then
+    logdebug "Permitting Relative Path $i"
     PERMITC=1
    fi
-   logdebug "Compare = ${SSH_ORIGINAL_COMMAND} with ${i}"
-   if [ "x${SSH_ORIGINAL_COMMAND:0:1}" == "x/" ]&&[ "x${SSH_ORIGINAL_COMMAND}" == "x${i}" ]; then
-    logdebug "Permitting Absolute Path ${i}"
+   logdebug "Compare = $SSH_ORIGINAL_COMMAND with $i"
+   if [ "x${SSH_ORIGINAL_COMMAND:0:1}" == "x/" ]&&[ "x$SSH_ORIGINAL_COMMAND" == "x$i" ]; then
+    logdebug "Permitting Absolute Path $i"
     PERMITC=1
    fi
   fi
@@ -306,23 +309,23 @@ apicall () {
  IFS="$saveifs"
  #
  if [ $PERMITC -eq 0 ]; then
-  if [ "x${FAKESUDO}" == "xyes" ]; then
-   logger -t sudo -p authpriv.info "  ${RUSR} : command not allowed ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+  if [ "x$FAKESUDO" == "xyes" ]; then
+   logger -t sudo -p authpriv.info "  $RUSR : command not allowed ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SSH_ORIGINAL_COMMAND ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
   fi
-  logauth "Remote user ${RUSR} : OpenAKC role does not permit command ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+  logauth "Remote user $RUSR : OpenAKC role does not permit command ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SSH_ORIGINAL_COMMAND ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
   if [ "x$BCOMMAND" != "xsftp-server" ]; then
-   echo "OpenAKC role does not permit command, must match the following command(s) - \"${CMD}\""
+   echo "OpenAKC role does not permit command, must match the following command(s) - \"$CMD\""
   fi
   echo "quit" >&5
   exec 5>&-
   exit 1
  fi 
  
- TMPFILE="$(mktemp -u).openakc-$(whoami)-${RPPID}-$(hostid)"
- TMPHEAD="${TMPFILE}.head"
-# TMPFIFO="${TMPFILE}.fifo"
+ TMPFILE="$(mktemp -u).openakc-$(whoami)-$RPPID-$(hostid)"
+ TMPHEAD="$TMPFILE.head"
+# TMPFIFO="$TMPFILE.fifo"
 # if [ "x${REC}" == "xyes" ]; then
-#  TMPOUT=${TMPFIFO}
+#  TMPOUT="$TMPFIFO"
 # else
 #  TMPOUT="/dev/null"
 # fi
@@ -332,158 +335,159 @@ apicall () {
  
  if [ "x$SSH_TTY" != "x" ]; then
   logdebug "Going to interactive mode"
-  if [ "x${HIDE}" != "xyes" ]; then
-   echo "OpenAKC (v${RELEASE}) - Interactive Session Initialized"
+  if [ "x$HIDE" != "xyes" ]; then
+   echo "OpenAKC (v$RELEASE) - Interactive Session Initialized"
    echo
-  elif [ "x${QUIZ}" == "xyes" ]; then
+  elif [ "x$QUIZ" == "xyes" ]; then
    echo "OpenAKC - Interactive Session Initialized"
    echo
   fi
 #
-  if [ "x${QUIZ}" == "xyes" ]; then
-   logstatus "Presenting user quiz for session ${RPPID}-$(hostid)"
+  if [ "x$QUIZ" == "xyes" ]; then
+   logstatus "Presenting user quiz for session $RPPID-$(hostid)"
    echo "Please enter the reason for your connection"
    echo -n "Title / Change Number: "
-   read -t 30 i
-   [ $? -gt 100 ]&&echo "Timeout!"
+   read -rt 30 i
+   [ $? -gt 100 ]&&echo "Timeout!"&&i="Input timed out!"
    echo
-   echo "Title: $i" > "${TMPHEAD}"
+   echo "Title: $i" > "$TMPHEAD"
    echo "Description (blank line to end)"
    while true
    do
-   read -t 45 j
-   [ $? -gt 100 ]&&echo "Timeout!"
-   echo "Summary: $j" >> "${TMPHEAD}"
+   read -rt 45 j
+   [ $? -gt 100 ]&&echo "Timeout!"&&j="Input timed out!"
+   echo "Summary: $j" >> "$TMPHEAD"
    [ "x$j" == "x" ]&&break
    done
   else
-   echo "Title: Quiz Disabled" > "${TMPHEAD}"
+   echo "Title: Quiz Disabled" > "$TMPHEAD"
   fi
-  echo "" >> "${TMPHEAD}"
-  echo "Network Source: ${SSH_CLIENT}" >> "${TMPHEAD}"
-  echo "Key Used: ${KEYF}" >> "${TMPHEAD}"
-  echo "TTY: ${SSH_TTY}" >> "${TMPHEAD}"
-  echo "Term Type: ${TERM}" >> "${TMPHEAD}"
-  echo "Term Language: ${LANG}" >> "${TMPHEAD}"
-  echo "Shell: ${SHL}" >> "${TMPHEAD}"
-  echo "Restricted Capabilties: ${CAP}" >> "${TMPHEAD}"
-  echo "Session Logging Enabled: ${REC}" >> "${TMPHEAD}"
-  echo "" >> "${TMPHEAD}"
+  {
+   echo ""
+   echo "Network Source: $SSH_CLIENT"
+   echo "Key Used: $KEYF"
+   echo "TTY: $SSH_TTY"
+   echo "Term Type: $TERM"
+   echo "Term Language: $LANG"
+   echo "Shell: $SHL"
+   echo "Restricted Capabilties: $CAP"
+   echo "Session Logging Enabled: $REC"
+   echo ""
+  } >> "$TMPHEAD"
 
-  MESSAGE=$(echo "logturn ${USR}@${HNS}.${RUSR}.${RPPID}-$(hostid)");sendmessage
+  MESSAGE="logturn $USR@$HNS.$RUSR.$RPPID-$(hostid)";sendmessage
   KLOG=1
 #
 #
-  if [ "x$RESTRICT" != "x" ]&&[ "x${HIDE}" == "xno" ]; then
+  if [ "x$RESTRICT" != "x" ]&&[ "x$HIDE" == "xno" ]; then
    echo "Restrictions Applied":-
-   for i in `echo $RESTRICT | tr ',' ' '`
-   do
+   for i in $(echo "$RESTRICT" | tr ',' ' '); do
     echo "Captbility $i withdrawn by role config"
    done
    echo
   fi
 
-  if [ "x${PERMITROOT}${EUID}" != "xno0" ]; then
-   if [ "x${FAKESUDO}" == "xyes" ]; then
-    logger -t sudo -p authpriv.info "  ${RUSR} : TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+  if [ "x$PERMITROOT$EUID" != "xno0" ]; then
+   if [ "x$FAKESUDO" == "xyes" ]; then
+    logger -t sudo -p authpriv.info "  $RUSR : TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SHL ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
    fi
-   logauth "Remote user ${RUSR} : granted access ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
-   export PSK=${SESSKEY}
-   if [ "x${REC}" == "xyes" ]; then
-    /usr/bin/openakc-cap --drop=$RESTRICT -- -c "script -ec \"PSK="OpenAKC" ${SHL}\" -qaf >(cat \"${TMPHEAD}\" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)"
+   logauth "Remote user $RUSR : granted access ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SHL ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
+   export PSK="$SESSKEY"
+   if [ "x$REC" == "xyes" ]; then
+    /usr/bin/openakc-cap --drop="$RESTRICT" -- -c "script -ec \"PSK=OpenAKC $SHL\" -qaf >(cat \"$TMPHEAD\" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)"
    else
-    cat "${TMPHEAD}" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5
-    /usr/bin/openakc-cap --drop=$RESTRICT -- -c "PSK="OpenAKC" ${SHL}"
+    cat "$TMPHEAD" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5
+    /usr/bin/openakc-cap --drop="$RESTRICT" -- -c "PSK=OpenAKC $SHL"
    fi
    KEXIT=$?
    unset PSK
   else
-   if [ "x${FAKESUDO}" == "xyes" ]; then
-    logger -t sudo -p authpriv.info "  ${RUSR} : command not allowed ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+   if [ "x$FAKESUDO" == "xyes" ]; then
+    logger -t sudo -p authpriv.info "  $RUSR : command not allowed ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SHL ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
    fi
-   logauth "Remote user ${RUSR} : OpenAKC root login not allowed by client config ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SHL} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+   logauth "Remote user $RUSR : OpenAKC root login not allowed by client config ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SHL ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
    echo "This host is configured to deny root access via OpenAKC"
    echo "You will be disconnected, please contact your system administrator"
-   export PSK=${SESSKEY}
-   echo "PERMITROOT configuration blocked this login" |(cat "${TMPHEAD}" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)
+   export PSK="$SESSKEY"
+   echo "PERMITROOT configuration blocked this login" |(cat "$TMPHEAD" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)
    unset PSK
-   logauth "PERMITROOT configuration blocked access to root account by ${KEYF}(${RUSR}) from ${SSH_CLIENT}"
+   logauth "PERMITROOT configuration blocked access to root account by $KEYF($RUSR) from $SSH_CLIENT"
    sleep 3
   fi
 #
 # 
  else
-  if [ "x${REC}" == "xyes" ]; then
-   MESSAGE=$(echo "logturn ${USR}@${HNS}.${RUSR}.${RPPID}-$(hostid)");sendmessage
+  if [ "x$REC" == "xyes" ]; then
+   MESSAGE="logturn $USR@$HNS.$RUSR.$RPPID-$(hostid)";sendmessage
    KLOG=1
-   echo "\"$SSH_ORIGINAL_COMMAND\" called via ssh" > "${TMPHEAD}"
-   echo "" >> "${TMPHEAD}"
+   echo "\"$SSH_ORIGINAL_COMMAND\" called via ssh" > "$TMPHEAD"
+   echo "" >> "$TMPHEAD"
   fi
  
-  if [ "x${PERMITROOT}${EUID}" != "xno0" ]; then
-   if [ "x${FAKESUDO}" == "xyes" ]; then
-    logger -t sudo -p authpriv.info "  ${RUSR} : TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+  if [ "x$PERMITROOT$EUID" != "xno0" ]; then
+   if [ "x$FAKESUDO" == "xyes" ]; then
+    logger -t sudo -p authpriv.info "  $RUSR : TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SSH_ORIGINAL_COMMAND ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
    fi
-   logauth "Remote user ${RUSR} : granted access ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
-   if [ "x${BCOMMAND}" == "xscp" ]; then
+   logauth "Remote user $RUSR : granted access ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SSH_ORIGINAL_COMMAND ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
+   if [ "x$BCOMMAND" == "xscp" ]; then
     SCPCMD=$(echo "$SSH_ORIGINAL_COMMAND" | awk '{print $1" "$2}')
     SCPVAL=$(echo "$SSH_ORIGINAL_COMMAND" | awk '{print $3}')
     saveifs="$IFS"
     IFS=";"
     for iscp in $SCP; do
-     logdebug "Running "sed" command \"${iscp}\""
+     logdebug "Running \"sed\" command \"$iscp\""
      SCPVAL=$(echo "$SCPVAL" | sed -e "$iscp")
     done
     IFS="$saveifs"
-    /usr/bin/openakc-cap --drop=$RESTRICT -- -c "$SCPCMD $SCPVAL"
+    /usr/bin/openakc-cap --drop="$RESTRICT" -- -c "$SCPCMD $SCPVAL"
     KEXIT=$?
-    [ "x${SCPCMD}" == "xscp -f" ]&&SCPCMD="GET"
-    [ "x${SCPCMD}" == "xscp -t" ]&&SCPCMD="PUT"
-    export PSK=${SESSKEY}
-    echo "SCP ${SCPCMD} ${SCPVAL} executed, exit code $KEXIT" |(cat "${TMPHEAD}" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)
+    [ "x$SCPCMD" == "xscp -f" ]&&SCPCMD="GET"
+    [ "x$SCPCMD" == "xscp -t" ]&&SCPCMD="PUT"
+    export PSK="$SESSKEY"
+    echo "SCP $SCPCMD $SCPVAL executed, exit code $KEXIT" |(cat "$TMPHEAD" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)
     unset PSK
     SCPEXIT="Failed"
     [ $KEXIT -eq 0 ]&&SCPEXIT="Succeeded"
-    logger -t openakc-scp -p local6.info "${SCPCMD} ${SCPVAL} ; ${SCPEXIT} for user $(whoami)"
-   elif [ "x${BCOMMAND}" == "xsftp-server" ]; then
-    [[ $SSH_ORIGINAL_COMMAND == *"/sftp-server" ]]&&SSH_ORIGINAL_COMMAND="${SSH_ORIGINAL_COMMAND} -f LOCAL6 -l INFO"
-    /usr/bin/openakc-cap --drop=$RESTRICT -- -c "$SSH_ORIGINAL_COMMAND"
-    KEXIT=$?
-    export PSK=${SESSKEY}
-    echo "$SSH_ORIGINAL_COMMAND executed" |(cat "${TMPHEAD}" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)
+    logger -t openakc-scp -p local6.info "$SCPCMD $SCPVAL ; $SCPEXIT for user $(whoami)"
+   elif [ "x$BCOMMAND" == "xsftp-server" ]; then
+    [[ $SSH_ORIGINAL_COMMAND == *"/sftp-server" ]]&&SSH_ORIGINAL_COMMAND="$SSH_ORIGINAL_COMMAND -f LOCAL6 -l INFO"
+    /usr/bin/openakc-cap --drop="$RESTRICT" -- -c "$SSH_ORIGINAL_COMMAND"
+    KEXIT="$?"
+    export PSK="$SESSKEY"
+    echo "$SSH_ORIGINAL_COMMAND executed" |(cat "$TMPHEAD" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)
     unset PSK
    else
-    if [ "x${REC}" == "xyes" ]; then
-     export PSK=${SESSKEY}
-     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "script -ec \"PSK="OpenAKC" ${SSH_ORIGINAL_COMMAND}\" -qaf >(cat \"${TMPHEAD}\" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)"
-     KEXIT=$?
+    if [ "x$REC" == "xyes" ]; then
+     export PSK="$SESSKEY"
+     /usr/bin/openakc-cap --drop="$RESTRICT" -- -c "script -ec \"PSK=OpenAKC $SSH_ORIGINAL_COMMAND\" -qaf >(cat \"$TMPHEAD\" - | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5)"
+     KEXIT="$?"
      unset PSK
     else
-     export PSK=${SESSKEY}
-     cat "${TMPHEAD}" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5
+     export PSK="$SESSKEY"
+     cat "$TMPHEAD" | /usr/bin/openakc-hpenc -a chacha20 -b 128 -K PSK >&5
      unset PSK
-     /usr/bin/openakc-cap --drop=$RESTRICT -- -c "${SSH_ORIGINAL_COMMAND}"
-     KEXIT=$?
+     /usr/bin/openakc-cap --drop="$RESTRICT" -- -c "$SSH_ORIGINAL_COMMAND"
+     KEXIT="$?"
     fi
    fi
   else
-   if [ "x${FAKESUDO}" == "xyes" ]; then
-    logger -t sudo -p authpriv.info "  ${RUSR} : command not allowed ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
+   if [ "x$FAKESUDO" == "xyes" ]; then
+    logger -t sudo -p authpriv.info "  $RUSR : command not allowed ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SSH_ORIGINAL_COMMAND ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
    fi
-   logauth "Remote user ${RUSR} : OpenAKC root login not allowed by client config ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; COMMAND=${SSH_ORIGINAL_COMMAND} ; CAP_RESTRICTIONS=${RESTRICT} ; OPENAKC_SESSION=${RPPID}-$(hostid) ; API=${API}"
-   logauth "PERMITROOT configuration blocked access to root account by ${KEYF}(${RUSR}) from ${SSH_CLIENT}"
+   logauth "Remote user $RUSR : OpenAKC root login not allowed by client config ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; COMMAND=$SSH_ORIGINAL_COMMAND ; CAP_RESTRICTIONS=$RESTRICT ; OPENAKC_SESSION=$RPPID-$(hostid) ; API=$API"
+   logauth "PERMITROOT configuration blocked access to root account by $KEYF($RUSR) from $SSH_CLIENT"
    sleep 3
   fi
  fi
 #
- rm "${TMPHEAD}" 2> /dev/null
+ rm "$TMPHEAD" 2> /dev/null
  
- logstatus "Remote user ${RUSR} : session ended ; TTY=${SSH_TTY} ; VIA=${RIP} ; USER=$(whoami) ; OPENAKC_SESSION=${RPPID}-$(hostid)"
- [ $KLOG -eq 0 ]&&echo "quit" >&5
+ logstatus "Remote user $RUSR : session ended ; TTY=$SSH_TTY ; VIA=$RIP ; USER=$(whoami) ; OPENAKC_SESSION=$RPPID-$(hostid)"
+ [ "$KLOG" -eq 0 ]&&echo "quit" >&5
  exec 5>&-
  logdebug "Passing on exit code $KEXIT"
  exit $KEXIT
 }
 
 
-apicall $API
+apicall "$API"

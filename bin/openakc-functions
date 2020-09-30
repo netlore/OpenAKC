@@ -69,6 +69,7 @@ data_validateroles () {
   exec 6<>"$fnd"
   [[ $? -eq 0 ]]&&logdebug "Default roles file \"$fnd\" opened OK"
  else
+# FIXME - having no role file (yet?) is not an error
   returnval["reply"]="ERR: Backend Failure Reading Roles Data"
   return 1
  fi
