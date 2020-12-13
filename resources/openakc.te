@@ -1,0 +1,42 @@
+
+module openakc 1.0;
+
+require {
+	type sysctl_t;
+	type systemd_hwdb_etc_t;
+	type udev_var_run_t;
+	type hi_reserved_port_t;
+	type var_lib_t;
+	type ifconfig_exec_t;
+	type sshd_t;
+	type hostname_exec_t;
+	type proc_kcore_t;
+	type sysctl_dev_t;
+	type hwdata_t;
+	class file { execute execute_no_trans getattr map open read };
+	class dir { create read search setattr };
+	class tcp_socket name_connect;
+}
+
+#============= sshd_t ==============
+
+#!!!! This avc can be allowed using the boolean 'nis_enabled'
+allow sshd_t hi_reserved_port_t:tcp_socket name_connect;
+
+#!!!! This avc can be allowed using the boolean 'domain_can_mmap_files'
+allow sshd_t hostname_exec_t:file map;
+allow sshd_t hostname_exec_t:file { execute execute_no_trans open read };
+allow sshd_t hwdata_t:file { open read };
+allow sshd_t ifconfig_exec_t:file { execute open read };
+allow sshd_t proc_kcore_t:file getattr;
+allow sshd_t sysctl_dev_t:dir search;
+allow sshd_t sysctl_t:dir read;
+allow sshd_t sysctl_t:file getattr;
+
+#!!!! This avc can be allowed using the boolean 'domain_can_mmap_files'
+allow sshd_t systemd_hwdb_etc_t:file map;
+allow sshd_t udev_var_run_t:file { open read };
+
+#!!!! This avc can be allowed using the boolean 'polyinstantiation_enabled'
+allow sshd_t var_lib_t:dir { create setattr };
+allow sshd_t var_lib_t:file { getattr open read };
