@@ -3,7 +3,7 @@
 # Filename      : /var/lib/openakc/libexec/openakc-functions-%RELEASE%
 # Function      : OpenAKC Shared Functions
 #
-# Copyright (C) 2019-2020  A. James Lewis
+# Copyright (C) 2019-2021  A. James Lewis
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -387,6 +387,58 @@ data_idkeyf () {
 #
 # End of Data Functions
 #
+
+#
+# Function using perl Authen::PAM to validate a user on the server
+# Call like "akcun=USERNAME akcpw=PASSWORD pamauth" - then check exit code.
+#
+pamauth () { 
+ perl=$(which perl)
+ pamout=$($perl <<'EOF' 
+ use Authen::PAM;
+ use POSIX qw(ttyname);
+
+ $service = "login";
+ $username = $ENV{'akcun'};
+ $password = $ENV{'akcpw'};
+ $tty_name = ttyname(fileno(STDIN));
+ 
+ sub my_conv_func {
+  my @res;
+  while ( @_ ) {
+   my $code = shift;
+   my $msg = shift;
+   my $ans = "";
+
+   $ans = $username if ($code == PAM_PROMPT_ECHO_ON() );
+   $ans = $password if ($code == PAM_PROMPT_ECHO_OFF() );
+
+   push @res, (PAM_SUCCESS(),$ans);
+  }
+  push @res, PAM_SUCCESS();
+  return @res;
+ }
+
+ ref($pamh = new Authen::PAM($service, $username, \&my_conv_func)) || die "Error code $pamh during PAM init!";
+
+ $res = $pamh->pam_set_item(PAM_TTY(), $tty_name);
+ $res = $pamh->pam_authenticate;
+
+ if ($res == PAM_SUCCESS()) {
+  printf ("%s\n","Success");
+ }
+ else {
+  printf ("%s\n","Failure");
+ }
+EOF
+ )
+ if [ "$pamout" = "Success" ]; then
+  return 0
+ else
+  return 1
+ fi
+}
+
 
 #
 # Function to compare IP with CIDR subnet address. Eg. "cidr_compare 192.168.122.0/24 192.168.122.50" returns true
