@@ -1,0 +1,36 @@
+james@morpheous:~$ openakc totp
+OpenAKC Copyright (C) 2019-2021  A. James Lewis.
+Version is 1.1.12~ubuntu21.04-1.
+
+This program comes with ABSOLUTELY NO WARRANTY; see "license" option.
+This is free software, and you are welcome to redistribute it
+under certain conditions; See LICENSE file for further details.
+
+Two Factor Authentication
+Please enter 6 digit code: 
+
+Connected to OpenAKC server.  Sending TOTP session request.
+OK: Code Matches, dynamic session keypair valid until 2021-06-23 19:05:11 BST
+
+Agent pid 393194
+Identity added: /home/james/.ssh/id_rsa (/home/james/.ssh/id_rsa)
+
+You may now proceed.
+
+james@morpheous:~$
+james@morpheous:~$ ssh root@testhost
+OpenAKC Interactive Session Initialized
+
+Please enter the reason for your connection
+Title / Change Number: TOTP Test
+Description (blank line to end)
+Test of dynamic key / TOTP access using
+Google Authenticator
+
+root@testhost:~# uname
+Linux
+root@testhost:~#
+root@testhost:~#exit
+logout
+Connection to testhost closed.
+james@morpheous:~$ 

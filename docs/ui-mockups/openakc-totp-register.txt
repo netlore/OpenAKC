@@ -1,0 +1,57 @@
+james@morpheous:~$ openakc totp-register
+OpenAKC Copyright (C) 2019-2021  A. James Lewis.
+Version is 1.1.12~ubuntu21.04-1.
+
+This program comes with ABSOLUTELY NO WARRANTY; see "license" option.
+This is free software, and you are welcome to redistribute it
+under certain conditions; See LICENSE file for further details.
+
+Two Factor Authentication Setup
+
+Connected to OpenAKC server.  Sending TOTP registration request.
+OK: Registration Data Sent
+
+█████████████████████████████████████████████████
+█████████████████████████████████████████████████
+████ ▄▄▄▄▄ █ ▀▄  ▀  █ ██▄▀ ██▄▄██  ▄▀█ ▄▄▄▄▄ ████
+████ █   █ ██▀▀▀▀█ ▄ █ ▄▀█ ▀██   █  ██ █   █ ████
+████ █▄▄▄█ █ ▀  ██ ▄ █▀ █ █ █▀▀ █▄▀ ▄█ █▄▄▄█ ████
+████▄▄▄▄▄▄▄█ █▄█ █▄█▄█ █ █ ▀▄█▄█▄█ █▄█▄▄▄▄▄▄▄████
+████▄  ▀█ ▄▀ ▀▄  █▀ ▀▀▄ ▀██ ▄ █▀ ▀▄▄    ▄██▄▄████
+████▀▀▄███▄█▀ ▀█▀▄ █ ▀█▄▀▀▄▄▀█▄ ▀██ █▄▀▀▀ ▄█ ████
+████ ▀  ▄▄▄ ▀█▄█ ▄ ▄ ▄█  ▀█▄▀█▀▀ ▄█  ▄█▀█ ▀ ▀████
+█████▀▀█ ▀▄▄ ██▀ ▀▀▀  ▄▀▄█▀█▄▄▄▀▄▄▀▄ █▄ ▄  █▄████
+████▄▀▀▄█▀▄▀ █▀▀▀ ▄█ ▀▄▀ ▀█▀ ▀█  ▀ ▄ █ ▄██▄▀ ████
+████▄ ▄ ▄█▄▀██▀  ▀█▄ ▄▄ ▄ ▄▄ ▀▄ ▄ █▄█▄ ▀▀▀▄█ ████
+████▄▄▀  █▄█▄▀███▄████▀▄ ▀██ █▄█▀▄█  ▄█ ▀██ ▀████
+████▄ ▄▄█▀▄ ██▄▄█ █▄██ █▄▄▀█ ▄▀█ █▄ ▄▀▀▄▀ ▀▀ ████
+██████▄▄▀█▄▀▀██  █  ▄▀▀ ▀█ ▀ █▀  █ █ ▀ ▄█ █▀▀████
+█████▀█▀▀▄▄█  ▄▄▄▄ ▄▀█▄ ███▄▄▀█ ▄▀▄ ▀█ ▄▀▀▄█ ████
+██████ ▄▀ ▄▀▀ ▀█ ▄ ▄ ██  ▀▀▄   ▀ ▄▀█  █  ▀█▄▀████
+████▄▄▄▀▀▀▄██  ▀ ▄█▀ ███ █▀ ▄▄▄▀ ▄▄ ▄█▄▄▀ ▀▀▄████
+████▄▄▄█▄█▄▄▀▀ ▀▄▀▀█▄▄ ▀ ▀▀ ▀██▀█ ██ ▄▄▄  █  ████
+████ ▄▄▄▄▄ █▀▀██▀▀█▀▀██▄▀█▄▄▀ ▄ ▀ ▄█ █▄█  ▄█ ████
+████ █   █ ██▄▄▄█▄█▄▄▀█▄ ██▀ ▄▄█▀▄█▄▄ ▄   █ ▀████
+████ █▄▄▄█ █ ▄ ▄██ ▄▄█▄▄ █  ▄▄ ▀ █ ▄▄█▀▄▄ ▀▄▄████
+████▄▄▄▄▄▄▄█▄▄█▄█▄█▄▄▄▄█▄██▄▄███▄██▄█▄█▄█▄██▄████
+█████████████████████████████████████████████████
+█████████████████████████████████████████████████
+
+Please scan the QR Code with your Authenticator App, or enter the details
+below manually:
+
+Provider: OpenAKC
+Username: james
+Key: JV4SAVDFON2CAS3FPEFA====
+
+
+Now enter 6 digit code to verify: 
+
+Connected to OpenAKC server.  Sending TOTP confirmation request.
+OK: Code Matches, Registered.
+
+Please do not loose your TOTP keys or you will need to contact your
+Security Administrator to reset your account!
+
+james@morpheous:~$
+james@morpheous:~$
