@@ -18,6 +18,10 @@
 
 **Possible Future Enhancements (Suggestions)**
 
+* "openakc totp-register" - register a TOTP (Authenticator) code
+* "openakc totp" - enable an agent session with TOTP code.
+* "openakc totp-refresh" - refresh (non-expired) key for an agent session with TOTP code.
+
 * "openakc explain" - reports reason for last failure, (user validataed using
   their OpenAKC public key in their user record)
 
