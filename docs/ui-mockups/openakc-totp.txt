@@ -6,14 +6,18 @@ This program comes with ABSOLUTELY NO WARRANTY; see "license" option.
 This is free software, and you are welcome to redistribute it
 under certain conditions; See LICENSE file for further details.
 
-Two Factor Authentication
-Please enter 6 digit code: 
+Please Enter Authentication Information
+
+Username: jlewis
+Password: 
+6 digit code (from app): 
 
 Connected to OpenAKC server.  Sending TOTP session request.
 OK: Code Matches, dynamic session keypair valid until 2021-06-23 19:05:11 BST
 
 Agent pid 393194
-Identity added: /home/james/.ssh/id_rsa (/home/james/.ssh/id_rsa)
+Identity added: /home/james/.ssh/id_tmp.WE0i38rWrr (/home/james/.ssh/id_tmp.WE0i38rWrr)
+Temp file removed.
 
 You may now proceed.
 

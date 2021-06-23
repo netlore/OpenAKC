@@ -8,8 +8,13 @@ under certain conditions; See LICENSE file for further details.
 
 Two Factor Authentication Setup
 
+Please confirm your account details:
+
+Username: jlewis
+Password: 
+
 Connected to OpenAKC server.  Sending TOTP registration request.
-OK: Registration Data Sent
+OK: Registration Data Valid
 
 █████████████████████████████████████████████████
 █████████████████████████████████████████████████
@@ -41,7 +46,7 @@ Please scan the QR Code with your Authenticator App, or enter the details
 below manually:
 
 Provider: OpenAKC
-Username: james
+Username: jlewis
 Key: JV4SAVDFON2CAS3FPEFA====
 
 
@@ -54,4 +59,4 @@ Please do not loose your TOTP keys or you will need to contact your
 Security Administrator to reset your account!
 
 james@morpheous:~$
-james@morpheous:~$
+james@morpheous:~$ 
