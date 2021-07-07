@@ -1,12 +1,23 @@
-**Blocking For 1.0 Release**
+**Blocking For 1.0 Release - Stalled as new work is mainly on the 1.2.x tree**
 
-* IN PROGRESS - Code review, fix up input validation and more graceful error handling plus
-  additional testing (initially for server & session).
+* Code review, improve input validation and more graceful error handling plus
+  additional testing (initially for server & session).  Given the number of
+  potential users, focus has moved preparing a 1.2.x code base which will
+  address many of the issues in 1.0.x.  1.0.x is fully functional, and I
+  will release updates to fix issues if any are found, the only reservation
+  would be that I only recommend OpenAKC 1.0 server for internal networks,
+  not for connection to the public Internet.
 
 
-**Planned Post 1.0 Enhancements**
+**Planned 1.2.x Enhancements**
 
-* Post 1.0 code review/refactor of client code.
+* 2FA
+* "openakc totp-register" - register a TOTP (Authenticator) code
+* "openakc totp" - enable an agent session with TOTP code.
+* "openakc totp-refresh" - refresh (non-expired) key for an agent session with TOTP code.
+
+* Rebuild openakc tool useing new password/totp authentication for changes, registering keys etc.
+  and removing requirement for "trusted" jump host.
 
 * STARTED - Migrate functions (including data) into a libexec folder
   (eventually facilitate alternate data stores).
