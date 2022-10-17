@@ -429,6 +429,8 @@ netcall () {
    sleep 5
    reset
    echo "Timeout / Error with OpenAKC backend at ${API}, check port ${PORT}. Code: $success"
+  else
+   break
   fi
  done
 }
